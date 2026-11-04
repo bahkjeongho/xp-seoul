@@ -1,11 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 
-const VAULT_CONTENT_DIR = path.resolve('../Hide-Park/content');
-const PUBLIC_DATA_DIR = path.resolve('./public/data');
-const SRC_DATA_DIR = path.resolve('./src/data');
+import { fileURLToPath } from 'node:url';
 
-for (const dir of [PUBLIC_DATA_DIR, SRC_DATA_DIR]) {
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT_DIR = path.resolve(__dirname, '..');
+const VAULT_CONTENT_DIR = path.resolve(ROOT_DIR, '../Hide-Park/content');
+const PUBLIC_DATA_DIR = path.resolve(ROOT_DIR, 'public/data');
+const PUBLIC_NOTES_DIR = path.resolve(ROOT_DIR, 'public/data/notes');
+const SRC_DATA_DIR = path.resolve(ROOT_DIR, 'src/data');
+
+for (const dir of [PUBLIC_DATA_DIR, PUBLIC_NOTES_DIR, SRC_DATA_DIR]) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
@@ -103,6 +109,7 @@ for (const file of wikiFiles) {
     const { data, content } = parseYamlFrontmatter(raw);
     const id = path.basename(file.filename, '.md');
     const title = id;
+    const hash = crypto.createHash('sha1').update(id).digest('hex');
 
     const categories = parseFrontmatterValue(data['Category']);
     const subCategories = parseFrontmatterValue(data['Sub-Category']);
@@ -152,9 +159,16 @@ for (const file of wikiFiles) {
     const cities = parseFrontmatterValue(data['Cities']);
     const countries = parseFrontmatterValue(data['Countries']);
 
-    notes.push({
+    // Capture ALL frontmatter attributes dynamically so nothing is hidden
+    const allProps = {};
+    for (const [k, v] of Object.entries(data)) {
+      allProps[k] = Array.isArray(v) ? v.map(cleanWikilink) : cleanWikilink(String(v));
+    }
+
+    const noteObj = {
       id,
       title,
+      hash,
       folderType: file.folderType,
       aliases,
       category,
@@ -175,7 +189,13 @@ for (const file of wikiFiles) {
       info,
       summary,
       rawContent: content,
-    });
+      allProps,
+    };
+
+    notes.push(noteObj);
+
+    // Save individual note detail in public/data/notes/<hash>.json
+    fs.writeFileSync(path.join(PUBLIC_NOTES_DIR, `${hash}.json`), JSON.stringify(noteObj));
   } catch (err) {
     console.error(`Error processing ${file.filename}:`, err);
   }
@@ -186,13 +206,11 @@ notes.sort((a, b) => a.title.localeCompare(b.title, 'ko'));
 
 console.log(`Successfully processed ${notes.length} notes.`);
 
-// Write full data
-fs.writeFileSync(path.join(SRC_DATA_DIR, 'notes.json'), JSON.stringify(notes));
-
 // Write light index
-const lightNotes = notes.map(({ id, title, folderType, aliases, category, subCategory, field, subField, type, subType, topic, topics, ig, website, tldr, info, cities, countries }) => ({
+const lightNotes = notes.map(({ id, title, hash, folderType, aliases, category, subCategory, field, subField, type, subType, topic, topics, ig, website, tldr, info, cities, countries }) => ({
   id,
   title,
+  hash,
   folderType,
   aliases,
   category,
@@ -215,11 +233,5 @@ fs.writeFileSync(path.join(SRC_DATA_DIR, 'notes-light.json'), JSON.stringify(lig
 fs.writeFileSync(path.join(PUBLIC_DATA_DIR, 'notes-light.json'), JSON.stringify(lightNotes));
 fs.writeFileSync(path.join(SRC_DATA_DIR, 'taxonomy.json'), JSON.stringify(taxonomyTree, null, 2));
 fs.writeFileSync(path.join(PUBLIC_DATA_DIR, 'taxonomy.json'), JSON.stringify(taxonomyTree, null, 2));
-
-// Clean up any notes dir in public if created earlier
-const oldNotesDir = path.join(PUBLIC_DATA_DIR, 'notes');
-if (fs.existsSync(oldNotesDir)) {
-  fs.rmSync(oldNotesDir, { recursive: true, force: true });
-}
 
 console.log('Finished writing all data files to src/data and public/data!');

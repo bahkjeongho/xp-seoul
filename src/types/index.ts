@@ -1,6 +1,7 @@
 export interface NoteItem {
   id: string;
   title: string;
+  hash: string;
   folderType: string;
   aliases: string[];
   category: string;
@@ -21,6 +22,7 @@ export interface NoteItem {
   info: string;
   summary?: string;
   rawContent?: string;
+  allProps?: Record<string, string | string[]>;
 }
 
 export interface TaxonomyCategory {

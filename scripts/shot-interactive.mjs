@@ -4,9 +4,9 @@ import os from "node:os";
 import path from "node:path";
 
 const url = "http://127.0.0.1:4321";
-const out = "/Users/parkjeongho/.gemini/antigravity/brain/57230a98-e841-4d36-a0af-fb81a26d73fe/preview_selected.png";
-const profile = fs.mkdtempSync(path.join(os.tmpdir(), "hp-chrome-detail-"));
-const port = 9550;
+const out = "/Users/parkjeongho/.gemini/antigravity/brain/57230a98-e841-4d36-a0af-fb81a26d73fe/preview_selected_v2.png";
+const profile = fs.mkdtempSync(path.join(os.tmpdir(), "hp-chrome-detail2-"));
+const port = 9560;
 const chrome = spawn("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", [
   "--headless=new","--disable-gpu",`--remote-debugging-port=${port}`,
   `--user-data-dir=${profile}`,"about:blank"],{stdio:"ignore"});
@@ -44,16 +44,28 @@ try {
   await send("Page.enable");
   await send("Emulation.setDeviceMetricsOverride", { width: 1512, height: 982, deviceScaleFactor: 2, mobile: false });
   await send("Page.navigate", { url });
-  await sleep(4000);
+  await sleep(3000);
 
-  // Click on the active center card to open detail panel
+  // Search for "Mucho" or click a note
   await send("Runtime.evaluate", {
     expression: `
-      const centerCard = document.querySelector('.shadow-\\\\[0_12px_32px_rgba\\\\(0\\\\,0\\\\,0\\\\,0\\\\.08\\\\)\\\\]');
-      if (centerCard) centerCard.click();
+      const input = document.querySelector('input[type="text"]');
+      if (input) {
+        input.value = "Mucho";
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
     `
   });
-  await sleep(2000);
+  await sleep(1000);
+
+  // Click on the matching card
+  await send("Runtime.evaluate", {
+    expression: `
+      const card = document.querySelector('.shadow-\\\\[0_14px_36px_rgba\\\\(0\\\\,0\\\\,0\\\\,0\\\\.08\\\\)\\\\]') || document.querySelector('h3');
+      if (card) card.click();
+    `
+  });
+  await sleep(2500);
 
   const shot = await send("Page.captureScreenshot", { format: "png" });
   fs.writeFileSync(out, Buffer.from(shot.data, "base64"));
