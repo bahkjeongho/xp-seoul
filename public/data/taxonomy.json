@@ -1,0 +1,354 @@
+{
+  "Design": {
+    "count": 1198,
+    "subCategories": {
+      "Fashion": {
+        "count": 378,
+        "topics": {
+          "Fashion Brand": 133,
+          "Fashion Magazine": 78,
+          "Fashion Designer": 67,
+          "Stylist": 30,
+          "Fashion Critic": 3,
+          "Fashion Design Program": 1,
+          "Fashion Design School": 12,
+          "Textile Design School": 5,
+          "Fashion Design Brand": 9,
+          "Fashion Retail": 10,
+          "Fashion Week": 1,
+          "Fashion Platform": 3,
+          "Luxury Goods Company": 1,
+          "Fashion Director": 1,
+          "Hair Designer": 1
+        }
+      },
+      "Visual Communication": {
+        "count": 264,
+        "topics": {
+          "Creative Agency": 30,
+          "Creative Studio": 55,
+          "Art Direction Award": 6,
+          "Creative Director": 86,
+          "Creative Company": 13,
+          "Creative Collective": 3,
+          "Creative Group": 2,
+          "Art Director": 28,
+          "Creative Production": 13,
+          "Creative Consultancy": 6,
+          "Visual Director": 4,
+          "Creative Producer": 4,
+          "Creative Office": 1,
+          "Creative Team": 1
+        }
+      },
+      "Graphic Design": {
+        "count": 246,
+        "topics": {
+          "Graphic Design Studio": 19,
+          "Brand Design Agency": 43,
+          "Type Designer": 4,
+          "Graphic Designer": 77,
+          "Brand Designer": 5,
+          "Graphic Design School": 28,
+          "Illustration School": 6,
+          "Brand Design Studio": 15,
+          "Brand Design Consultancy": 8,
+          "Type Foundry": 10
+        }
+      },
+      "Architecture": {
+        "count": 64,
+        "topics": {
+          "Architecture Studio": 7,
+          "Architecture Award": 7,
+          "Interior Architecture Company": 1,
+          "Architect": 18,
+          "Architecture Magazine": 2,
+          "Architecture School": 6,
+          "Architecture Firm": 15,
+          "Architecture Office": 4,
+          "Architecture Prize": 2
+        }
+      },
+      "Product Design": {
+        "count": 33,
+        "topics": {
+          "Product Designer": 3,
+          "Industrial Design School": 11,
+          "Furniture Design School": 5,
+          "Furniture Designer": 3,
+          "Industrial Designer": 1
+        }
+      },
+      "Digital Design": {
+        "count": 12,
+        "topics": {
+          "Digital Design School": 5,
+          "3D Artist": 2
+        }
+      },
+      "Production Design": {
+        "count": 2,
+        "topics": {
+          "Production Designer": 2
+        }
+      },
+      "Performing Arts": {
+        "count": 1,
+        "topics": {}
+      }
+    }
+  },
+  "The Arts": {
+    "count": 1066,
+    "subCategories": {
+      "Music": {
+        "count": 717,
+        "topics": {
+          "K-Pop Idol": 458,
+          "Music Artist": 155,
+          "Music Producer": 1,
+          "Rapper": 11,
+          "Producer": 12,
+          "Record Label": 14,
+          "K-Pop Company": 23,
+          "Music Critic": 5,
+          "Music Magazine": 6,
+          "Music Festival": 5,
+          "Band": 6,
+          "Music Platform": 3,
+          "Music Journalism": 1,
+          "Music Award": 1,
+          "Rock Band": 2,
+          "DJ": 2,
+          "Instruments Company": 2,
+          "Singer-Songwriter": 2,
+          "A&R": 1
+        }
+      },
+      "Video": {
+        "count": 56,
+        "topics": {
+          "Video Director": 31,
+          "D.O.P.": 1,
+          "Animation School": 7,
+          "Video Editor": 2,
+          "Video Production": 5,
+          "Production Company": 2,
+          "Executive Producer": 1,
+          "Video Channel": 2,
+          "Animation Studio": 1,
+          "Production House": 1
+        }
+      },
+      "Film": {
+        "count": 34,
+        "topics": {
+          "Film School": 15,
+          "Film Director": 2,
+          "Filmmaker": 4,
+          "Sound Director": 1,
+          "Film Production": 2,
+          "Moving Image Critic": 1,
+          "Film Critic": 3,
+          "Film Magazine": 1
+        }
+      },
+      "Visual Art": {
+        "count": 78,
+        "topics": {
+          "Art Week": 1,
+          "Art Platform": 14,
+          "Art Fair": 1,
+          "Fine Art School": 24,
+          "Museum": 17,
+          "Art Festival": 2,
+          "Art Gallery": 10,
+          "Curator": 1,
+          "Art Collective": 3,
+          "Sculptor": 2
+        }
+      },
+      "Performing Arts": {
+        "count": 13,
+        "topics": {
+          "Promoter": 6,
+          "Venue": 1
+        }
+      },
+      "Photography": {
+        "count": 93,
+        "topics": {
+          "Photography Director": 11,
+          "Photographer": 64,
+          "Photography School": 14
+        }
+      },
+      "Comics": {
+        "count": 1,
+        "topics": {}
+      },
+      "Critique": {
+        "count": 1,
+        "topics": {
+          "Critique Magazine": 1
+        }
+      },
+      "Literature": {
+        "count": 1,
+        "topics": {
+          "Literary Critic": 1
+        }
+      }
+    }
+  },
+  "Media": {
+    "count": 203,
+    "subCategories": {
+      "Publishing": {
+        "count": 28,
+        "topics": {
+          "Publisher": 4,
+          "Publishing Company": 13,
+          "Book": 8,
+          "Book Editor": 1
+        }
+      },
+      "Editing": {
+        "count": 41,
+        "topics": {
+          "Editor": 23,
+          "Editor-in-Chief": 16,
+          "Editorial Director": 2
+        }
+      },
+      "News": {
+        "count": 5,
+        "topics": {
+          "Newspaper": 4
+        }
+      },
+      "Blog": {
+        "count": 2,
+        "topics": {}
+      }
+    }
+  },
+  "Entertainment": {
+    "count": 170,
+    "subCategories": {
+      "Sports": {
+        "count": 161,
+        "topics": {
+          "Sports Team": 152,
+          "Sports League": 8,
+          "Sports Magazine": 1
+        }
+      },
+      "Management": {
+        "count": 4,
+        "topics": {
+          "Management Agency": 3
+        }
+      }
+    }
+  },
+  "Uncategorized": {
+    "count": 208,
+    "subCategories": {}
+  },
+  "Technology": {
+    "count": 33,
+    "subCategories": {
+      "Software": {
+        "count": 11,
+        "topics": {
+          "Programmer": 4,
+          "AI Company": 3,
+          "Software Company": 1,
+          "AI Engineer": 1
+        }
+      },
+      "Engineering": {
+        "count": 12,
+        "topics": {
+          "Engineer": 1,
+          "Spacecraft Company": 1,
+          "Automobile Company": 1
+        }
+      },
+      "Tech Product": {
+        "count": 3,
+        "topics": {
+          "Tech Product Company": 3
+        }
+      },
+      "Computer Science": {
+        "count": 1,
+        "topics": {
+          "Computer Scientist": 1
+        }
+      }
+    }
+  },
+  "Humanities": {
+    "count": 6,
+    "subCategories": {
+      "Philosophy": {
+        "count": 5,
+        "topics": {
+          "Philosopher": 4
+        }
+      },
+      "Social Theory": {
+        "count": 1,
+        "topics": {}
+      }
+    }
+  },
+  "Business": {
+    "count": 22,
+    "subCategories": {
+      "Consulting": {
+        "count": 3,
+        "topics": {
+          "Consulting Agency": 2,
+          "Consultancy Collective": 1
+        }
+      },
+      "Marketing": {
+        "count": 4,
+        "topics": {
+          "Communications Group": 1,
+          "PR Agency": 1,
+          "Marketing Agency": 1,
+          "Marketing Company": 1
+        }
+      },
+      "Investing": {
+        "count": 3,
+        "topics": {
+          "Growth Invention Company": 1
+        }
+      },
+      "Branding": {
+        "count": 3,
+        "topics": {
+          "Brand Strategist": 2
+        }
+      },
+      "Advertising": {
+        "count": 1,
+        "topics": {}
+      }
+    }
+  },
+  "Culture": {
+    "count": 4,
+    "subCategories": {}
+  },
+  "Object": {
+    "count": 1302,
+    "subCategories": {}
+  }
+}
