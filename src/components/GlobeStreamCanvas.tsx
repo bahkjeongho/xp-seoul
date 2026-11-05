@@ -173,63 +173,132 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     animationFrameRef.current = requestAnimationFrame(step);
   }, []);
 
-  // Unified Pointer Drag Handlers (iOS Safari / Mobile Touch & Desktop Mouse)
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest('.interactive-control')) return;
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+  // --- NATIVE NON-PASSIVE TOUCH & MOUSE DRAG EVENT LISTENERS (Guaranteed iOS Safari & Mobile Touch Support) ---
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-    try {
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    } catch (_) {}
+    // 1. Touch Handlers (iOS Safari & Android)
+    const onTouchStart = (e: TouchEvent) => {
+      if ((e.target as HTMLElement).closest('.interactive-control')) return;
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
 
-    isDraggingRef.current = true;
-    totalDragDistanceRef.current = 0;
-    dragStartPosRef.current = { x: e.clientX, y: e.clientY };
-    dragStartPanRef.current = { ...panRef.current };
-    lastMovePosRef.current = { x: e.clientX, y: e.clientY, time: performance.now() };
-    velocityRef.current = { x: 0, y: 0 };
-  };
+      const touch = e.touches[0];
+      if (!touch) return;
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDraggingRef.current) return;
-
-    const dx = e.clientX - dragStartPosRef.current.x;
-    const dy = e.clientY - dragStartPosRef.current.y;
-    totalDragDistanceRef.current += Math.hypot(
-      e.clientX - lastMovePosRef.current.x,
-      e.clientY - lastMovePosRef.current.y
-    );
-
-    const now = performance.now();
-    const dt = Math.max(1, now - lastMovePosRef.current.time);
-    velocityRef.current = {
-      x: ((e.clientX - lastMovePosRef.current.x) / dt) * 14,
-      y: ((e.clientY - lastMovePosRef.current.y) / dt) * 14,
+      isDraggingRef.current = true;
+      totalDragDistanceRef.current = 0;
+      dragStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+      dragStartPanRef.current = { ...panRef.current };
+      lastMovePosRef.current = { x: touch.clientX, y: touch.clientY, time: performance.now() };
+      velocityRef.current = { x: 0, y: 0 };
     };
-    lastMovePosRef.current = { x: e.clientX, y: e.clientY, time: now };
 
-    setPan({
-      x: dragStartPanRef.current.x + dx,
-      y: dragStartPanRef.current.y + dy,
-    });
-  };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!isDraggingRef.current) return;
 
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (!isDraggingRef.current) return;
-    try {
-      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch (_) {}
-    isDraggingRef.current = false;
-    startMomentum();
-  };
+      // Essential for iOS Safari: stops native scroll & prevents touch cancellation
+      if (e.cancelable) {
+        e.preventDefault();
+      }
 
-  const handlePointerCancel = (e: React.PointerEvent) => {
-    if (!isDraggingRef.current) return;
-    try {
-      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch (_) {}
-    isDraggingRef.current = false;
-  };
+      const touch = e.touches[0];
+      if (!touch) return;
+
+      const dx = touch.clientX - dragStartPosRef.current.x;
+      const dy = touch.clientY - dragStartPosRef.current.y;
+      totalDragDistanceRef.current += Math.hypot(
+        touch.clientX - lastMovePosRef.current.x,
+        touch.clientY - lastMovePosRef.current.y
+      );
+
+      const now = performance.now();
+      const dt = Math.max(1, now - lastMovePosRef.current.time);
+      velocityRef.current = {
+        x: ((touch.clientX - lastMovePosRef.current.x) / dt) * 14,
+        y: ((touch.clientY - lastMovePosRef.current.y) / dt) * 14,
+      };
+      lastMovePosRef.current = { x: touch.clientX, y: touch.clientY, time: now };
+
+      setPan({
+        x: dragStartPanRef.current.x + dx,
+        y: dragStartPanRef.current.y + dy,
+      });
+    };
+
+    const onTouchEnd = () => {
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+      startMomentum();
+    };
+
+    const onTouchCancel = () => {
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+    };
+
+    // 2. Mouse Handlers (Desktop)
+    const onMouseDown = (e: MouseEvent) => {
+      if ((e.target as HTMLElement).closest('.interactive-control')) return;
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+
+      isDraggingRef.current = true;
+      totalDragDistanceRef.current = 0;
+      dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+      dragStartPanRef.current = { ...panRef.current };
+      lastMovePosRef.current = { x: e.clientX, y: e.clientY, time: performance.now() };
+      velocityRef.current = { x: 0, y: 0 };
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDraggingRef.current) return;
+
+      const dx = e.clientX - dragStartPosRef.current.x;
+      const dy = e.clientY - dragStartPosRef.current.y;
+      totalDragDistanceRef.current += Math.hypot(e.movementX || 0, e.movementY || 0);
+
+      const now = performance.now();
+      const dt = Math.max(1, now - lastMovePosRef.current.time);
+      velocityRef.current = {
+        x: ((e.clientX - lastMovePosRef.current.x) / dt) * 14,
+        y: ((e.clientY - lastMovePosRef.current.y) / dt) * 14,
+      };
+      lastMovePosRef.current = { x: e.clientX, y: e.clientY, time: now };
+
+      setPan({
+        x: dragStartPanRef.current.x + dx,
+        y: dragStartPanRef.current.y + dy,
+      });
+    };
+
+    const onMouseUp = () => {
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+      startMomentum();
+    };
+
+    // Register non-passive touch listeners so iOS Safari NEVER cancels the gesture
+    container.addEventListener('touchstart', onTouchStart, { passive: false });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd, { passive: false });
+    window.addEventListener('touchcancel', onTouchCancel, { passive: false });
+
+    // Register desktop mouse listeners
+    container.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+
+    return () => {
+      container.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('touchcancel', onTouchCancel);
+
+      container.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [startMomentum]);
 
   // Mouse Wheel Navigation
   const handleWheel = (e: React.WheelEvent) => {
@@ -474,13 +543,15 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       {/* --- 2. MAIN 3D GLOBE CANVAS (Strictly below the header, overflow hidden) --- */}
       <div
         ref={containerRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
         onWheel={handleWheel}
         className="flex-1 w-full max-w-[100vw] h-full relative overflow-hidden cursor-grab active:cursor-grabbing touch-none select-none"
-        style={{ perspective: '1200px', touchAction: 'none', contain: 'paint' }}
+        style={{
+          perspective: '1200px',
+          touchAction: 'none',
+          WebkitTouchCallout: 'none',
+          WebkitUserSelect: 'none',
+          userSelect: 'none',
+        }}
       >
         {/* --- DESKTOP ONLY: RIGHT TOP FLOATING FILTER BUTTONS --- */}
         <div className="hidden md:flex interactive-control fixed top-[72px] right-6 z-40 flex-col items-end gap-1.5 select-none font-sans max-h-[82vh] overflow-y-auto no-scrollbar pb-6">
