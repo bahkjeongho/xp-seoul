@@ -424,25 +424,25 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
   return (
     <div className="w-full max-w-[100vw] h-screen flex flex-col bg-[#fbfbfb] text-black overflow-hidden select-none font-sans relative">
       {/* --- 1. TOP HEADER (Solid 100% Opaque, identical height to Stream mode, completely OUTSIDE 3D container!) --- */}
-      <header className="interactive-control w-full max-w-[100vw] h-[57px] bg-white border-b border-[#eeeeee] px-3 sm:px-6 md:px-8 flex items-center justify-between z-50 shrink-0 select-none shadow-2xs box-border">
-        {/* Left: Brand & Mode Switcher */}
+      <header className="interactive-control w-full max-w-[100vw] h-[57px] bg-white border-b border-[#eeeeee] px-4 sm:px-6 md:px-8 flex items-center justify-between z-50 shrink-0 select-none shadow-2xs box-border">
+        {/* Left: Brand & Desktop Mode Switcher */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             onClick={handleResetAll}
-            className="font-black text-lg sm:text-2xl tracking-tight text-black font-sans hover:opacity-75 transition-opacity"
+            className="font-black text-xl sm:text-2xl tracking-tight text-black font-sans hover:opacity-75 transition-opacity"
           >
             XP Seoul
           </button>
 
-          {/* Mode Switcher Pill */}
-          <div className="flex items-center bg-[#f4f4f5] p-0.5 sm:p-1 rounded-full border border-black/8 font-sans text-[11px] sm:text-xs ml-1 sm:ml-2">
+          {/* Desktop Mode Switcher Pill */}
+          <div className="hidden md:flex items-center bg-[#f4f4f5] p-1 rounded-full border border-black/8 font-sans text-xs ml-2">
             <button
               onClick={onSwitchToStream}
-              className="px-2 sm:px-3 py-1 rounded-full text-[#666666] hover:text-black transition-colors"
+              className="px-3 py-1 rounded-full text-[#666666] hover:text-black transition-colors"
             >
               Stream
             </button>
-            <button className="px-2.5 sm:px-3.5 py-1 rounded-full bg-white text-black font-semibold shadow-2xs">
+            <button className="px-3.5 py-1 rounded-full bg-white text-black font-semibold shadow-2xs">
               Globe
             </button>
           </div>
@@ -467,9 +467,12 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
           </span>
         </div>
 
-        {/* Right: Search & Filter Trigger Buttons (Mobile only) */}
+        {/* Right: Mobile Header Controls (Search Toggle & Count) */}
         <div className="flex md:hidden items-center gap-2 shrink-0">
-          {/* Mobile Search Toggle */}
+          <span className="font-mono text-[11px] text-[#888888] mr-0.5">
+            {filteredNotes.length.toLocaleString()}
+          </span>
+
           <button
             onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
             className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${
@@ -480,22 +483,6 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
             aria-label="Toggle search"
           >
             <Search className="w-3.5 h-3.5" />
-          </button>
-
-          {/* Mobile Filter Sheet Button (circular icon button matching reference) */}
-          <button
-            onClick={() => setIsMobileFilterOpen(true)}
-            className={`relative w-8 h-8 rounded-full border flex items-center justify-center transition-all ${
-              hasActiveFilter
-                ? 'bg-black text-white border-black shadow-xs'
-                : 'bg-[#f4f4f5] text-[#333333] border-black/8 hover:text-black'
-            }`}
-            aria-label="Open filter"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            {hasActiveFilter && (
-              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-black border-2 border-white" />
-            )}
           </button>
         </div>
       </header>
@@ -681,10 +668,10 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
             })}
           </div>
 
-        {/* --- BOTTOM FLOATING HELPER HINT --- */}
-        <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/90 backdrop-blur-md border border-black/8 text-[10.5px] sm:text-[11px] font-sans text-[#666666] flex items-center gap-1.5 sm:gap-2 shadow-[0_6px_20px_rgba(0,0,0,0.06)] whitespace-nowrap">
+        {/* --- DESKTOP ONLY: BOTTOM FLOATING HELPER HINT --- */}
+        <div className="hidden md:flex fixed bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-4 py-2 rounded-full bg-white/90 backdrop-blur-md border border-black/8 text-[11px] font-sans text-[#666666] items-center gap-2 shadow-[0_6px_20px_rgba(0,0,0,0.06)] whitespace-nowrap">
           <span className="w-1.5 h-1.5 rounded-full bg-black/60 shrink-0" />
-          <span>{isMobile ? 'Drag in any direction · Tap note to expand' : 'Drag freely in all directions · Click note to inflate'}</span>
+          <span>Drag freely in all directions · Click note to inflate</span>
         </div>
 
         {/* --- 3D GLOBE CARDS LAYER (Uniform Spacing, Zero Overlap, Razor-sharp Text) --- */}
@@ -754,6 +741,58 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
             );
           })}
         </div>
+      </div>
+
+      {/* --- MOBILE BOTTOM FLOATING CONTROLLER BAR (Stream | Globe + Filter + Reset) --- */}
+      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/85 backdrop-blur-xl rounded-full px-2 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.14)] flex items-center gap-1.5 border border-black/10 select-none font-sans whitespace-nowrap">
+        {/* Segmented Mode Switcher */}
+        <div className="flex items-center bg-[#f0f0f2] p-0.5 rounded-full font-sans text-xs">
+          <button
+            onClick={onSwitchToStream}
+            className="px-3 py-1.5 rounded-full text-[#666666] hover:text-black font-medium transition-all"
+          >
+            Stream
+          </button>
+          <button
+            className="px-3.5 py-1.5 rounded-full bg-black text-white font-semibold shadow-xs transition-all"
+          >
+            Globe
+          </button>
+        </div>
+
+        {/* Hairline Divider */}
+        <div className="w-[1px] h-4 bg-black/12 mx-0.5" />
+
+        {/* Filter Button */}
+        <button
+          onClick={() => setIsMobileFilterOpen(true)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
+            hasActiveFilter
+              ? 'bg-black text-white shadow-xs'
+              : 'text-[#333333] hover:text-black active:bg-black/5'
+          }`}
+          aria-label="Open filter"
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5" />
+          <span className="truncate max-w-[80px]">
+            {selectedTopic || selectedSubCategory || selectedCategory || 'Filter'}
+          </span>
+          {hasActiveFilter && !selectedCategory && (
+            <span className="w-1.5 h-1.5 rounded-full bg-white ml-0.5" />
+          )}
+        </button>
+
+        {/* Reset Button (only if active filter) */}
+        {hasActiveFilter && (
+          <button
+            onClick={handleResetAll}
+            className="w-7 h-7 rounded-full bg-black/5 hover:bg-black/10 active:scale-90 flex items-center justify-center text-[#555555] hover:text-black transition-all"
+            aria-label="Reset all filters"
+            title="Reset filters"
+          >
+            <RotateCcw className="w-3 h-3" />
+          </button>
+        )}
       </div>
 
       {/* --- MOBILE FILTER BOTTOM SHEET --- */}

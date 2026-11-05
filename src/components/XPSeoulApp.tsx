@@ -9,7 +9,7 @@ import { MenuNav } from './MenuNav';
 import { BlogView } from './BlogView';
 import { AboutView } from './AboutView';
 import { AnimatePresence, motion } from 'framer-motion';
-import { History, SlidersHorizontal, Menu as MenuIcon, X, AlertCircle, Sparkles } from 'lucide-react';
+import { History, SlidersHorizontal, Menu as MenuIcon, X, AlertCircle, Sparkles, RotateCcw } from 'lucide-react';
 
 interface XPSeoulAppProps {
   initialNotes?: NoteItem[];
@@ -525,6 +525,60 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* --- MOBILE MAIN STREAM FLOATING CONTROLLER BAR (Stream | Globe + Filter) --- */}
+      {isMobile && activeMenu === 'wiki' && !isDetailOpen && (
+        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/85 backdrop-blur-xl rounded-full px-2 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.14)] flex items-center gap-1.5 border border-black/10 select-none font-sans whitespace-nowrap">
+          {/* Segmented Mode Switcher */}
+          <div className="flex items-center bg-[#f0f0f2] p-0.5 rounded-full font-sans text-xs">
+            <button
+              className="px-3.5 py-1.5 rounded-full bg-black text-white font-semibold shadow-xs transition-all"
+            >
+              Stream
+            </button>
+            <button
+              onClick={() => setViewMode('globe')}
+              className="px-3 py-1.5 rounded-full text-[#666666] hover:text-black font-medium transition-all"
+            >
+              Globe
+            </button>
+          </div>
+
+          {/* Hairline Divider */}
+          <div className="w-[1px] h-4 bg-black/12 mx-0.5" />
+
+          {/* Filter Button */}
+          <button
+            onClick={() => setIsMobileFilterOpen(true)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
+              selectedCategory || selectedSubCategory || selectedTopic || searchQuery
+                ? 'bg-black text-white shadow-xs'
+                : 'text-[#333333] hover:text-black active:bg-black/5'
+            }`}
+            aria-label="Open filter"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span className="truncate max-w-[80px]">
+              {selectedTopic || selectedSubCategory || selectedCategory || 'Filter'}
+            </span>
+            {(selectedCategory || selectedSubCategory || selectedTopic || searchQuery) && !selectedCategory && (
+              <span className="w-1.5 h-1.5 rounded-full bg-white ml-0.5" />
+            )}
+          </button>
+
+          {/* Reset Button (only if active filter) */}
+          {(selectedCategory || selectedSubCategory || selectedTopic || searchQuery) && (
+            <button
+              onClick={handleResetFilters}
+              className="w-7 h-7 rounded-full bg-black/5 hover:bg-black/10 active:scale-90 flex items-center justify-center text-[#555555] hover:text-black transition-all"
+              aria-label="Reset all filters"
+              title="Reset filters"
+            >
+              <RotateCcw className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      )}
 
       {/* --- MOBILE NOTE READING BOTTOM SHEET MODAL (History & Filter) --- */}
       <MobileDetailBottomSheet
