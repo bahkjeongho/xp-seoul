@@ -2,14 +2,12 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import type { NoteItem, TaxonomyData } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  X, 
   Search, 
   Compass, 
   RotateCcw, 
-  ArrowUpRight, 
-  Layers, 
   Sparkles,
-  Maximize2
+  SlidersHorizontal,
+  ChevronRight
 } from 'lucide-react';
 import { NoteDetailPanel } from './NoteDetailPanel';
 
@@ -20,28 +18,6 @@ interface GlobeStreamCanvasProps {
   onSwitchToStream: () => void;
   onNavigateWikilink?: (title: string) => void;
 }
-
-// Category accent colors for Apple-style square cards
-const getCategoryAccent = (category: string, topic?: string) => {
-  const cat = (category || '').toLowerCase();
-  const top = (topic || '').toLowerCase();
-  if (cat.includes('object') || top.includes('product') || top.includes('hardware')) {
-    return { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', text: '#fbbf24', border: 'rgba(245, 158, 11, 0.3)' };
-  }
-  if (cat.includes('clipping') || top.includes('news') || top.includes('article')) {
-    return { color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)', text: '#22d3ee', border: 'rgba(6, 182, 212, 0.3)' };
-  }
-  if (top.includes('fashion') || top.includes('brand') || top.includes('stylist')) {
-    return { color: '#a855f7', bg: 'rgba(168, 85, 247, 0.15)', text: '#c084fc', border: 'rgba(168, 85, 247, 0.3)' };
-  }
-  if (top.includes('music') || top.includes('artist') || top.includes('album')) {
-    return { color: '#ec4899', bg: 'rgba(236, 72, 153, 0.15)', text: '#f472b6', border: 'rgba(236, 72, 153, 0.3)' };
-  }
-  if (top.includes('architect') || top.includes('space') || top.includes('interior')) {
-    return { color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', text: '#34d399', border: 'rgba(16, 185, 129, 0.3)' };
-  }
-  return { color: '#6366f1', bg: 'rgba(99, 102, 241, 0.15)', text: '#818cf8', border: 'rgba(99, 102, 241, 0.3)' };
-};
 
 export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
   notes,
@@ -108,20 +84,20 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     return result;
   }, [notes, selectedCategory, searchQuery]);
 
-  // Card grid geometry
-  const CARD_W = 210;
-  const CARD_H = 210;
-  const GAP = 24;
-  const STEP_X = CARD_W + GAP; // 234px
-  const STEP_Y = CARD_H + GAP; // 234px
+  // Card grid geometry matching Figma (175px x 175px squircle)
+  const CARD_W = 175;
+  const CARD_H = 175;
+  const GAP = 26;
+  const STEP_X = CARD_W + GAP; // 201px
+  const STEP_Y = CARD_H + GAP; // 201px
 
   // Grid columns based on notes length
   const GRID_COLS = useMemo(() => {
-    return Math.max(12, Math.ceil(Math.sqrt(Math.max(1, filteredNotes.length) * 1.6)));
+    return Math.max(14, Math.ceil(Math.sqrt(Math.max(1, filteredNotes.length) * 1.5)));
   }, [filteredNotes.length]);
 
   const GRID_ROWS = useMemo(() => {
-    return Math.max(12, Math.ceil(Math.max(1, filteredNotes.length) / GRID_COLS));
+    return Math.max(14, Math.ceil(Math.max(1, filteredNotes.length) / GRID_COLS));
   }, [filteredNotes.length, GRID_COLS]);
 
   // Smooth Momentum glide physics on release
@@ -236,7 +212,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     startMomentum();
   };
 
-  // Mouse Wheel Navigation (pan in both axes)
+  // Mouse Wheel Navigation
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
@@ -271,8 +247,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
   const cx = dimensions.width / 2;
   const cy = dimensions.height / 2;
 
-  // Sphere radius: determines curvature and horizon boundary
-  const sphereRadius = Math.max(dimensions.width, dimensions.height) * 0.62;
+  // Sphere radius
+  const sphereRadius = Math.max(dimensions.width, dimensions.height) * 0.65;
 
   // Compute visible cards with 3D Spherical projection
   const visibleCards = useMemo(() => {
@@ -290,7 +266,6 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       zIndex: number;
     }> = [];
 
-    // Range of rows and cols within sphere bounds
     const minCol = Math.floor((-pan.x - sphereRadius * 1.1) / STEP_X);
     const maxCol = Math.ceil((-pan.x + dimensions.width + sphereRadius * 1.1) / STEP_X);
     const minRow = Math.floor((-pan.y - sphereRadius * 1.1) / STEP_Y);
@@ -298,19 +273,15 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
 
     for (let r = minRow; r <= maxRow; r++) {
       for (let c = minCol; c <= maxCol; c++) {
-        // Flat coordinate of card center
         const cardCenterX = c * STEP_X + pan.x + CARD_W / 2;
         const cardCenterY = r * STEP_Y + pan.y + CARD_H / 2;
 
-        // Offset from screen center
         const dx = cardCenterX - cx;
         const dy = cardCenterY - cy;
         const dist = Math.hypot(dx, dy);
 
-        // Cull cards outside the sphere horizon
         if (dist > sphereRadius * 1.05) continue;
 
-        // Map (col, row) to note index using toroidal wrapping
         const total = filteredNotes.length;
         const wrappedCol = ((c % GRID_COLS) + GRID_COLS) % GRID_COLS;
         const wrappedRow = ((r % GRID_ROWS) + GRID_ROWS) % GRID_ROWS;
@@ -318,23 +289,19 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         const note = filteredNotes[noteIndex];
         if (!note) continue;
 
-        // Spherical barrel projection:
-        // Angle from center normal theta (0 at center, pi/2 at horizon)
         const normDist = dist / sphereRadius;
         const theta = normDist * (Math.PI / 2.2);
 
-        // Spherical curved screen position
         const curvedDist = sphereRadius * Math.sin(theta);
         const ratio = dist > 0 ? curvedDist / dist : 1;
         const screenX = cx + dx * ratio - CARD_W / 2;
         const screenY = cy + dy * ratio - CARD_H / 2;
 
-        // 3D rotations matching spherical surface
-        const rotY = (dx / sphereRadius) * 44;
-        const rotX = -(dy / sphereRadius) * 44;
+        const rotY = (dx / sphereRadius) * 40;
+        const rotX = -(dy / sphereRadius) * 40;
 
-        // Scale and opacity tapering towards sphere perimeter
-        const scale = Math.max(0.62, 1 - Math.pow(normDist, 1.8) * 0.36);
+        // Size differentiation: cards near center are 1.0, gently scaling down to 0.72 at perimeter
+        const scale = Math.max(0.72, 1 - Math.pow(normDist, 1.7) * 0.28);
         const opacity = Math.max(0, 1 - Math.pow(normDist, 2.5));
         const zIndex = Math.round((1 - normDist) * 100);
 
@@ -368,7 +335,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     STEP_Y,
   ]);
 
-  // Handle card click (distinguish drag from click)
+  // Handle card click
   const handleCardClick = (
     note: NoteItem,
     screenX: number,
@@ -380,7 +347,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       e.clientX - dragStartPosRef.current.x,
       e.clientY - dragStartPosRef.current.y
     );
-    if (dragDist > 12) return; // ignore if was deliberate drag
+    if (dragDist > 12) return;
 
     setClickOrigin({
       x: screenX + CARD_W / 2,
@@ -389,10 +356,14 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     setSelectedNote(note);
   };
 
-  // Reset globe position to center
   const handleResetPosition = () => {
     setPan({ x: 0, y: 0 });
   };
+
+  // Top categories for vertical filter stack
+  const topCategories = useMemo(() => {
+    return Object.keys(taxonomy);
+  }, [taxonomy]);
 
   return (
     <div
@@ -404,109 +375,118 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onWheel={handleWheel}
-      className="w-full h-screen relative overflow-hidden select-none bg-[#0a0a0c] text-white cursor-grab active:cursor-grabbing font-sans"
+      className="w-full h-screen relative overflow-hidden select-none bg-[#fbfbfb] text-black cursor-grab active:cursor-grabbing font-sans"
       style={{ perspective: '1200px' }}
     >
-      {/* Background Ambient Glow */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-[20%] -left-[10%] w-[60vw] h-[60vw] rounded-full bg-indigo-950/20 blur-[140px]" />
-        <div className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-violet-950/15 blur-[160px]" />
-      </div>
-
-      {/* --- TOP CONTROL BAR --- */}
-      <header className="interactive-control fixed top-0 inset-x-0 z-50 px-6 py-3.5 flex items-center justify-between bg-[#0a0a0c]/90 backdrop-blur-2xl border-b border-white/10 select-none">
-        {/* Brand & Mode Switcher */}
+      {/* --- TOP CONTROL HEADER (Clean Monotone) --- */}
+      <header className="interactive-control fixed top-0 inset-x-0 z-50 px-6 py-3.5 flex items-center justify-between bg-[#fbfbfb]/96 backdrop-blur-2xl border-b border-black/8 select-none">
+        {/* Left: Brand & Mode Switcher */}
         <div className="flex items-center gap-4 shrink-0">
           <div className="flex items-baseline gap-2">
-            <span className="font-extrabold text-lg tracking-tight text-white">XP Seoul</span>
-            <span className="font-mono text-[10px] text-white/50 uppercase tracking-widest hidden sm:inline">
-              Archive Globe
+            <span className="font-extrabold text-xl tracking-tight text-black font-sans">XP Seoul</span>
+            <span className="font-mono text-[10px] text-[#888888] uppercase tracking-widest hidden sm:inline">
+              Globe
             </span>
           </div>
 
-          {/* Stream vs Globe Mode Switcher Pill */}
-          <div className="flex items-center bg-white/10 p-1 rounded-full border border-white/10 font-sans text-xs">
+          {/* Mode Switcher Pill */}
+          <div className="flex items-center bg-[#f0f0f2] p-1 rounded-full border border-black/5 font-sans text-xs">
             <button
               onClick={onSwitchToStream}
-              className="px-3 py-1 rounded-full text-white/60 hover:text-white transition-colors"
+              className="px-3 py-1 rounded-full text-[#666666] hover:text-black transition-colors"
             >
               Stream
             </button>
-            <button className="px-3.5 py-1 rounded-full bg-white text-black font-semibold shadow-xs flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-indigo-600" />
+            <button className="px-3.5 py-1 rounded-full bg-white text-black font-semibold shadow-2xs flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3 text-black" />
               <span>Globe</span>
-              <span className="text-[9px] bg-black text-white px-1.5 py-0.2 rounded-full font-mono">BETA</span>
             </button>
           </div>
         </div>
 
-        {/* Center: Search & Categories */}
-        <div className="flex items-center gap-3 max-w-2xl flex-1 mx-6 overflow-hidden">
-          <div className="relative shrink-0 w-44 lg:w-56">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-            <input
-              type="text"
-              placeholder="Search globe..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-full bg-white/8 border border-white/10 text-xs text-white placeholder-white/35 focus:outline-hidden focus:border-white/30 transition-all font-sans"
-            />
-          </div>
-
-          {/* Quick Category Buttons */}
-          <div className="hidden md:flex items-center gap-1.5 text-[11px] font-sans overflow-x-auto no-scrollbar py-0.5">
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className={`px-3 py-1 rounded-full whitespace-nowrap transition-all ${
-                !selectedCategory
-                  ? 'bg-white text-black font-semibold shadow-xs'
-                  : 'text-white/60 hover:text-white hover:bg-white/10 border border-white/8'
-              }`}
-            >
-              All ({notes.length})
-            </button>
-            {Object.keys(taxonomy).map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
-                className={`px-3 py-1 rounded-full whitespace-nowrap transition-all ${
-                  selectedCategory === cat
-                    ? 'bg-white text-black font-semibold shadow-xs'
-                    : 'text-white/60 hover:text-white hover:bg-white/10 border border-white/8'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+        {/* Center: Search Bar */}
+        <div className="relative flex-1 max-w-sm mx-4">
+          <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#888888]" />
+          <input
+            type="text"
+            placeholder="Search notes on globe..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-1.5 rounded-full bg-[#f4f4f6] border border-black/5 text-xs text-black placeholder-[#999999] focus:outline-hidden focus:bg-white focus:border-black/20 transition-all font-sans"
+          />
         </div>
 
         {/* Right Info & Reset */}
-        <div className="flex items-center gap-3 shrink-0">
-          <span className="font-mono text-[10px] text-white/50 tracking-wider hidden lg:inline">
-            {filteredNotes.length.toLocaleString()} Notes
+        <div className="flex items-center gap-3 shrink-0 font-sans">
+          <span className="font-mono text-[11px] text-[#888888] hidden md:inline">
+            <span className="font-semibold text-black">{filteredNotes.length.toLocaleString()}</span> Notes
           </span>
           <button
             onClick={handleResetPosition}
             title="Reset Globe Center"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/8 hover:bg-white/15 text-white/70 hover:text-white transition-all active:scale-95 border border-white/10 text-xs font-sans"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f4f4f6] hover:bg-[#eaeaea] text-[#555555] hover:text-black transition-all active:scale-95 border border-black/5 text-xs"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3 h-3" />
             <span className="hidden sm:inline">Reset</span>
           </button>
         </div>
       </header>
 
-      {/* --- FLOATING HELPER HINT --- */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-4 py-2 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-sans text-white/60 flex items-center gap-2 shadow-lg">
-        <Compass className="w-3.5 h-3.5 text-white/70 animate-spin" style={{ animationDuration: '16s' }} />
-        <span>Drag in any direction · Click card to inflate · Scroll to pan</span>
+      {/* --- RIGHT FLOATING FILTER STACK (Exact Figma Style) --- */}
+      <div className="interactive-control fixed right-6 top-1/2 -translate-y-1/2 z-40 flex flex-col items-end gap-2 select-none font-sans">
+        <div className="bg-white/80 backdrop-blur-2xl border border-black/8 p-2 rounded-[22px] shadow-[0_12px_36px_rgba(0,0,0,0.06)] flex flex-col gap-1.5 max-h-[70vh] overflow-y-auto no-scrollbar">
+          <div className="px-3 py-1 text-[10px] font-mono uppercase tracking-wider text-[#999999] flex items-center gap-1.5">
+            <SlidersHorizontal className="w-3 h-3 text-black" />
+            <span>Filter</span>
+          </div>
+
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className={`px-4 py-2 rounded-xl text-xs font-medium transition-all text-left flex items-center justify-between gap-3 ${
+              !selectedCategory
+                ? 'bg-black text-white shadow-xs'
+                : 'bg-[#f4f4f6] text-[#444444] hover:bg-[#eaeaea] hover:text-black'
+            }`}
+          >
+            <span>All</span>
+            <span className={`text-[10px] font-mono ${!selectedCategory ? 'text-white/70' : 'text-[#888888]'}`}>
+              {notes.length}
+            </span>
+          </button>
+
+          {topCategories.map((cat) => {
+            const isSelected = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(isSelected ? null : cat)}
+                className={`px-4 py-2 rounded-xl text-xs font-medium transition-all text-left flex items-center justify-between gap-3 ${
+                  isSelected
+                    ? 'bg-black text-white shadow-xs'
+                    : 'bg-[#f4f4f6] text-[#444444] hover:bg-[#eaeaea] hover:text-black'
+                }`}
+              >
+                <span>{cat}</span>
+                {isSelected && <ChevronRight className="w-3 h-3 text-white" />}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* --- 3D GLOBE CARDS LAYER --- */}
-      <div className={`absolute inset-0 transition-opacity duration-300 ${selectedNote ? 'opacity-20 pointer-events-none' : 'pointer-events-none'}`}>
+      {/* --- FLOATING HELPER HINT --- */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-4 py-2 rounded-full bg-white/85 backdrop-blur-md border border-black/8 text-[11px] font-sans text-[#666666] flex items-center gap-2 shadow-[0_6px_20px_rgba(0,0,0,0.06)]">
+        <Compass className="w-3.5 h-3.5 text-black animate-spin" style={{ animationDuration: '16s' }} />
+        <span>Drag freely in all directions · Click note to inflate</span>
+      </div>
+
+      {/* --- 3D GLOBE CARDS LAYER (Figma Light Aesthetic) --- */}
+      <div
+        className={`absolute inset-0 transition-opacity duration-300 ${
+          selectedNote ? 'opacity-20 pointer-events-none' : 'pointer-events-none'
+        }`}
+      >
         {visibleCards.map((item) => {
-          const accent = getCategoryAccent(item.note.category, item.note.topic);
           const tldrText = item.note.tldr || item.note.summary || item.note.info || item.note.category;
 
           return (
@@ -526,50 +506,29 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
               }}
               className="group cursor-pointer select-none"
             >
-              {/* Apple Squircle Card Container */}
+              {/* Figma Liquid Glass Squircle Card */}
               <div
                 style={{
                   borderRadius: '26px',
-                  background: 'linear-gradient(145deg, rgba(32, 32, 36, 0.92) 0%, rgba(18, 18, 22, 0.96) 100%)',
                 }}
-                className="w-full h-full p-4 flex flex-col justify-between border border-white/10 shadow-[0_10px_28px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-300 group-hover:border-white/30 group-hover:shadow-[0_16px_36px_rgba(0,0,0,0.7)] group-hover:-translate-y-1 relative overflow-hidden"
+                className="w-full h-full p-4 flex flex-col items-start gap-[9px] bg-white/95 backdrop-blur-xl border border-black/8 shadow-[0_10px_28px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] transition-all duration-300 group-hover:border-black/25 group-hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)] group-hover:-translate-y-1 relative overflow-hidden"
               >
-                {/* Subtle Top Inner Edge Highlight (Apple Glass Light) */}
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                {/* 1. Title (Figma Bold 17px) */}
+                <h3 className="font-sans font-bold text-[17px] text-black tracking-[-0.04em] leading-tight line-clamp-1 w-full shrink-0">
+                  {item.note.title}
+                </h3>
 
-                {/* Card Header: Topic Badge & Category Pill */}
-                <div className="flex items-center justify-between gap-1.5 shrink-0">
-                  <div
-                    style={{ backgroundColor: accent.bg, borderColor: accent.border }}
-                    className="px-2.5 py-0.5 rounded-full border text-[9px] font-mono uppercase tracking-wider font-semibold truncate flex items-center gap-1.5"
-                  >
-                    <span
-                      style={{ backgroundColor: accent.color }}
-                      className="w-1.5 h-1.5 rounded-full shrink-0"
-                    />
-                    <span style={{ color: accent.text }} className="truncate">
-                      {item.note.topic || item.note.category}
-                    </span>
-                  </div>
-
-                  <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center text-white/30 group-hover:text-white/80 group-hover:bg-white/15 transition-all">
-                    <ArrowUpRight className="w-3 h-3" />
-                  </div>
-                </div>
-
-                {/* Card Center: Note Title */}
-                <div className="flex-1 flex flex-col justify-center my-1.5 min-w-0">
-                  <h3 className="font-sans font-bold text-[15px] leading-snug tracking-tight text-white group-hover:text-white transition-colors line-clamp-2">
-                    {item.note.title}
-                  </h3>
-                </div>
-
-                {/* Card Footer: tl;dr Summary */}
-                <div className="shrink-0 pt-1 border-t border-white/6">
-                  <p className="text-[11px] font-sans text-[#a1a1aa] line-clamp-2 leading-relaxed">
-                    {tldrText}
+                {/* 2. Topic Badge (Figma bg-[#1e1e1e] badge) */}
+                <div className="bg-[#1e1e1e] flex items-center justify-center px-2 py-0.5 rounded-[4px] shrink-0 max-w-full truncate">
+                  <p className="font-mono text-[#ececec] text-[9.5px] tracking-[-0.2px] uppercase whitespace-nowrap truncate font-medium">
+                    {item.note.topic || item.note.category}
                   </p>
                 </div>
+
+                {/* 3. tl;dr / Summary (Figma 10px text, 16px leading) */}
+                <p className="text-[10px] text-[#444444] font-sans leading-[16px] tracking-[-0.3px] line-clamp-3 w-full">
+                  {tldrText}
+                </p>
               </div>
             </div>
           );
@@ -587,7 +546,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
               onClick={() => setSelectedNote(null)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-2xl"
+              className="absolute inset-0 bg-black/60 backdrop-blur-2xl"
             />
 
             {/* Inflating / Blooming Note Modal */}
@@ -619,7 +578,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                 stiffness: 260,
                 mass: 0.85,
               }}
-              className="relative w-full max-w-[1080px] h-[90vh] max-h-[920px] bg-white text-black shadow-[0_25px_80px_rgba(0,0,0,0.6)] border border-black/10 rounded-[28px] overflow-hidden flex flex-col z-10"
+              className="relative w-full max-w-[1080px] h-[90vh] max-h-[920px] bg-white text-black shadow-[0_25px_80px_rgba(0,0,0,0.45)] border border-black/10 rounded-[28px] overflow-hidden flex flex-col z-10"
               style={{ willChange: 'transform, opacity' }}
             >
               <NoteDetailPanel
