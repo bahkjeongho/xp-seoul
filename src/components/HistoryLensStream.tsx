@@ -69,9 +69,9 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
     );
   }
 
-  // Render window: show active item at the top, plus up to 4 items below, and 1 item above if scrolled
+  // Render window: show active item at top, plus up to 6 items below, and 1 item above if scrolled
   const startIndex = Math.max(0, activeIndex - 1);
-  const endIndex = Math.min(historyNotes.length - 1, activeIndex + 4);
+  const endIndex = Math.min(historyNotes.length - 1, activeIndex + 6);
   const visibleItems = historyNotes.slice(startIndex, endIndex + 1);
 
   return (
@@ -111,7 +111,7 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
       </div>
 
       {/* Top Lens Stack Area */}
-      <div className="flex-1 relative overflow-hidden flex items-start justify-center pt-3">
+      <div className="flex-1 relative overflow-hidden flex items-start justify-center pt-2.5">
         {visibleItems.map((note, idxInWindow) => {
           const actualIndex = startIndex + idxInWindow;
           const distance = actualIndex - activeIndex;
@@ -119,9 +119,9 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
           const isCurrentlySelected = selectedNote?.id === note.id;
 
           // Top-anchored perspective calculations:
-          // distance = 0 (top focus card): scale 1.0, opacity 1.0, y = 0
-          // distance > 0 (downwards): scale decreases, opacity fades out smoothly
-          // distance < 0 (scrolled upwards past top): pushed up and fades
+          // distance = 0 (1st, main focus): scale 1.0, opacity 1.0
+          // distance 1..4 (2nd..5th): clearly visible, 5th note reaches scale ~0.88, opacity ~0.60
+          // distance >= 5 (6th onwards): quickly decreases and fades out
           let yOffset = 0;
           let scale = 1;
           let opacity = 1;
@@ -133,13 +133,19 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
             opacity = 1;
             zIndex = 30;
           } else if (distance > 0) {
-            yOffset = distance * 62;
-            scale = Math.max(0.74, 1 - distance * 0.065);
-            opacity = Math.max(0.12, 1 - distance * 0.22);
+            if (distance <= 4) {
+              scale = 1 - distance * 0.03;      // 1: 0.97, 2: 0.94, 3: 0.91, 4: 0.88
+              opacity = 1 - distance * 0.10;    // 1: 0.90, 2: 0.80, 3: 0.70, 4: 0.60
+            } else {
+              const beyond = distance - 4;
+              scale = Math.max(0.70, 0.88 - beyond * 0.06);
+              opacity = Math.max(0.08, 0.60 - beyond * 0.22);
+            }
+            yOffset = distance * 48;
             zIndex = 20 - distance;
           } else {
             // distance < 0 (item scrolled above)
-            yOffset = distance * 48;
+            yOffset = distance * 44;
             scale = Math.max(0.8, 1 + distance * 0.1);
             opacity = Math.max(0.1, 1 + distance * 0.5);
             zIndex = 10;
@@ -168,12 +174,12 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
                 cursor: 'pointer',
               }}
               style={{ zIndex }}
-              className={`absolute w-[250px] lg:w-[280px] h-[58px] px-3.5 py-2 flex items-center justify-between rounded-xl transition-all cursor-pointer ${
+              className={`absolute w-[250px] lg:w-[280px] h-[52px] px-3 py-1.5 flex items-center justify-between rounded-xl transition-all cursor-pointer ${
                 isTopFocus
                   ? isCurrentlySelected
                     ? 'bg-black text-white shadow-[0_8px_24px_rgba(0,0,0,0.18)] border border-black ring-1 ring-black/20'
                     : 'bg-white text-black shadow-[0_8px_24px_rgba(0,0,0,0.08)] border border-black/15 ring-1 ring-black/5'
-                  : 'bg-white/90 text-[#333333] border border-black/8 hover:bg-white hover:opacity-90 shadow-sm'
+                  : 'bg-white/95 text-[#333333] border border-black/8 hover:bg-white hover:opacity-100 shadow-sm'
               }`}
             >
               {/* Left Side: Title & Topic */}

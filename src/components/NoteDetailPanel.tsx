@@ -234,83 +234,86 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
             </div>
           </div>
 
-          {/* (2) Web Shortcuts Row & Location (City, Country) */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 py-3 border-y border-[#eeeeee]">
-            {/* Left: Web Links Buttons */}
-            <div className="flex flex-wrap items-center gap-2">
-              {externalLinks.map((link, idx) => (
-                <a
-                  key={idx}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f6f6f7] hover:bg-black hover:text-white rounded-md text-xs font-mono transition-colors"
+          {/* (2) & (3) Unified Action & Metadata Container (Web Links, Location, Related, Tags) */}
+          <div className="flex flex-col border-y border-[#eeeeee]">
+            {/* Top Sub-row: Web Shortcuts & Location */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 py-2.5">
+              {/* Left: Web Links Buttons */}
+              <div className="flex flex-wrap items-center gap-2">
+                {externalLinks.map((link, idx) => (
+                  <a
+                    key={idx}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f6f6f7] hover:bg-black hover:text-white rounded-md text-xs font-mono transition-colors"
+                  >
+                    {renderLinkIcon(link.type)}
+                    <span>{link.label}</span>
+                    <ExternalLink className="w-3 h-3 opacity-60" />
+                  </a>
+                ))}
+              </div>
+
+              {/* Right: Location Button (City, Country) */}
+              {(fullNote.cities?.length > 0 || fullNote.countries?.length > 0) && (
+                <button
+                  onClick={() => {
+                    const targetLoc = fullNote.cities?.[0] || fullNote.countries?.[0];
+                    if (targetLoc) onNavigateWikilink(targetLoc);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f6f6f7] hover:bg-black hover:text-white rounded-md text-xs font-mono text-[#333333] transition-colors"
                 >
-                  {renderLinkIcon(link.type)}
-                  <span>{link.label}</span>
-                  <ExternalLink className="w-3 h-3 opacity-60" />
-                </a>
-              ))}
+                  <MapPin className="w-3.5 h-3.5 text-[#888888]" />
+                  <span>
+                    {[...(fullNote.cities || []), ...(fullNote.countries || [])].join(', ')}
+                  </span>
+                </button>
+              )}
             </div>
 
-            {/* Right: Location Button (City, Country) */}
-            {(fullNote.cities?.length > 0 || fullNote.countries?.length > 0) && (
-              <button
-                onClick={() => {
-                  const targetLoc = fullNote.cities?.[0] || fullNote.countries?.[0];
-                  if (targetLoc) onNavigateWikilink(targetLoc);
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f6f6f7] hover:bg-black hover:text-white rounded-md text-xs font-mono text-[#333333] transition-colors"
-              >
-                <MapPin className="w-3.5 h-3.5 text-[#888888]" />
-                <span>
-                  {[...(fullNote.cities || []), ...(fullNote.countries || [])].join(', ')}
-                </span>
-              </button>
+            {/* Bottom Sub-row: Related & Tags (Separated by subtle border, perfectly vertically centered) */}
+            {(relatedList.length > 0 || tagsList.length > 0) && (
+              <div className="border-t border-[#f0f0f0] py-2 flex flex-wrap items-center gap-4 text-xs font-mono min-h-[34px]">
+                {relatedList.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[#888888] uppercase tracking-wider text-[11px] font-mono leading-none select-none flex items-center">
+                      RELATED:
+                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {relatedList.map((rel, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => onNavigateWikilink(rel)}
+                          className="inline-flex items-center px-2 py-0.5 rounded bg-[#f5f5f7] hover:bg-black hover:text-white text-black text-xs font-mono transition-colors leading-none"
+                        >
+                          {rel}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {tagsList.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[#888888] uppercase tracking-wider text-[11px] font-mono leading-none select-none flex items-center">
+                      TAGS:
+                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {tagsList.map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center px-1.5 py-0.5 rounded bg-[#fafafa] border border-[#eeeeee] text-[#555555] text-xs font-mono leading-none"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
-
-          {/* (3) Tags and Related Row - compact height and perfectly centered */}
-          {(relatedList.length > 0 || tagsList.length > 0) && (
-            <div className="flex flex-wrap items-center gap-4 text-xs font-mono py-1.5 border-b border-[#f0f0f0] min-h-[30px]">
-              {relatedList.length > 0 && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[#888888] uppercase tracking-wider text-[11px] font-mono leading-none select-none flex items-center">
-                    RELATED:
-                  </span>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {relatedList.map((rel, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => onNavigateWikilink(rel)}
-                        className="inline-flex items-center px-2 py-0.5 rounded bg-[#f5f5f7] hover:bg-black hover:text-white text-black text-xs font-mono transition-colors leading-none"
-                      >
-                        {rel}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {tagsList.length > 0 && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[#888888] uppercase tracking-wider text-[11px] font-mono leading-none select-none flex items-center">
-                    TAGS:
-                  </span>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {tagsList.map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="inline-flex items-center px-1.5 py-0.5 rounded bg-[#fafafa] border border-[#eeeeee] text-[#555555] text-xs font-mono leading-none"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* (4) Full Markdown Body (Callouts, Headings, Iframes, Video Players) */}
           <div
