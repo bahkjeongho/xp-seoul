@@ -4,21 +4,25 @@ import { TopFilterBar } from './TopFilterBar';
 import { MiddleNavColumn } from './MiddleNavColumn';
 import { MobileDetailBottomSheet } from './MobileDetailBottomSheet';
 import { NoteDetailPanel } from './NoteDetailPanel';
+import { GlobeStreamCanvas } from './GlobeStreamCanvas';
 import { MenuNav } from './MenuNav';
 import { BlogView } from './BlogView';
 import { AboutView } from './AboutView';
 import { AnimatePresence, motion } from 'framer-motion';
-import { History, SlidersHorizontal, Menu as MenuIcon, X, AlertCircle } from 'lucide-react';
+import { History, SlidersHorizontal, Menu as MenuIcon, X, AlertCircle, Sparkles } from 'lucide-react';
 
 interface XPSeoulAppProps {
   initialNotes?: NoteItem[];
   initialTaxonomy?: TaxonomyData;
+  initialViewMode?: 'stream' | 'globe';
 }
 
 export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
   initialNotes = [],
   initialTaxonomy = {},
+  initialViewMode = 'stream',
 }) => {
+  const [viewMode, setViewMode] = useState<'stream' | 'globe'>(initialViewMode);
   const [notes, setNotes] = useState<NoteItem[]>(initialNotes);
   const [taxonomy, setTaxonomy] = useState<TaxonomyData>(initialTaxonomy);
   const [isLoading, setIsLoading] = useState<boolean>(initialNotes.length === 0);
@@ -87,6 +91,16 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
       });
     }
   }, [notes.length]);
+
+  // Read initial note from URL (?note=...) on first mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (window.location.pathname.startsWith('/globe') || urlParams.get('mode') === 'globe') {
+        setViewMode('globe');
+      }
+    }
+  }, []);
 
   // Read initial note from URL (?note=...) on first mount
   useEffect(() => {
@@ -265,6 +279,24 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
     );
   }
 
+  // --- SUB / EXPERIMENTAL GLOBE VIEW ---
+  if (viewMode === 'globe') {
+    return (
+      <GlobeStreamCanvas
+        notes={notes}
+        taxonomy={taxonomy}
+        knownTitles={knownTitles}
+        onSwitchToStream={() => {
+          setViewMode('stream');
+          if (typeof window !== 'undefined' && window.location.pathname.startsWith('/globe')) {
+            window.history.pushState({}, '', '/');
+          }
+        }}
+        onNavigateWikilink={(target) => handleNavigateWikilink(target)}
+      />
+    );
+  }
+
   return (
     <div className="w-screen h-screen flex flex-col overflow-hidden bg-white relative">
       {/* --- UNRESOLVED WIKILINK TOAST POPUP --- */}
@@ -286,7 +318,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
       {(!isDetailOpen || !selectedNote) && (
         <header className="w-full flex flex-col bg-white shrink-0 z-40 border-b border-[#eeeeee]">
           <div className="flex items-center justify-between px-4 lg:px-8 py-3">
-            {/* Left: Brand & Count */}
+            {/* Left: Brand & Count & View Switcher */}
             <div className="flex items-center gap-3">
               <button
                 onClick={handleResetFilters}
@@ -298,6 +330,24 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
                 <span>Archive</span>
                 <span>·</span>
                 <span className="font-semibold text-black">{filteredNotes.length.toLocaleString()}</span>
+              </div>
+
+              {/* View Mode Switcher Pill */}
+              <div className="hidden sm:flex items-center bg-[#f4f4f5] p-1 rounded-full border border-black/8 font-sans text-xs ml-2">
+                <button
+                  onClick={() => setViewMode('stream')}
+                  className="px-3 py-1 rounded-full bg-white text-black font-semibold shadow-2xs"
+                >
+                  Stream
+                </button>
+                <button
+                  onClick={() => setViewMode('globe')}
+                  className="px-3 py-1 rounded-full text-[#666666] hover:text-black flex items-center gap-1.5 transition-colors"
+                >
+                  <Sparkles className="w-3 h-3 text-indigo-500" />
+                  <span>Globe</span>
+                  <span className="text-[9px] bg-black text-white px-1.5 py-0.2 rounded-full font-mono">BETA</span>
+                </button>
               </div>
             </div>
 

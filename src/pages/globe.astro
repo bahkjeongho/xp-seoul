@@ -1,0 +1,15 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { XPSeoulApp } from '../components/XPSeoulApp';
+import notesLight from '../data/notes-light.json';
+import taxonomy from '../data/taxonomy.json';
+---
+
+<Layout title="XP Seoul — Globe Archive (Beta)">
+  <XPSeoulApp
+    client:load
+    initialNotes={notesLight}
+    initialTaxonomy={taxonomy}
+    initialViewMode="globe"
+  />
+</Layout>
