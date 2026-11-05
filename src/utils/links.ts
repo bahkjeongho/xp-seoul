@@ -10,6 +10,10 @@ export interface ExternalLinkItem {
     | 'spotify'
     | 'soundcloud'
     | 'bandcamp'
+    | 'vimeo'
+    | 'behance'
+    | 'namuwiki'
+    | 'wikipedia'
     | 'wiki'
     | 'other';
 }
@@ -23,12 +27,14 @@ export function detectLinkType(url: string): { label: string; type: ExternalLink
     if (host.includes('youtube.com') || host.includes('youtu.be')) return { label: 'YouTube', type: 'youtube' };
     if (host.includes('twitter.com') || host.includes('x.com')) return { label: 'X (Twitter)', type: 'twitter' };
     if (host.includes('linkedin.com')) return { label: 'LinkedIn', type: 'linkedin' };
+    if (host.includes('vimeo.com')) return { label: 'Vimeo', type: 'vimeo' };
+    if (host.includes('behance.net')) return { label: 'Behance', type: 'behance' };
+    if (host.includes('namu.wiki')) return { label: 'Namuwiki', type: 'namuwiki' };
+    if (host.includes('wikipedia.org')) return { label: 'Wikipedia', type: 'wikipedia' };
     if (host.includes('spotify.com')) return { label: 'Spotify', type: 'spotify' };
     if (host.includes('soundcloud.com')) return { label: 'SoundCloud', type: 'soundcloud' };
     if (host.includes('bandcamp.com')) return { label: 'Bandcamp', type: 'bandcamp' };
-    if (host.includes('namu.wiki') || host.includes('wikipedia.org')) return { label: 'Wiki', type: 'wiki' };
 
-    // Format host as clean domain name, e.g. "weare23.com"
     const cleanHost = host.replace(/^www\./, '');
     return { label: cleanHost, type: 'website' };
   } catch {
@@ -67,16 +73,16 @@ export function getAllExternalLinks(props: Record<string, any> = {}): ExternalLi
     webs.forEach((u: string) => addUrl(u, 'Website', 'website'));
   }
 
-  // 3. URLs
+  // 3. URLs (Vimeo, Behance, YouTube, Twitter, LinkedIn, etc.)
   if (props.URL) {
     const urls = Array.isArray(props.URL) ? props.URL : [props.URL];
     urls.forEach((u: string) => addUrl(u));
   }
 
-  // 4. Wikis
+  // 4. Wikis (Namuwiki, Wikipedia)
   if (props.Wikis) {
     const wikis = Array.isArray(props.Wikis) ? props.Wikis : [props.Wikis];
-    wikis.forEach((u: string) => addUrl(u, 'Wiki Reference', 'wiki'));
+    wikis.forEach((u: string) => addUrl(u));
   }
 
   return result;

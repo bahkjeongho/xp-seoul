@@ -1,22 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import type { NoteItem } from '../types';
 import { motion } from 'framer-motion';
-import { X, ExternalLink, Globe, MapPin, Layers, Video, Music, Radio } from 'lucide-react';
+import { X, ExternalLink, Globe, MapPin, Music, Radio, Link as LinkIcon } from 'lucide-react';
 import { renderFullNoteHtml } from '../utils/markdown';
 import { getAllExternalLinks, type ExternalLinkItem } from '../utils/links';
 
 interface NoteDetailPanelProps {
   note: NoteItem;
+  knownTitles?: Set<string>;
   onClose: () => void;
   onNavigateWikilink: (target: string) => void;
+  onShowUnresolvedToast?: (target: string) => void;
   isMobile?: boolean;
 }
-
-const YouTubeIcon = () => (
-  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-  </svg>
-);
 
 const InstagramIcon = () => (
   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -38,10 +34,18 @@ const LinkedInIcon = () => (
   </svg>
 );
 
+const YouTubeIcon = () => (
+  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+  </svg>
+);
+
 export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
   note,
+  knownTitles,
   onClose,
   onNavigateWikilink,
+  onShowUnresolvedToast,
   isMobile = false,
 }) => {
   const [fullNote, setFullNote] = useState<NoteItem>(note);
@@ -65,17 +69,32 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
       });
   }, [note.hash]);
 
-  const htmlContent = renderFullNoteHtml(fullNote.rawContent || '');
+  // Render markdown with full video embed & wikilink resolution
+  const htmlContent = useMemo(() => {
+    return renderFullNoteHtml(fullNote.rawContent || '', knownTitles);
+  }, [fullNote.rawContent, knownTitles]);
 
-  // Parse all external link items (IG, Website, URL, Wikis)
-  const externalLinks = getAllExternalLinks({
-    IG: fullNote.ig,
-    Website: fullNote.website,
-    ...(fullNote.allProps || {}),
-  });
+  // External Links (IG, Website, URL, Wikis)
+  const externalLinks = useMemo(() => {
+    return getAllExternalLinks({
+      IG: fullNote.ig,
+      Website: fullNote.website,
+      ...(fullNote.allProps || {}),
+    });
+  }, [fullNote]);
 
-  // Handle click delegation on wikilinks inside rendered markdown
+  // Handle click delegation on wikilinks
   const handleContainerClick = (e: React.MouseEvent) => {
+    const unresolvedEl = (e.target as HTMLElement).closest('[data-unresolved-wikilink]') as HTMLElement | null;
+    if (unresolvedEl) {
+      e.preventDefault();
+      const target = unresolvedEl.getAttribute('data-unresolved-wikilink');
+      if (target && onShowUnresolvedToast) {
+        onShowUnresolvedToast(target);
+      }
+      return;
+    }
+
     const linkEl = (e.target as HTMLElement).closest('[data-wikilink]') as HTMLElement | null;
     if (linkEl) {
       e.preventDefault();
@@ -106,6 +125,33 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
     }
   };
 
+  // Collect taxonomy items (excluding Topic which gets prominent display)
+  const taxonomyItems = useMemo(() => {
+    const items: { label: string; value: string }[] = [];
+    if (fullNote.category) items.push({ label: 'Category', value: fullNote.category });
+    if (fullNote.subCategory) items.push({ label: 'Sub-Category', value: fullNote.subCategory });
+    if (fullNote.field) items.push({ label: 'Field', value: fullNote.field });
+    if (fullNote.subField) items.push({ label: 'Sub-Field', value: fullNote.subField });
+    if (fullNote.type) items.push({ label: 'Type', value: fullNote.type });
+    if (fullNote.subType) items.push({ label: 'Sub-Type', value: fullNote.subType });
+    return items;
+  }, [fullNote]);
+
+  // Extract Related and Tags
+  const relatedList: string[] = useMemo(() => {
+    const raw = fullNote.allProps?.Related;
+    if (!raw) return [];
+    const arr = Array.isArray(raw) ? raw : [raw];
+    return arr.map(r => String(r).replace(/^\[\[/, '').replace(/\]\]$/, '').trim()).filter(Boolean);
+  }, [fullNote.allProps]);
+
+  const tagsList: string[] = useMemo(() => {
+    const raw = fullNote.allProps?.tags || fullNote.allProps?.tag;
+    if (!raw) return [];
+    const arr = Array.isArray(raw) ? raw : [raw];
+    return arr.map(t => String(t).replace(/^\[\[/, '').replace(/\]\]$/, '').replace(/^#/, '').trim()).filter(Boolean);
+  }, [fullNote.allProps]);
+
   return (
     <motion.section
       initial={{ opacity: 0, x: isMobile ? 0 : 30 }}
@@ -114,42 +160,15 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
       transition={{ type: 'spring', damping: 28, stiffness: 280 }}
       onClick={handleContainerClick}
       className={`h-full bg-white flex flex-col overflow-hidden z-30 select-text ${
-        isMobile
-          ? 'fixed inset-0 w-full'
-          : 'flex-1'
+        isMobile ? 'fixed inset-0 w-full' : 'flex-1'
       }`}
     >
       {/* Top Header Bar */}
-      <div className="flex items-center justify-between px-6 lg:px-12 py-4 border-b border-[#eeeeee] bg-white/95 backdrop-blur sticky top-0 z-20">
-        <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-[#888888] truncate">
-          <button
-            onClick={() => fullNote.category && onNavigateWikilink(fullNote.category)}
-            className="text-black font-semibold hover:underline"
-          >
-            {fullNote.category || 'Wiki'}
-          </button>
-          {fullNote.subCategory && (
-            <>
-              <span>/</span>
-              <button
-                onClick={() => onNavigateWikilink(fullNote.subCategory)}
-                className="text-black hover:underline"
-              >
-                {fullNote.subCategory}
-              </button>
-            </>
-          )}
-          {fullNote.topic && (
-            <>
-              <span>/</span>
-              <button
-                onClick={() => onNavigateWikilink(fullNote.topic)}
-                className="px-2 py-0.5 rounded bg-black text-white text-[10px] font-bold hover:bg-black/80"
-              >
-                {fullNote.topic}
-              </button>
-            </>
-          )}
+      <div className="flex items-center justify-between px-6 lg:px-12 py-3.5 border-b border-[#eeeeee] bg-white/95 backdrop-blur sticky top-0 z-20">
+        <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-[#888888]">
+          <span className="text-black font-semibold">XP Seoul Note</span>
+          <span>·</span>
+          <span>{fullNote.id}</span>
         </div>
 
         <button
@@ -161,25 +180,63 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
         </button>
       </div>
 
-      {/* Main Scrollable Canvas */}
+      {/* Main Scrollable Canvas (Width tailored to 1080px) */}
       <div className="flex-1 overflow-y-auto px-6 lg:px-12 py-8 flex flex-col items-center">
-        <div className="w-full max-w-[1080px] flex flex-col gap-8">
-          {/* Headline & Title */}
-          <div className="flex flex-col gap-2">
-            <h1 className="text-3xl lg:text-5xl font-black tracking-[-0.04em] text-black leading-[1.08] font-sans">
-              {fullNote.title}
-            </h1>
+        <div className="w-full max-w-[1080px] flex flex-col gap-6">
 
-            {fullNote.aliases && fullNote.aliases.length > 0 && (
-              <p className="font-sans text-sm lg:text-base text-[#777777]">
-                aka {fullNote.aliases.join(', ')}
-              </p>
-            )}
+          {/* (1) Title Row & Top Right Taxonomy Hierarchy Buttons */}
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 pt-2">
+            {/* Title & Aliases (NO "aka " prefix!) */}
+            <div className="flex flex-col gap-1.5 flex-1 min-w-0 pr-4">
+              <h1 className="text-3xl lg:text-5xl font-black tracking-[-0.04em] text-black leading-[1.08] font-sans break-words">
+                {fullNote.title}
+              </h1>
+
+              {fullNote.aliases && fullNote.aliases.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 text-sm lg:text-base text-[#666666] font-sans">
+                  {fullNote.aliases.map((alias, idx) => (
+                    <span key={idx}>
+                      {alias}
+                      {idx < fullNote.aliases.length - 1 && ' · '}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Right: Prominent Topic + Category/Field/Type Buttons */}
+            <div className="flex flex-col md:items-end gap-2 shrink-0">
+              {/* Prominent Topic Pill */}
+              {fullNote.topic && (
+                <button
+                  onClick={() => onNavigateWikilink(fullNote.topic)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-black text-white hover:bg-black/80 font-mono text-xs font-bold tracking-wider uppercase transition-colors"
+                >
+                  <span>{fullNote.topic}</span>
+                </button>
+              )}
+
+              {/* Taxonomy Attribute Buttons */}
+              {taxonomyItems.length > 0 && (
+                <div className="flex flex-wrap md:justify-end gap-1.5">
+                  {taxonomyItems.map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => onNavigateWikilink(item.value)}
+                      title={item.label}
+                      className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#f4f4f5] hover:bg-black hover:text-white text-[#444444] font-mono text-[11px] transition-colors"
+                    >
+                      <span>{item.value}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Action Row: External Links + City/Country Badges */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 pb-4 border-b border-[#eeeeee]">
-            {/* Left: External Link Buttons */}
+          {/* (2) Web Shortcuts Row & Location (City, Country) */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 py-3 border-y border-[#eeeeee]">
+            {/* Left: Web Links Buttons */}
             <div className="flex flex-wrap items-center gap-2">
               {externalLinks.map((link, idx) => (
                 <a
@@ -213,87 +270,51 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
             )}
           </div>
 
-          {/* Properties Table (Every value is a clickable wikilink!) */}
-          {fullNote.allProps && Object.keys(fullNote.allProps).length > 0 && (
-            <div className="flex flex-col border border-[#eeeeee] rounded-xl overflow-hidden text-xs">
-              <div className="px-4 py-2 bg-[#fafafa] border-b border-[#eeeeee] font-mono text-[10px] uppercase tracking-wider text-[#888888] font-bold flex items-center gap-1.5">
-                <Layers className="w-3 h-3 text-black" />
-                <span>Note Properties</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[#eeeeee] bg-white">
-                <div className="flex flex-col divide-y divide-[#eeeeee]">
-                  {Object.entries(fullNote.allProps)
-                    .slice(0, Math.ceil(Object.keys(fullNote.allProps).length / 2))
-                    .map(([k, v]) => (
-                      <div key={k} className="flex items-center px-4 py-2 gap-4">
-                        <span className="font-mono text-[11px] text-[#777777] w-28 shrink-0">{k}</span>
-                        <div className="flex flex-wrap gap-1 items-center">
-                          {Array.isArray(v) ? (
-                            v.map((item, i) => (
-                              <button
-                                key={i}
-                                onClick={() => onNavigateWikilink(item)}
-                                className="font-sans text-black hover:underline hover:bg-black/5 px-1 py-0.5 rounded text-left transition-colors"
-                              >
-                                {item}
-                              </button>
-                            ))
-                          ) : (
-                            <button
-                              onClick={() => onNavigateWikilink(String(v))}
-                              className="font-sans text-black hover:underline hover:bg-black/5 px-1 py-0.5 rounded text-left transition-colors"
-                            >
-                              {String(v)}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+          {/* (3) Tags and Related Row */}
+          {(relatedList.length > 0 || tagsList.length > 0) && (
+            <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-[#666666] py-1 border-b border-[#f2f2f2]">
+              {relatedList.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[#999999] uppercase tracking-wider text-[10px]">Related:</span>
+                  {relatedList.map((rel, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => onNavigateWikilink(rel)}
+                      className="px-2 py-0.5 rounded bg-[#f5f5f7] hover:bg-black hover:text-white text-black font-medium transition-colors"
+                    >
+                      {rel}
+                    </button>
+                  ))}
                 </div>
-                <div className="flex flex-col divide-y divide-[#eeeeee]">
-                  {Object.entries(fullNote.allProps)
-                    .slice(Math.ceil(Object.keys(fullNote.allProps).length / 2))
-                    .map(([k, v]) => (
-                      <div key={k} className="flex items-center px-4 py-2 gap-4">
-                        <span className="font-mono text-[11px] text-[#777777] w-28 shrink-0">{k}</span>
-                        <div className="flex flex-wrap gap-1 items-center">
-                          {Array.isArray(v) ? (
-                            v.map((item, i) => (
-                              <button
-                                key={i}
-                                onClick={() => onNavigateWikilink(item)}
-                                className="font-sans text-black hover:underline hover:bg-black/5 px-1 py-0.5 rounded text-left transition-colors"
-                              >
-                                {item}
-                              </button>
-                            ))
-                          ) : (
-                            <button
-                              onClick={() => onNavigateWikilink(String(v))}
-                              className="font-sans text-black hover:underline hover:bg-black/5 px-1 py-0.5 rounded text-left transition-colors"
-                            >
-                              {String(v)}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+              )}
+
+              {tagsList.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[#999999] uppercase tracking-wider text-[10px]">Tags:</span>
+                  {tagsList.map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className="px-1.5 py-0.5 rounded bg-[#fafafa] border border-[#eeeeee] text-[#555555]"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
                 </div>
-              </div>
+              )}
             </div>
           )}
 
-          {/* Full Markdown Body (Separate Callouts, Headings, Inline Code, Lists, Iframes) */}
+          {/* (4) Full Markdown Body (Callouts, Headings, Iframes, Video Players) */}
           <div
-            className="prose-obsidian w-full"
+            className="prose-obsidian w-full pt-2"
             dangerouslySetInnerHTML={{ __html: htmlContent }}
           />
         </div>
       </div>
 
       {/* Bottom Status Bar */}
-      <div className="px-6 lg:px-12 py-3 bg-[#fbfbfb] border-t border-[#eeeeee] flex items-center justify-between text-[11px] font-mono text-[#888888]">
-        <span>Obsidian Note: {fullNote.id}</span>
+      <div className="px-6 lg:px-12 py-2.5 bg-[#fbfbfb] border-t border-[#eeeeee] flex items-center justify-between text-[11px] font-mono text-[#888888]">
+        <span>Obsidian Note Document</span>
         <span>1080px Canvas View</span>
       </div>
     </motion.section>

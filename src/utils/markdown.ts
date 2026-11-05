@@ -91,25 +91,56 @@ export function parseObsidianBlocks(bodyText: string): ContentBlock[] {
   return blocks;
 }
 
-function processWikilinksAndImages(markdownText: string): string {
-  // 1. Transform Obsidian Image Embeds ![[image.png]]
-  let text = markdownText.replace(/!\[\[([^\]]+)\]\]/g, (match, src) => {
+function convertVideoEmbeds(text: string): string {
+  // YouTube video embeds: ![](https://youtu.be/ID...) or ![](https://www.youtube.com/watch?v=ID...)
+  let res = text.replace(
+    /!\[.*?\]\(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)[^\)]*\)/g,
+    (match, id) => {
+      return `\n\n<div class="youtube-embed my-5 aspect-video w-full max-w-[840px] rounded-2xl overflow-hidden shadow-sm border border-black/10 bg-black"><iframe src="https://www.youtube-nocookie.com/embed/${id}" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>\n\n`;
+    }
+  );
+
+  // Vimeo video embeds: ![](https://vimeo.com/ID...)
+  res = res.replace(
+    /!\[.*?\]\(https?:\/\/(?:www\.)?vimeo\.com\/(\d+)[^\)]*\)/g,
+    (match, id) => {
+      return `\n\n<div class="vimeo-embed my-5 aspect-video w-full max-w-[840px] rounded-2xl overflow-hidden shadow-sm border border-black/10 bg-black"><iframe src="https://player.vimeo.com/video/${id}" class="w-full h-full" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div>\n\n`;
+    }
+  );
+
+  return res;
+}
+
+function processWikilinksAndImages(markdownText: string, knownTitles?: Set<string>): string {
+  // 1. Convert video embeds first
+  let text = convertVideoEmbeds(markdownText);
+
+  // 2. Transform Obsidian Image Embeds ![[image.png]]
+  text = text.replace(/!\[\[([^\]]+)\]\]/g, (match, src) => {
     return `![${src}](/images/${encodeURIComponent(src)})`;
   });
 
-  // 2. Transform Obsidian Wikilinks [[Target|Display]] or [[Target]]
+  // 3. Transform Obsidian Wikilinks [[Target|Display]] or [[Target]]
   text = text.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (match, target, display) => {
     const cleanTarget = target.trim();
     const cleanDisplay = (display || target).trim();
-    return `<a href="#wikilink" data-wikilink="${cleanTarget}" class="wikilink font-medium text-black underline underline-offset-4 decoration-black/30 hover:decoration-black hover:bg-black/5 px-1 py-0.5 rounded transition-colors inline-block cursor-pointer">${cleanDisplay}</a>`;
+
+    const isResolved = knownTitles ? knownTitles.has(cleanTarget.toLowerCase()) : true;
+
+    if (isResolved) {
+      return `<a href="#wikilink" data-wikilink="${cleanTarget}" class="wikilink font-medium text-black underline underline-offset-4 decoration-black/30 hover:decoration-black hover:bg-black/5 px-1 py-0.5 rounded transition-colors inline-block cursor-pointer">${cleanDisplay}</a>`;
+    } else {
+      // Unresolved note in vault
+      return `<span data-unresolved-wikilink="${cleanTarget}" title="아직 작성되지 않은 노트입니다" class="wikilink-unresolved font-normal text-[#888888] underline underline-offset-4 decoration-dashed decoration-[#aaaaaa] hover:text-[#444444] px-1 py-0.5 rounded transition-colors inline-block cursor-pointer">${cleanDisplay}</span>`;
+    }
   });
 
   return text;
 }
 
-export function renderObsidianBlock(block: ContentBlock): string {
+export function renderObsidianBlock(block: ContentBlock, knownTitles?: Set<string>): string {
   if (block.type === 'callout') {
-    const processedLines = processWikilinksAndImages(block.lines.join('\n'));
+    const processedLines = processWikilinksAndImages(block.lines.join('\n'), knownTitles);
     const bodyHtml = marked.parse(processedLines) as string;
 
     const displayTitle =
@@ -132,16 +163,16 @@ export function renderObsidianBlock(block: ContentBlock): string {
   }
 
   // Normal markdown block
-  const processedText = processWikilinksAndImages(block.content);
+  const processedText = processWikilinksAndImages(block.content, knownTitles);
   return marked.parse(processedText) as string;
 }
 
-export function renderFullNoteHtml(rawContent: string): string {
+export function renderFullNoteHtml(rawContent: string, knownTitles?: Set<string>): string {
   if (!rawContent) return '';
 
   // Strip frontmatter
   const bodyText = rawContent.replace(/^---[\s\S]*?---\n*/, '');
   const blocks = parseObsidianBlocks(bodyText);
 
-  return blocks.map(renderObsidianBlock).join('\n');
+  return blocks.map((b) => renderObsidianBlock(b, knownTitles)).join('\n');
 }

@@ -1,13 +1,13 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import type { NoteItem, TaxonomyData } from '../types';
 import { FilterSidebar } from './FilterSidebar';
-import { ScrollLensStream } from './ScrollLensStream';
+import { MiddleNavColumn } from './MiddleNavColumn';
 import { NoteDetailPanel } from './NoteDetailPanel';
 import { MenuNav } from './MenuNav';
 import { BlogView } from './BlogView';
 import { AboutView } from './AboutView';
 import { AnimatePresence, motion } from 'framer-motion';
-import { SlidersHorizontal, Menu as MenuIcon, X } from 'lucide-react';
+import { SlidersHorizontal, Menu as MenuIcon, X, AlertCircle } from 'lucide-react';
 
 interface XPSeoulAppProps {
   initialNotes?: NoteItem[];
@@ -32,6 +32,12 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
   const [activeMenu, setActiveMenu] = useState<'wiki' | 'blog' | 'about'>('wiki');
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
 
+  // Visited History Stack (last 10 notes)
+  const [historyNotes, setHistoryNotes] = useState<NoteItem[]>([]);
+
+  // Toast notification for unresolved notes
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
   // Mobile Drawer State
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
@@ -46,6 +52,19 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Set of all known note titles & aliases for wikilink resolution
+  const knownTitles = useMemo(() => {
+    const s = new Set<string>();
+    for (const n of notes) {
+      s.add(n.title.toLowerCase());
+      s.add(n.id.toLowerCase());
+      if (n.aliases) {
+        n.aliases.forEach((a) => s.add(a.toLowerCase()));
+      }
+    }
+    return s;
+  }, [notes]);
 
   // Client-side fetch fallback if props were not provided at SSR
   useEffect(() => {
@@ -64,12 +83,77 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
     }
   }, [notes.length]);
 
+  // Read initial note from URL (?note=...) on first mount
+  useEffect(() => {
+    if (notes.length > 0 && typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const noteParam = urlParams.get('note');
+      if (noteParam) {
+        const found = notes.find(
+          (n) => n.id.toLowerCase() === noteParam.toLowerCase() || n.title.toLowerCase() === noteParam.toLowerCase()
+        );
+        if (found) {
+          setSelectedNote(found);
+          setHistoryNotes([found]);
+        }
+      }
+    }
+  }, [notes]);
+
+  // Track History & Browser History API (Cmd + [ and Cmd + ])
+  const selectNoteWithHistory = useCallback((note: NoteItem | null, pushBrowserHistory: boolean = true) => {
+    setSelectedNote(note);
+
+    if (note) {
+      // Add to recent history stack (max 10, without duplicates at top)
+      setHistoryNotes((prev) => {
+        const filtered = prev.filter((item) => item.id !== note.id);
+        return [note, ...filtered].slice(0, 10);
+      });
+
+      if (pushBrowserHistory && typeof window !== 'undefined') {
+        const newUrl = `${window.location.pathname}?note=${encodeURIComponent(note.id)}`;
+        window.history.pushState({ noteId: note.id }, '', newUrl);
+      }
+    } else {
+      if (pushBrowserHistory && typeof window !== 'undefined') {
+        window.history.pushState({ noteId: null }, '', window.location.pathname);
+      }
+    }
+  }, []);
+
+  // Browser Back/Forward (popstate) listener
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const noteId = e.state?.noteId;
+      if (noteId) {
+        const found = notes.find((n) => n.id === noteId);
+        if (found) {
+          selectNoteWithHistory(found, false);
+          return;
+        }
+      }
+      selectNoteWithHistory(null, false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [notes, selectNoteWithHistory]);
+
   // Reset all filters
   const handleResetFilters = () => {
     setSelectedCategory(null);
     setSelectedSubCategory(null);
     setSelectedTopic(null);
     setSearchQuery('');
+  };
+
+  // Toast trigger for uncreated notes
+  const showUnresolvedToast = (target: string) => {
+    setToastMessage(`아직 작성되지 않은 노트입니다: [[${target}]]`);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 2800);
   };
 
   // Wikilink click navigation handler (Core Feature)
@@ -86,7 +170,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
     );
 
     if (matchedNote) {
-      setSelectedNote(matchedNote);
+      selectNoteWithHistory(matchedNote, true);
       setActiveMenu('wiki');
       return;
     }
@@ -97,13 +181,30 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
       setSelectedCategory(categoryMatch);
       setSelectedSubCategory(null);
       setSelectedTopic(null);
-      setSelectedNote(null);
+      selectNoteWithHistory(null, true);
       return;
     }
 
-    // 3. Fallback: Search the term across the vault
-    setSearchQuery(target);
-    setSelectedNote(null);
+    // 3. Try matching Topic
+    let isTopic = false;
+    for (const cat of Object.values(taxonomy)) {
+      for (const sub of Object.values(cat.subCategories || {})) {
+        if (sub.topics && sub.topics[target]) {
+          isTopic = true;
+          break;
+        }
+      }
+      if (isTopic) break;
+    }
+
+    if (isTopic) {
+      setSelectedTopic(target);
+      selectNoteWithHistory(null, true);
+      return;
+    }
+
+    // 4. Fallback: If not found in vault, show clean toast notification!
+    showUnresolvedToast(target);
   };
 
   // High performance filtering
@@ -141,12 +242,12 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && selectedNote) {
-        setSelectedNote(null);
+        selectNoteWithHistory(null, true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedNote]);
+  }, [selectedNote, selectNoteWithHistory]);
 
   const isDetailOpen = selectedNote !== null && activeMenu === 'wiki';
 
@@ -160,7 +261,22 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
   }
 
   return (
-    <div className="w-screen h-screen flex flex-col md:flex-row overflow-hidden bg-white">
+    <div className="w-screen h-screen flex flex-col md:flex-row overflow-hidden bg-white relative">
+      {/* --- UNRESOLVED WIKILINK TOAST POPUP --- */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 30 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-[#111111] text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-mono"
+          >
+            <AlertCircle className="w-4 h-4 text-[#ffaa00]" />
+            <span>{toastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* --- MOBILE TOP NAVIGATION BAR (< 768px) --- */}
       <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-[#eeeeee] bg-white z-40">
         <button
@@ -210,10 +326,11 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
       {/* --- CENTER / MAIN CONTENT CANVAS --- */}
       <main className="flex-1 h-full flex overflow-hidden relative">
         {activeMenu === 'wiki' && (
-          <ScrollLensStream
+          <MiddleNavColumn
             notes={filteredNotes}
             selectedNote={selectedNote}
-            onSelectNote={(note) => setSelectedNote(note)}
+            historyNotes={historyNotes}
+            onSelectNote={(note) => selectNoteWithHistory(note, true)}
             isCompact={isDetailOpen}
           />
         )}
@@ -227,8 +344,10 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
           {isDetailOpen && selectedNote && (
             <NoteDetailPanel
               note={selectedNote}
-              onClose={() => setSelectedNote(null)}
+              knownTitles={knownTitles}
+              onClose={() => selectNoteWithHistory(null, true)}
               onNavigateWikilink={handleNavigateWikilink}
+              onShowUnresolvedToast={showUnresolvedToast}
               isMobile={isMobile}
             />
           )}
@@ -241,7 +360,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
           activeMenu={activeMenu}
           onSelectMenu={(menu) => {
             setActiveMenu(menu);
-            if (menu !== 'wiki') setSelectedNote(null);
+            if (menu !== 'wiki') selectNoteWithHistory(null, true);
           }}
           isCompact={isDetailOpen}
         />
@@ -340,7 +459,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
                       onClick={() => {
                         setActiveMenu(item.id as any);
                         setIsMobileMenuOpen(false);
-                        if (item.id !== 'wiki') setSelectedNote(null);
+                        if (item.id !== 'wiki') selectNoteWithHistory(null, true);
                       }}
                       className="text-left py-2 border-b border-[#f5f5f5]"
                     >
