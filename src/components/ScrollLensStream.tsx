@@ -37,38 +37,70 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
     }
   }, [selectedNote, notes]);
 
-  // Smooth wheel navigation
+  // Smooth wheel navigation with accumulator and damping
+  const wheelAccumulatorRef = useRef<number>(0);
+  const lastWheelTimeRef = useRef<number>(0);
+
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
-    clearTimeout(scrollTimeoutRef.current);
 
-    const delta = e.deltaY;
-    if (Math.abs(delta) < 8) return;
+    const now = performance.now();
+    const dt = now - lastWheelTimeRef.current;
+    lastWheelTimeRef.current = now;
 
-    const step = delta > 0 ? 1 : -1;
-    setActiveIndex(prev => {
-      const next = prev + step;
-      return Math.max(0, Math.min(notes.length - 1, next));
-    });
+    // Reset accumulator on pause (>160ms) to ensure clean stops
+    if (dt > 160) {
+      wheelAccumulatorRef.current = 0;
+    }
+
+    // Dampen trackpad flick spikes so cards don't rush past
+    const clampedDelta = Math.sign(e.deltaY) * Math.min(50, Math.abs(e.deltaY));
+    wheelAccumulatorRef.current += clampedDelta;
+
+    const THRESHOLD = 52; // Natural, comfortable trackpad threshold
+    if (Math.abs(wheelAccumulatorRef.current) >= THRESHOLD) {
+      const step = wheelAccumulatorRef.current > 0 ? 1 : -1;
+      wheelAccumulatorRef.current = wheelAccumulatorRef.current > 0
+        ? Math.max(0, wheelAccumulatorRef.current - THRESHOLD)
+        : Math.min(0, wheelAccumulatorRef.current + THRESHOLD);
+
+      setActiveIndex(prev => Math.max(0, Math.min(notes.length - 1, prev + step)));
+    }
   }, [notes.length]);
 
-  // Touch gesture support for mobile swiping
+  // Touch gesture support for mobile swiping with continuous drag feel
   const touchStartY = useRef<number | null>(null);
+  const lastTouchYRef = useRef<number>(0);
+  const touchAccumulatorRef = useRef<number>(0);
+
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
+    lastTouchYRef.current = e.touches[0].clientY;
+    touchAccumulatorRef.current = 0;
   };
+
   const handleTouchMove = (e: React.TouchEvent) => {
     if (touchStartY.current === null) return;
     const currentY = e.touches[0].clientY;
-    const deltaY = touchStartY.current - currentY;
-    if (Math.abs(deltaY) > 24) {
-      const step = deltaY > 0 ? 1 : -1;
+    const dy = lastTouchYRef.current - currentY;
+    lastTouchYRef.current = currentY;
+
+    touchAccumulatorRef.current += dy;
+    const TOUCH_THRESHOLD = 36; // Responsive mobile swipe threshold
+
+    if (Math.abs(touchAccumulatorRef.current) >= TOUCH_THRESHOLD) {
+      const step = touchAccumulatorRef.current > 0 ? 1 : -1;
+      touchAccumulatorRef.current = touchAccumulatorRef.current > 0
+        ? Math.max(0, touchAccumulatorRef.current - TOUCH_THRESHOLD)
+        : Math.min(0, touchAccumulatorRef.current + TOUCH_THRESHOLD);
+
       setActiveIndex(prev => Math.max(0, Math.min(notes.length - 1, prev + step)));
-      touchStartY.current = currentY;
     }
   };
+
   const handleTouchEnd = () => {
     touchStartY.current = null;
+    touchAccumulatorRef.current = 0;
   };
 
   // Keyboard navigation
@@ -114,7 +146,8 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      className="h-full w-full relative overflow-hidden flex flex-col items-center justify-center select-none bg-[#fbfbfb] transition-all duration-500"
+      className="h-full w-full relative overflow-hidden flex flex-col items-center justify-center select-none touch-none bg-[#fbfbfb] transition-all duration-500"
+      style={{ touchAction: 'none' }}
     >
       {/* Target Focus Ring (Figma frame style) */}
       <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center justify-center px-4">
@@ -161,24 +194,36 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
                 setActiveIndex(actualIndex);
                 onSelectNote(note);
               }}
+              initial={{
+                y: distance > 0 ? yOffset + 45 : yOffset - 45,
+                x: '-50%',
+                scale: scale * 0.96,
+                opacity: 0,
+              }}
               animate={{
                 y: yOffset,
                 x: '-50%',
                 scale: scale,
                 opacity: opacity,
               }}
+              exit={{
+                y: distance > 0 ? yOffset + 45 : yOffset - 45,
+                x: '-50%',
+                scale: scale * 0.96,
+                opacity: 0,
+              }}
               style={{ left: '50%' }}
               transition={{
                 type: 'spring',
-                stiffness: 280,
-                damping: 32,
+                stiffness: 220,
+                damping: 28,
                 mass: 0.8,
               }}
               whileHover={{
                 scale: scale * 1.02,
                 cursor: 'pointer',
               }}
-              className={`absolute flex items-center justify-between rounded-xl transition-all ${
+              className={`absolute flex items-center justify-between rounded-xl transition-colors select-none touch-none ${
                 isCenter
                   ? 'bg-white shadow-[0_14px_36px_rgba(0,0,0,0.08)] border border-black/10 ring-1 ring-black/5 z-20'
                   : 'bg-white/80 border border-black/5 z-10 hover:bg-white hover:opacity-90'

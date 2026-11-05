@@ -327,21 +327,23 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
         <header className="w-full flex flex-col bg-white shrink-0 z-40 border-b border-[#eeeeee]">
           <div className="flex items-center justify-between px-4 lg:px-8 py-3">
             {/* Left: Brand & Count & View Switcher */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <button
                 onClick={handleResetFilters}
-                className="font-black text-2xl tracking-tight text-black font-sans hover:opacity-75 transition-opacity"
+                className="font-black text-xl sm:text-2xl tracking-tight text-black font-sans hover:opacity-75 transition-opacity whitespace-nowrap shrink-0"
               >
                 XP Seoul
               </button>
-              <div className="flex items-center gap-1.5 font-mono text-[11px] text-[#888888]">
+
+              {/* Archive count - Desktop only */}
+              <div className="hidden sm:flex items-center gap-1.5 font-mono text-[11px] text-[#888888] shrink-0">
                 <span>Archive</span>
                 <span>·</span>
                 <span className="font-semibold text-black">{filteredNotes.length.toLocaleString()}</span>
               </div>
 
               {/* View Mode Switcher Pill */}
-              <div className="flex items-center bg-[#f4f4f5] p-0.5 sm:p-1 rounded-full border border-black/8 font-sans text-[11px] sm:text-xs ml-1 sm:ml-2">
+              <div className="flex items-center bg-[#f4f4f5] p-0.5 sm:p-1 rounded-full border border-black/8 font-sans text-[11px] sm:text-xs ml-1 sm:ml-2 shrink-0">
                 <button
                   onClick={() => setViewMode('stream')}
                   className="px-2.5 sm:px-3 py-1 rounded-full bg-white text-black font-semibold shadow-2xs"
@@ -384,11 +386,8 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
               })}
             </div>
 
-            {/* Mobile Menu Toggle Button */}
-            <div className="md:hidden flex items-center gap-2">
-              <span className="font-mono text-[11px] text-[#888888]">
-                {filteredNotes.length.toLocaleString()}
-              </span>
+            {/* Mobile Menu Toggle Button (Clean without overlapping count) */}
+            <div className="md:hidden flex items-center shrink-0">
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
                 className="p-1.5 rounded-lg border border-[#e5e5e5] text-black hover:bg-[#f5f5f5] transition-colors"
@@ -419,44 +418,6 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
               />
             )}
           </div>
-
-          {/* Mobile Search Dropdown Bar (Stream mode) */}
-          <AnimatePresence>
-            {isMobile && isMobileSearchOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="md:hidden z-40 bg-white border-t border-[#eeeeee] px-4 py-2 flex items-center gap-2 overflow-hidden shrink-0 shadow-2xs"
-              >
-                <div className="relative flex-1">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#888888]" />
-                  <input
-                    type="text"
-                    autoFocus
-                    placeholder="Search notes in stream..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-8 pr-7 py-1.5 rounded-full bg-[#f4f4f5] border border-black/8 text-xs text-black placeholder-[#888888] focus:outline-hidden font-sans"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#888888] hover:text-black"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-                <button
-                  onClick={() => setIsMobileSearchOpen(false)}
-                  className="text-xs font-sans text-[#666666] shrink-0 px-1"
-                >
-                  Cancel
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </header>
       )}
 
@@ -577,60 +538,104 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
         )}
       </AnimatePresence>
 
-      {/* --- MOBILE MAIN STREAM FLOATING CONTROLLER BAR (검색 | 필터) --- */}
+      {/* --- MOBILE MAIN STREAM FLOATING CONTROLLER BAR (검색 | 필터) & CONNECTED SEARCH BAR --- */}
       {isMobile && activeMenu === 'wiki' && !isDetailOpen && (
-        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/85 backdrop-blur-xl rounded-full px-3.5 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.14)] flex items-center gap-2 border border-black/10 select-none font-sans whitespace-nowrap">
-          {/* Search Button */}
-          <button
-            onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
-              searchQuery || isMobileSearchOpen
-                ? 'bg-black text-white shadow-xs'
-                : 'text-[#333333] hover:text-black active:bg-black/5'
-            }`}
-            aria-label="Toggle search"
-          >
-            <Search className="w-3.5 h-3.5" />
-            <span className="truncate max-w-[85px]">{searchQuery || '검색'}</span>
-          </button>
-
-          {/* Hairline Divider */}
-          <div className="w-[1px] h-3.5 bg-black/15" />
-
-          {/* Filter Button */}
-          <button
-            onClick={() => {
-              setMobileSheetTab('filter');
-              setIsMobileSheetOpen(true);
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
-              selectedCategory || selectedSubCategory || selectedTopic
-                ? 'bg-black text-white shadow-xs'
-                : 'text-[#333333] hover:text-black active:bg-black/5'
-            }`}
-            aria-label="Open filter"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span className="truncate max-w-[85px]">
-              {selectedTopic || selectedSubCategory || selectedCategory || '필터'}
-            </span>
-            {(selectedCategory || selectedSubCategory || selectedTopic) && (
-              <span className="w-1.5 h-1.5 rounded-full bg-white ml-0.5" />
-            )}
-          </button>
-
-          {/* Reset Button (only if active filter or search) */}
-          {(selectedCategory || selectedSubCategory || selectedTopic || searchQuery) && (
-            <button
-              onClick={handleResetFilters}
-              className="w-7 h-7 rounded-full bg-black/5 hover:bg-black/10 active:scale-90 flex items-center justify-center text-[#555555] hover:text-black transition-all ml-0.5"
-              aria-label="Reset all filters"
-              title="Reset filters"
+        <AnimatePresence mode="wait">
+          {isMobileSearchOpen ? (
+            <motion.div
+              key="stream-search-bar"
+              initial={{ y: 20, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 20, opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="md:hidden fixed bottom-6 inset-x-4 max-w-sm mx-auto z-40 bg-white/95 backdrop-blur-xl rounded-full px-3.5 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.16)] flex items-center gap-2 border border-black/10 select-none font-sans"
             >
-              <RotateCcw className="w-3 h-3" />
-            </button>
+              <Search className="w-4 h-4 text-[#888888] shrink-0 ml-1" />
+              <input
+                type="text"
+                autoFocus
+                placeholder="Search notes in stream..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 bg-transparent text-xs text-black placeholder-[#888888] focus:outline-hidden font-sans py-1.5"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="p-1 rounded-full text-[#888888] hover:text-black"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <button
+                onClick={() => setIsMobileSearchOpen(false)}
+                className="text-xs font-sans text-[#666666] hover:text-black px-1.5 py-1 rounded-full shrink-0 font-medium"
+              >
+                Done
+              </button>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="stream-control-pill"
+              initial={{ y: 20, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 20, opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/85 backdrop-blur-xl rounded-full px-3.5 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.14)] flex items-center gap-2 border border-black/10 select-none font-sans whitespace-nowrap"
+            >
+              {/* Search Button */}
+              <button
+                onClick={() => setIsMobileSearchOpen(true)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
+                  searchQuery
+                    ? 'bg-black text-white shadow-xs'
+                    : 'text-[#333333] hover:text-black active:bg-black/5'
+                }`}
+                aria-label="Toggle search"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span className="truncate max-w-[85px]">{searchQuery || '검색'}</span>
+              </button>
+
+              {/* Hairline Divider */}
+              <div className="w-[1px] h-3.5 bg-black/15" />
+
+              {/* Filter Button */}
+              <button
+                onClick={() => {
+                  setMobileSheetTab('filter');
+                  setIsMobileSheetOpen(true);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
+                  selectedCategory || selectedSubCategory || selectedTopic
+                    ? 'bg-black text-white shadow-xs'
+                    : 'text-[#333333] hover:text-black active:bg-black/5'
+                }`}
+                aria-label="Open filter"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span className="truncate max-w-[85px]">
+                  {selectedTopic || selectedSubCategory || selectedCategory || '필터'}
+                </span>
+                {(selectedCategory || selectedSubCategory || selectedTopic) && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-white ml-0.5" />
+                )}
+              </button>
+
+              {/* Reset Button (only if active filter or search) */}
+              {(selectedCategory || selectedSubCategory || selectedTopic || searchQuery) && (
+                <button
+                  onClick={handleResetFilters}
+                  className="w-7 h-7 rounded-full bg-black/5 hover:bg-black/10 active:scale-90 flex items-center justify-center text-[#555555] hover:text-black transition-all ml-0.5"
+                  aria-label="Reset all filters"
+                  title="Reset filters"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                </button>
+              )}
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
       )}
 
       {/* --- MOBILE NOTE READING BOTTOM SHEET MODAL (History & Filter) --- */}

@@ -173,10 +173,14 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     animationFrameRef.current = requestAnimationFrame(step);
   }, []);
 
-  // Mouse Drag Handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
+  // Unified Pointer Drag Handlers (iOS Safari / Mobile Touch & Desktop Mouse)
+  const handlePointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('.interactive-control')) return;
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch (_) {}
 
     isDraggingRef.current = true;
     totalDragDistanceRef.current = 0;
@@ -186,12 +190,15 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     velocityRef.current = { x: 0, y: 0 };
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDraggingRef.current) return;
 
     const dx = e.clientX - dragStartPosRef.current.x;
     const dy = e.clientY - dragStartPosRef.current.y;
-    totalDragDistanceRef.current += Math.hypot(e.movementX, e.movementY);
+    totalDragDistanceRef.current += Math.hypot(
+      e.clientX - lastMovePosRef.current.x,
+      e.clientY - lastMovePosRef.current.y
+    );
 
     const now = performance.now();
     const dt = Math.max(1, now - lastMovePosRef.current.time);
@@ -207,54 +214,21 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     });
   };
 
-  const handleMouseUp = () => {
+  const handlePointerUp = (e: React.PointerEvent) => {
     if (!isDraggingRef.current) return;
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch (_) {}
     isDraggingRef.current = false;
     startMomentum();
   };
 
-  // Touch Support
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if ((e.target as HTMLElement).closest('.interactive-control')) return;
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-
-    const touch = e.touches[0];
-    isDraggingRef.current = true;
-    totalDragDistanceRef.current = 0;
-    dragStartPosRef.current = { x: touch.clientX, y: touch.clientY };
-    dragStartPanRef.current = { ...panRef.current };
-    lastMovePosRef.current = { x: touch.clientX, y: touch.clientY, time: performance.now() };
-    velocityRef.current = { x: 0, y: 0 };
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
+  const handlePointerCancel = (e: React.PointerEvent) => {
     if (!isDraggingRef.current) return;
-    const touch = e.touches[0];
-    const dx = touch.clientX - dragStartPosRef.current.x;
-    const dy = touch.clientY - dragStartPosRef.current.y;
-    totalDragDistanceRef.current += Math.hypot(
-      touch.clientX - lastMovePosRef.current.x,
-      touch.clientY - lastMovePosRef.current.y
-    );
-
-    const now = performance.now();
-    const dt = Math.max(1, now - lastMovePosRef.current.time);
-    velocityRef.current = {
-      x: ((touch.clientX - lastMovePosRef.current.x) / dt) * 14,
-      y: ((touch.clientY - lastMovePosRef.current.y) / dt) * 14,
-    };
-    lastMovePosRef.current = { x: touch.clientX, y: touch.clientY, time: now };
-
-    setPan({
-      x: dragStartPanRef.current.x + dx,
-      y: dragStartPanRef.current.y + dy,
-    });
-  };
-
-  const handleTouchEnd = () => {
-    if (!isDraggingRef.current) return;
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch (_) {}
     isDraggingRef.current = false;
-    startMomentum();
   };
 
   // Mouse Wheel Navigation
@@ -407,7 +381,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       e.clientX - dragStartPosRef.current.x,
       e.clientY - dragStartPosRef.current.y
     );
-    if (dragDist > 12) return;
+    if (dragDist > 8 || totalDragDistanceRef.current > 8) return;
 
     setClickOrigin({
       x: screenX + CARD_W / 2,
@@ -497,55 +471,15 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         </div>
       </header>
 
-      {/* Mobile Search Dropdown Bar */}
-      <AnimatePresence>
-        {isMobile && isMobileSearchOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="md:hidden z-40 bg-white border-b border-[#eeeeee] px-4 py-2 flex items-center gap-2 overflow-hidden shrink-0 shadow-2xs"
-          >
-            <div className="relative flex-1">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#888888]" />
-              <input
-                type="text"
-                autoFocus
-                placeholder="Search notes on globe..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-7 py-1.5 rounded-full bg-[#f4f4f5] border border-black/8 text-xs text-black placeholder-[#888888] focus:outline-hidden font-sans"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#888888] hover:text-black"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-            <button
-              onClick={() => setIsMobileSearchOpen(false)}
-              className="text-xs font-sans text-[#666666] shrink-0 px-1"
-            >
-              Cancel
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* --- 2. MAIN 3D GLOBE CANVAS (Strictly below the header, overflow hidden) --- */}
       <div
         ref={containerRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
         onWheel={handleWheel}
-        className="flex-1 w-full max-w-[100vw] h-full relative overflow-hidden cursor-grab active:cursor-grabbing touch-none"
+        className="flex-1 w-full max-w-[100vw] h-full relative overflow-hidden cursor-grab active:cursor-grabbing touch-none select-none"
         style={{ perspective: '1200px', touchAction: 'none', contain: 'paint' }}
       >
         {/* --- DESKTOP ONLY: RIGHT TOP FLOATING FILTER BUTTONS --- */}
@@ -709,8 +643,9 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                   pointerEvents: item.opacity > 0.2 ? 'auto' : 'none',
                   backfaceVisibility: 'hidden',
                   WebkitBackfaceVisibility: 'hidden',
+                  touchAction: 'none',
                 }}
-                className="group cursor-pointer select-none"
+                className="group cursor-pointer select-none touch-none"
               >
                 {/* Opaque white card for 100% razor sharp text rendering */}
                 <div
@@ -720,7 +655,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                     MozOsxFontSmoothing: 'grayscale',
                     textRendering: 'optimizeLegibility',
                   }}
-                  className={`w-full h-full flex flex-col items-start bg-white border border-black/8 shadow-[0_4px_16px_rgba(0,0,0,0.06),0_1px_4px_rgba(0,0,0,0.03)] transition-all duration-200 group-hover:border-black/25 group-hover:shadow-[0_10px_28px_rgba(0,0,0,0.12)] relative overflow-hidden ${
+                  className={`w-full h-full flex flex-col items-start bg-white border border-black/8 shadow-[0_4px_16px_rgba(0,0,0,0.06),0_1px_4px_rgba(0,0,0,0.03)] transition-all duration-200 group-hover:border-black/25 group-hover:shadow-[0_10px_28px_rgba(0,0,0,0.12)] relative overflow-hidden select-none touch-none ${
                     isMobile ? 'p-2.5 gap-1.5' : 'p-3.5 gap-[8px]'
                   }`}
                 >
@@ -753,57 +688,101 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         </div>
       </div>
 
-      {/* --- MOBILE MAIN GLOBE FLOATING BAR (검색 | 필터) --- */}
+      {/* --- MOBILE MAIN GLOBE FLOATING BAR (검색 | 필터) & CONNECTED BOTTOM SEARCH --- */}
       {isMobile && !selectedNote && (
-        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/85 backdrop-blur-xl rounded-full px-3.5 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.14)] flex items-center gap-2 border border-black/10 select-none font-sans whitespace-nowrap">
-          {/* Search Button */}
-          <button
-            onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
-              searchQuery || isMobileSearchOpen
-                ? 'bg-black text-white shadow-xs'
-                : 'text-[#333333] hover:text-black active:bg-black/5'
-            }`}
-            aria-label="Toggle search"
-          >
-            <Search className="w-3.5 h-3.5" />
-            <span className="truncate max-w-[85px]">{searchQuery || '검색'}</span>
-          </button>
-
-          {/* Hairline Divider */}
-          <div className="w-[1px] h-3.5 bg-black/15" />
-
-          {/* Filter Button */}
-          <button
-            onClick={() => setIsMobileFilterOpen(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
-              selectedCategory || selectedSubCategory || selectedTopic
-                ? 'bg-black text-white shadow-xs'
-                : 'text-[#333333] hover:text-black active:bg-black/5'
-            }`}
-            aria-label="Open filter"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span className="truncate max-w-[85px]">
-              {selectedTopic || selectedSubCategory || selectedCategory || '필터'}
-            </span>
-            {(selectedCategory || selectedSubCategory || selectedTopic) && (
-              <span className="w-1.5 h-1.5 rounded-full bg-white ml-0.5" />
-            )}
-          </button>
-
-          {/* Reset Button (only if active filter or search) */}
-          {hasActiveFilter && (
-            <button
-              onClick={handleResetAll}
-              className="w-7 h-7 rounded-full bg-black/5 hover:bg-black/10 active:scale-90 flex items-center justify-center text-[#555555] hover:text-black transition-all ml-0.5"
-              aria-label="Reset all filters"
-              title="Reset filters"
+        <AnimatePresence mode="wait">
+          {isMobileSearchOpen ? (
+            <motion.div
+              key="globe-search-bar"
+              initial={{ y: 20, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 20, opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="md:hidden fixed bottom-6 inset-x-4 max-w-sm mx-auto z-40 bg-white/95 backdrop-blur-xl rounded-full px-3.5 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.16)] flex items-center gap-2 border border-black/10 select-none font-sans"
             >
-              <RotateCcw className="w-3 h-3" />
-            </button>
+              <Search className="w-4 h-4 text-[#888888] shrink-0 ml-1" />
+              <input
+                type="text"
+                autoFocus
+                placeholder="Search notes on globe..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 bg-transparent text-xs text-black placeholder-[#888888] focus:outline-hidden font-sans py-1.5"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="p-1 rounded-full text-[#888888] hover:text-black"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <button
+                onClick={() => setIsMobileSearchOpen(false)}
+                className="text-xs font-sans text-[#666666] hover:text-black px-1.5 py-1 rounded-full shrink-0 font-medium"
+              >
+                Done
+              </button>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="globe-control-pill"
+              initial={{ y: 20, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 20, opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/85 backdrop-blur-xl rounded-full px-3.5 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.14)] flex items-center gap-2 border border-black/10 select-none font-sans whitespace-nowrap"
+            >
+              {/* Search Button */}
+              <button
+                onClick={() => setIsMobileSearchOpen(true)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
+                  searchQuery
+                    ? 'bg-black text-white shadow-xs'
+                    : 'text-[#333333] hover:text-black active:bg-black/5'
+                }`}
+                aria-label="Toggle search"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span className="truncate max-w-[85px]">{searchQuery || '검색'}</span>
+              </button>
+
+              {/* Hairline Divider */}
+              <div className="w-[1px] h-3.5 bg-black/15" />
+
+              {/* Filter Button */}
+              <button
+                onClick={() => setIsMobileFilterOpen(true)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
+                  selectedCategory || selectedSubCategory || selectedTopic
+                    ? 'bg-black text-white shadow-xs'
+                    : 'text-[#333333] hover:text-black active:bg-black/5'
+                }`}
+                aria-label="Open filter"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span className="truncate max-w-[85px]">
+                  {selectedTopic || selectedSubCategory || selectedCategory || '필터'}
+                </span>
+                {(selectedCategory || selectedSubCategory || selectedTopic) && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-white ml-0.5" />
+                )}
+              </button>
+
+              {/* Reset Button (only if active filter or search) */}
+              {hasActiveFilter && (
+                <button
+                  onClick={handleResetAll}
+                  className="w-7 h-7 rounded-full bg-black/5 hover:bg-black/10 active:scale-90 flex items-center justify-center text-[#555555] hover:text-black transition-all ml-0.5"
+                  aria-label="Reset all filters"
+                  title="Reset filters"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                </button>
+              )}
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
       )}
 
       {/* --- MOBILE FILTER BOTTOM SHEET --- */}
