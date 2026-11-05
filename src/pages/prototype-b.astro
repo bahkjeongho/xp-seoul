@@ -1,0 +1,14 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { PrototypeBApp } from '../components/PrototypeBApp';
+import notesLight from '../data/notes-light.json';
+import facetData from '../data/facet-taxonomy.json';
+---
+
+<Layout title="XP Seoul — Filter Prototype B (Hybrid Parallel)">
+  <PrototypeBApp
+    client:load
+    initialNotes={notesLight}
+    facetData={facetData}
+  />
+</Layout>

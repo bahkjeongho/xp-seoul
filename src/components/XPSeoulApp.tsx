@@ -357,6 +357,23 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
                   Globe
                 </button>
               </div>
+
+              {/* Filter Prototypes Quick Switcher */}
+              <div className="hidden lg:flex items-center gap-1 text-[11px] font-mono border-l border-[#e5e5e5] pl-3 ml-1 text-[#888888]">
+                <span>Filter Test:</span>
+                <a
+                  href="/prototype-a"
+                  className="px-2 py-0.5 rounded-full bg-[#f4f4f5] hover:bg-black hover:text-white transition-colors text-black font-medium"
+                >
+                  Proto A (Faceted)
+                </a>
+                <a
+                  href="/prototype-b"
+                  className="px-2 py-0.5 rounded-full bg-[#f4f4f5] hover:bg-black hover:text-white transition-colors text-black font-medium"
+                >
+                  Proto B (Hybrid)
+                </a>
+              </div>
             </div>
 
             {/* Desktop Navigation Menu (Wiki, Blog, About) */}
