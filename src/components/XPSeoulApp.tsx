@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import type { NoteItem, TaxonomyData } from '../types';
-import { FilterSidebar } from './FilterSidebar';
-import { MobileFilterBar } from './MobileFilterBar';
+import { TopFilterBar } from './TopFilterBar';
 import { MiddleNavColumn } from './MiddleNavColumn';
 import { NoteDetailPanel } from './NoteDetailPanel';
 import { MenuNav } from './MenuNav';
@@ -262,7 +261,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
   }
 
   return (
-    <div className="w-screen h-screen flex flex-col md:flex-row overflow-hidden bg-white relative">
+    <div className="w-screen h-screen flex flex-col overflow-hidden bg-white relative">
       {/* --- UNRESOLVED WIKILINK TOAST POPUP --- */}
       <AnimatePresence>
         {toastMessage && (
@@ -278,112 +277,144 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
         )}
       </AnimatePresence>
 
-      {/* --- MOBILE TOP NAVIGATION BAR (< 768px) --- */}
-      <div className="md:hidden flex flex-col bg-white z-40 shrink-0">
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#eeeeee]">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleResetFilters}
-              className="font-black text-xl tracking-tight text-black font-sans"
-            >
-              XP Seoul
-            </button>
-            <span className="font-mono text-[10px] text-[#888888]">
-              · {filteredNotes.length}
-            </span>
+      {/* --- TOP GLOBAL NAVIGATION HEADER (When browsing main archive or blog/about) --- */}
+      {(!isDetailOpen || !selectedNote) && (
+        <header className="w-full flex flex-col bg-white shrink-0 z-40 border-b border-[#eeeeee]">
+          <div className="flex items-center justify-between px-4 lg:px-8 py-3">
+            {/* Left: Brand & Count */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleResetFilters}
+                className="font-black text-2xl tracking-tight text-black font-sans hover:opacity-75 transition-opacity"
+              >
+                XP Seoul
+              </button>
+              <div className="flex items-center gap-1.5 font-mono text-[11px] text-[#888888]">
+                <span>Archive</span>
+                <span>·</span>
+                <span className="font-semibold text-black">{filteredNotes.length.toLocaleString()}</span>
+              </div>
+            </div>
+
+            {/* Desktop Navigation Menu (Wiki, Blog, About) */}
+            <div className="hidden md:flex items-center gap-6 font-mono text-xs">
+              {[
+                { id: 'wiki', label: 'Wiki' },
+                { id: 'blog', label: 'Blog' },
+                { id: 'about', label: 'About' },
+              ].map((item) => {
+                const isActive = activeMenu === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveMenu(item.id as any);
+                      if (item.id !== 'wiki') selectNoteWithHistory(null, true);
+                    }}
+                    className={`transition-colors py-1 ${
+                      isActive
+                        ? 'text-black font-bold border-b-2 border-black'
+                        : 'text-[#888888] hover:text-black'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Mobile Menu Toggle Button */}
+            <div className="md:hidden flex items-center gap-2">
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="p-1.5 rounded-lg border border-[#e5e5e5] text-black hover:bg-[#f5f5f5] transition-colors"
+                aria-label="Open menu"
+              >
+                <MenuIcon className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="p-1.5 rounded-lg border border-[#e5e5e5] text-black hover:bg-[#f5f5f5] transition-colors"
-              aria-label="Open menu"
-            >
-              <MenuIcon className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+          {/* Dynamic Hierarchical Button Filter Bar (Level 1 -> 2 -> 3) across Desktop & Mobile */}
+          {activeMenu === 'wiki' && (
+            <TopFilterBar
+              taxonomy={taxonomy}
+              totalNotesCount={notes.length}
+              filteredNotesCount={filteredNotes.length}
+              selectedCategory={selectedCategory}
+              selectedSubCategory={selectedSubCategory}
+              selectedTopic={selectedTopic}
+              searchQuery={searchQuery}
+              onSelectCategory={setSelectedCategory}
+              onSelectSubCategory={setSelectedSubCategory}
+              onSelectTopic={setSelectedTopic}
+              onSearchChange={setSearchQuery}
+              onReset={handleResetFilters}
+              isDesktop={!isMobile}
+            />
+          )}
+        </header>
+      )}
 
-        {/* Dynamic Hierarchical Button Filter Bar (Level 1 -> 2 -> 3) on Mobile Main Page */}
-        {activeMenu === 'wiki' && !selectedNote && (
-          <MobileFilterBar
-            taxonomy={taxonomy}
-            totalNotesCount={notes.length}
-            filteredNotesCount={filteredNotes.length}
-            selectedCategory={selectedCategory}
-            selectedSubCategory={selectedSubCategory}
-            selectedTopic={selectedTopic}
-            searchQuery={searchQuery}
-            onSelectCategory={setSelectedCategory}
-            onSelectSubCategory={setSelectedSubCategory}
-            onSelectTopic={setSelectedTopic}
-            onSearchChange={setSearchQuery}
-            onReset={handleResetFilters}
-          />
-        )}
-      </div>
-
-      {/* --- DESKTOP LEFT COLUMN: Organic Filter Sidebar (Hidden on Mobile) --- */}
-      <div className="hidden md:flex">
-        <FilterSidebar
-          taxonomy={taxonomy}
-          totalNotesCount={notes.length}
-          filteredNotesCount={filteredNotes.length}
-          selectedCategory={selectedCategory}
-          selectedSubCategory={selectedSubCategory}
-          selectedTopic={selectedTopic}
-          searchQuery={searchQuery}
-          onSelectCategory={setSelectedCategory}
-          onSelectSubCategory={setSelectedSubCategory}
-          onSelectTopic={setSelectedTopic}
-          onSearchChange={setSearchQuery}
-          onReset={handleResetFilters}
-          isCompact={isDetailOpen}
-        />
-      </div>
-
-      {/* --- CENTER / MAIN CONTENT CANVAS --- */}
+      {/* --- MAIN CONTENT CANVAS --- */}
       <main className="flex-1 h-full flex overflow-hidden relative">
-        {activeMenu === 'wiki' && (
-          <MiddleNavColumn
-            notes={filteredNotes}
-            selectedNote={selectedNote}
-            historyNotes={historyNotes}
-            onSelectNote={(note) => selectNoteWithHistory(note, true)}
-            isCompact={isDetailOpen}
-          />
+        {activeMenu === 'wiki' && !isDetailOpen && (
+          // Full-screen wide lens stream on main page without cramped sidebars!
+          <div className="flex-1 h-full relative overflow-hidden flex items-center justify-center">
+            <MiddleNavColumn
+              notes={filteredNotes}
+              selectedNote={null}
+              historyNotes={historyNotes}
+              onSelectNote={(note) => selectNoteWithHistory(note, true)}
+              isCompact={false}
+            />
+          </div>
+        )}
+
+        {activeMenu === 'wiki' && isDetailOpen && selectedNote && (
+          // Split screen: Unified Nav Column (History + Archive Stream) + Note Detail Canvas
+          <div className="flex-1 h-full flex overflow-hidden">
+            {/* Desktop Unified Left Nav: Recent History (Top) + Archive Stream (Bottom) */}
+            <div className="hidden md:flex h-full shrink-0">
+              <MiddleNavColumn
+                notes={filteredNotes}
+                selectedNote={selectedNote}
+                historyNotes={historyNotes}
+                onSelectNote={(note) => selectNoteWithHistory(note, true)}
+                isCompact={true}
+              />
+            </div>
+
+            {/* Note Detail Panel (Full on Mobile, 1080px Canvas on Desktop) */}
+            <AnimatePresence>
+              <NoteDetailPanel
+                note={selectedNote}
+                knownTitles={knownTitles}
+                onClose={() => selectNoteWithHistory(null, true)}
+                onNavigateWikilink={handleNavigateWikilink}
+                onShowUnresolvedToast={showUnresolvedToast}
+                isMobile={isMobile}
+              />
+            </AnimatePresence>
+
+            {/* Desktop Right Column: Slim Minimal Menu Nav ('W', 'B', 'A') */}
+            <div className="hidden md:flex shrink-0">
+              <MenuNav
+                activeMenu={activeMenu}
+                onSelectMenu={(menu) => {
+                  setActiveMenu(menu);
+                  if (menu !== 'wiki') selectNoteWithHistory(null, true);
+                }}
+                isCompact={true}
+              />
+            </div>
+          </div>
         )}
 
         {activeMenu === 'blog' && <BlogView />}
 
         {activeMenu === 'about' && <AboutView />}
-
-        {/* --- DESKTOP & MOBILE NOTE DETAIL PANEL (1080px Canvas View) --- */}
-        <AnimatePresence>
-          {isDetailOpen && selectedNote && (
-            <NoteDetailPanel
-              note={selectedNote}
-              knownTitles={knownTitles}
-              onClose={() => selectNoteWithHistory(null, true)}
-              onNavigateWikilink={handleNavigateWikilink}
-              onShowUnresolvedToast={showUnresolvedToast}
-              isMobile={isMobile}
-            />
-          )}
-        </AnimatePresence>
       </main>
-
-      {/* --- DESKTOP RIGHT COLUMN: Menu Navigation (Hidden on Mobile) --- */}
-      <div className="hidden md:flex">
-        <MenuNav
-          activeMenu={activeMenu}
-          onSelectMenu={(menu) => {
-            setActiveMenu(menu);
-            if (menu !== 'wiki') selectNoteWithHistory(null, true);
-          }}
-          isCompact={isDetailOpen}
-        />
-      </div>
 
       {/* --- MOBILE FILTER DRAWER MODAL --- */}
       <AnimatePresence>
