@@ -382,6 +382,16 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
                 historyNotes={historyNotes}
                 onSelectNote={(note) => selectNoteWithHistory(note, true)}
                 isCompact={true}
+                onGoHome={() => selectNoteWithHistory(null, true)}
+                taxonomy={taxonomy}
+                totalNotesCount={notes.length}
+                selectedCategory={selectedCategory}
+                selectedSubCategory={selectedSubCategory}
+                selectedTopic={selectedTopic}
+                onSelectCategory={setSelectedCategory}
+                onSelectSubCategory={setSelectedSubCategory}
+                onSelectTopic={setSelectedTopic}
+                onResetFilters={handleResetFilters}
               />
             </div>
 
