@@ -95,8 +95,8 @@ export const MiddleNavColumn: React.FC<MiddleNavColumnProps> = ({
         </span>
       </div>
 
-      {/* (2) Upper Section: Recent History Lens Stream (Compact fixed 185px height so filters sit high up) */}
-      <div className="h-[185px] border-b border-[#e8e8e8] relative flex flex-col bg-[#fcfcfd] shrink-0 overflow-hidden">
+      {/* (2) Upper Section: Recent History Lens Stream (Spacious ~38% height, 1-5 clearly visible, 6-8 layered) */}
+      <div className="h-[38%] min-h-[310px] max-h-[380px] border-b border-[#e8e8e8] relative flex flex-col bg-[#fcfcfd] shrink-0 overflow-hidden">
         <HistoryLensStream
           historyNotes={historyNotes}
           selectedNote={selectedNote}

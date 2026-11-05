@@ -69,9 +69,9 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
     );
   }
 
-  // Render window: show active item at top, plus up to 6 items below, and 1 item above if scrolled
+  // Render window: show active item at top, plus up to 8 items below, and 1 item above if scrolled
   const startIndex = Math.max(0, activeIndex - 1);
-  const endIndex = Math.min(historyNotes.length - 1, activeIndex + 6);
+  const endIndex = Math.min(historyNotes.length - 1, activeIndex + 8);
   const visibleItems = historyNotes.slice(startIndex, endIndex + 1);
 
   return (
@@ -111,7 +111,7 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
       </div>
 
       {/* Top Lens Stack Area */}
-      <div className="flex-1 relative overflow-hidden flex items-start justify-center pt-2.5">
+      <div className="flex-1 relative overflow-hidden flex items-start justify-center pt-3.5">
         {visibleItems.map((note, idxInWindow) => {
           const actualIndex = startIndex + idxInWindow;
           const distance = actualIndex - activeIndex;
@@ -120,8 +120,8 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
 
           // Top-anchored perspective calculations:
           // distance = 0 (1st, main focus): scale 1.0, opacity 1.0
-          // distance 1..4 (2nd..5th): clearly visible, 5th note reaches scale ~0.88, opacity ~0.60
-          // distance >= 5 (6th onwards): quickly decreases and fades out
+          // distance 1..4 (2nd..5th): clearly visible, 5th note reaches scale ~0.88, opacity ~0.62
+          // distance 5..7 (6th..8th): smoothly fades out while remaining visible as layered deck
           let yOffset = 0;
           let scale = 1;
           let opacity = 1;
@@ -135,17 +135,17 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
           } else if (distance > 0) {
             if (distance <= 4) {
               scale = 1 - distance * 0.03;      // 1: 0.97, 2: 0.94, 3: 0.91, 4: 0.88
-              opacity = 1 - distance * 0.10;    // 1: 0.90, 2: 0.80, 3: 0.70, 4: 0.60
+              opacity = 1 - distance * 0.095;   // 1: 0.90, 2: 0.81, 3: 0.71, 4: 0.62
             } else {
               const beyond = distance - 4;
-              scale = Math.max(0.70, 0.88 - beyond * 0.06);
-              opacity = Math.max(0.08, 0.60 - beyond * 0.22);
+              scale = Math.max(0.68, 0.88 - beyond * 0.05);
+              opacity = Math.max(0.08, 0.62 - beyond * 0.17); // 5th: 0.45, 6th: 0.28, 7th: 0.11
             }
-            yOffset = distance * 38;
+            yOffset = distance * 42;
             zIndex = 20 - distance;
           } else {
             // distance < 0 (item scrolled above)
-            yOffset = distance * 36;
+            yOffset = distance * 38;
             scale = Math.max(0.8, 1 + distance * 0.1);
             opacity = Math.max(0.1, 1 + distance * 0.5);
             zIndex = 10;
@@ -174,18 +174,18 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
                 cursor: 'pointer',
               }}
               style={{ zIndex }}
-              className={`absolute w-[250px] lg:w-[280px] h-[46px] px-3 py-1 flex items-center justify-between rounded-xl transition-all cursor-pointer ${
+              className={`absolute w-[250px] lg:w-[280px] h-[48px] px-3 py-1.5 flex items-center justify-between rounded-xl transition-all cursor-pointer ${
                 isTopFocus
                   ? isCurrentlySelected
-                    ? 'bg-black text-white shadow-[0_6px_20px_rgba(0,0,0,0.18)] border border-black ring-1 ring-black/20'
-                    : 'bg-white text-black shadow-[0_6px_20px_rgba(0,0,0,0.08)] border border-black/15 ring-1 ring-black/5'
+                    ? 'bg-black text-white shadow-[0_6px_22px_rgba(0,0,0,0.18)] border border-black ring-1 ring-black/20'
+                    : 'bg-white text-black shadow-[0_6px_22px_rgba(0,0,0,0.08)] border border-black/15 ring-1 ring-black/5'
                   : 'bg-white/95 text-[#333333] border border-black/8 hover:bg-white hover:opacity-100 shadow-sm'
               }`}
             >
               {/* Left Side: Title & Topic */}
               <div className="flex flex-col justify-center min-w-0 pr-2">
                 <span
-                  className={`font-sans font-medium text-[12px] tracking-[-0.02em] truncate ${
+                  className={`font-sans font-medium text-[12.5px] tracking-[-0.02em] truncate ${
                     isTopFocus && isCurrentlySelected ? 'text-white font-semibold' : 'text-black'
                   }`}
                 >
@@ -193,7 +193,7 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
                 </span>
                 {note.topic && (
                   <span
-                    className={`font-mono text-[8.5px] uppercase tracking-wider truncate mt-0.5 ${
+                    className={`font-mono text-[9px] uppercase tracking-wider truncate mt-0.5 ${
                       isTopFocus && isCurrentlySelected ? 'text-white/70' : 'text-[#888888]'
                     }`}
                   >
