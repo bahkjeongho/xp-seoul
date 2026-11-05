@@ -105,10 +105,10 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
     setSelectedNote(note);
 
     if (note) {
-      // Add to recent history stack (max 10, without duplicates at top)
+      // Add to recent history stack (up to 100 notes, newest first without duplicates)
       setHistoryNotes((prev) => {
         const filtered = prev.filter((item) => item.id !== note.id);
-        return [note, ...filtered].slice(0, 10);
+        return [note, ...filtered].slice(0, 100);
       });
 
       if (pushBrowserHistory && typeof window !== 'undefined') {

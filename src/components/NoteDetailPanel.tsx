@@ -270,35 +270,43 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
             )}
           </div>
 
-          {/* (3) Tags and Related Row */}
+          {/* (3) Tags and Related Row - compact height and perfectly centered */}
           {(relatedList.length > 0 || tagsList.length > 0) && (
-            <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-[#666666] py-1 border-b border-[#f2f2f2]">
+            <div className="flex flex-wrap items-center gap-4 text-xs font-mono py-1.5 border-b border-[#f0f0f0] min-h-[30px]">
               {relatedList.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[#999999] uppercase tracking-wider text-[10px]">Related:</span>
-                  {relatedList.map((rel, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => onNavigateWikilink(rel)}
-                      className="px-2 py-0.5 rounded bg-[#f5f5f7] hover:bg-black hover:text-white text-black font-medium transition-colors"
-                    >
-                      {rel}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[#888888] uppercase tracking-wider text-[11px] font-mono leading-none select-none flex items-center">
+                    RELATED:
+                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {relatedList.map((rel, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => onNavigateWikilink(rel)}
+                        className="inline-flex items-center px-2 py-0.5 rounded bg-[#f5f5f7] hover:bg-black hover:text-white text-black text-xs font-mono transition-colors leading-none"
+                      >
+                        {rel}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
               {tagsList.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[#999999] uppercase tracking-wider text-[10px]">Tags:</span>
-                  {tagsList.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="px-1.5 py-0.5 rounded bg-[#fafafa] border border-[#eeeeee] text-[#555555]"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[#888888] uppercase tracking-wider text-[11px] font-mono leading-none select-none flex items-center">
+                    TAGS:
+                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {tagsList.map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center px-1.5 py-0.5 rounded bg-[#fafafa] border border-[#eeeeee] text-[#555555] text-xs font-mono leading-none"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
