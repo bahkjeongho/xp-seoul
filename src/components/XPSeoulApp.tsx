@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import type { NoteItem, TaxonomyData } from '../types';
 import { FilterSidebar } from './FilterSidebar';
+import { MobileFilterBar } from './MobileFilterBar';
 import { MiddleNavColumn } from './MiddleNavColumn';
 import { NoteDetailPanel } from './NoteDetailPanel';
 import { MenuNav } from './MenuNav';
@@ -278,30 +279,48 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
       </AnimatePresence>
 
       {/* --- MOBILE TOP NAVIGATION BAR (< 768px) --- */}
-      <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-[#eeeeee] bg-white z-40">
-        <button
-          onClick={handleResetFilters}
-          className="font-black text-xl tracking-tight text-black"
-        >
-          XP Seoul
-        </button>
+      <div className="md:hidden flex flex-col bg-white z-40 shrink-0">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#eeeeee]">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleResetFilters}
+              className="font-black text-xl tracking-tight text-black font-sans"
+            >
+              XP Seoul
+            </button>
+            <span className="font-mono text-[10px] text-[#888888]">
+              · {filteredNotes.length}
+            </span>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsMobileFilterOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e5] text-xs font-mono text-black"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span>{selectedTopic || selectedSubCategory || selectedCategory || 'Filter'}</span>
-          </button>
-
-          <button
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="p-1.5 rounded-lg border border-[#e5e5e5] text-black"
-          >
-            <MenuIcon className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="p-1.5 rounded-lg border border-[#e5e5e5] text-black hover:bg-[#f5f5f5] transition-colors"
+              aria-label="Open menu"
+            >
+              <MenuIcon className="w-4 h-4" />
+            </button>
+          </div>
         </div>
+
+        {/* Dynamic Hierarchical Button Filter Bar (Level 1 -> 2 -> 3) on Mobile Main Page */}
+        {activeMenu === 'wiki' && !selectedNote && (
+          <MobileFilterBar
+            taxonomy={taxonomy}
+            totalNotesCount={notes.length}
+            filteredNotesCount={filteredNotes.length}
+            selectedCategory={selectedCategory}
+            selectedSubCategory={selectedSubCategory}
+            selectedTopic={selectedTopic}
+            searchQuery={searchQuery}
+            onSelectCategory={setSelectedCategory}
+            onSelectSubCategory={setSelectedSubCategory}
+            onSelectTopic={setSelectedTopic}
+            onSearchChange={setSearchQuery}
+            onReset={handleResetFilters}
+          />
+        )}
       </div>
 
       {/* --- DESKTOP LEFT COLUMN: Organic Filter Sidebar (Hidden on Mobile) --- */}
