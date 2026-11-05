@@ -1,8 +1,10 @@
-import React from 'react';
-import type { NoteItem, TaxonomyData } from '../types';
+import React, { useState, useMemo } from 'react';
+import type { NoteItem } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { History, SlidersHorizontal, X, RotateCcw } from 'lucide-react';
+import { History, SlidersHorizontal, X, RotateCcw, Plus, ChevronRight } from 'lucide-react';
 import { HistoryLensStream } from './HistoryLensStream';
+import type { FacetTaxonomyData } from './TopFilterBarFacet';
+import type { ActiveFilterSlot } from './MultiFacetFilterBar';
 
 interface MobileDetailBottomSheetProps {
   isOpen: boolean;
@@ -12,15 +14,12 @@ interface MobileDetailBottomSheetProps {
   historyNotes: NoteItem[];
   selectedNote: NoteItem | null;
   notes: NoteItem[];
-  taxonomy: TaxonomyData;
-  selectedCategory: string | null;
-  selectedSubCategory: string | null;
-  selectedTopic: string | null;
+  facetData: FacetTaxonomyData;
+  activeFilterSlots: ActiveFilterSlot[];
+  onAddFilterSlot: (slot: ActiveFilterSlot) => void;
+  onRemoveFilterSlot: (id: string) => void;
+  onClearAllSlots: () => void;
   onSelectNote: (note: NoteItem) => void;
-  onSelectCategory: (cat: string | null) => void;
-  onSelectSubCategory: (subCat: string | null) => void;
-  onSelectTopic: (topic: string | null) => void;
-  onResetFilters: () => void;
 }
 
 export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = ({
@@ -30,41 +29,95 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
   historyNotes,
   selectedNote,
   notes,
-  taxonomy,
-  selectedCategory,
-  selectedSubCategory,
-  selectedTopic,
+  facetData,
+  activeFilterSlots,
+  onAddFilterSlot,
+  onRemoveFilterSlot,
+  onClearAllSlots,
   onSelectNote,
-  onSelectCategory,
-  onSelectSubCategory,
-  onSelectTopic,
-  onResetFilters,
 }) => {
   if (!isOpen) return null;
 
-  // Categories sorted by note count
-  const categories = Object.keys(taxonomy).sort((a, b) => {
-    return (taxonomy[b]?.count || 0) - (taxonomy[a]?.count || 0);
-  });
+  const [currentAxis, setCurrentAxis] = useState<'category' | 'type' | 'field'>('category');
+  const [draftPrimary, setDraftPrimary] = useState<string | null>(null);
 
-  const currentCategoryData = selectedCategory ? taxonomy[selectedCategory] : null;
-  const subCategories = currentCategoryData
-    ? Object.keys(currentCategoryData.subCategories || {}).sort(
-        (a, b) => currentCategoryData.subCategories[b].count - currentCategoryData.subCategories[a].count
-      )
-    : [];
+  // Primary list for current axis
+  const primaryList = useMemo(() => {
+    if (currentAxis === 'category') {
+      return Object.entries(facetData.byCategory || {})
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([name, data]) => ({ name, count: data.count }));
+    }
+    if (currentAxis === 'type') {
+      return Object.entries(facetData.byType || {})
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([name, data]) => ({ name, count: data.count }));
+    }
+    if (currentAxis === 'field') {
+      return Object.entries(facetData.byField || {})
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([name, data]) => ({ name, count: data.count }));
+    }
+    return [];
+  }, [currentAxis, facetData]);
 
-  const currentSubCategoryData =
-    selectedCategory && selectedSubCategory && currentCategoryData?.subCategories[selectedSubCategory]
-      ? currentCategoryData.subCategories[selectedSubCategory]
-      : null;
-  const topics = currentSubCategoryData
-    ? Object.keys(currentSubCategoryData.topics || {}).sort(
-        (a, b) => currentSubCategoryData.topics[b] - currentSubCategoryData.topics[a]
-      )
-    : [];
+  // Secondary list
+  const secondaryList = useMemo(() => {
+    if (!draftPrimary) return [];
+    if (currentAxis === 'category') {
+      return Object.entries(facetData.byCategory?.[draftPrimary]?.subs || {})
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([name, data]) => ({ name, count: data.count }));
+    }
+    if (currentAxis === 'type') {
+      return Object.entries(facetData.byType?.[draftPrimary]?.subs || {})
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([name, data]) => ({ name, count: data.count }));
+    }
+    if (currentAxis === 'field') {
+      return Object.entries(facetData.byField?.[draftPrimary]?.subs || {})
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([name, data]) => ({ name, count: data.count }));
+    }
+    return [];
+  }, [currentAxis, draftPrimary, facetData]);
 
-  const hasActiveFilter = Boolean(selectedCategory || selectedSubCategory || selectedTopic);
+  // Topics list
+  const contextualTopics = useMemo(() => {
+    let topicMap: Record<string, number> = {};
+    if (currentAxis === 'category' && draftPrimary) {
+      topicMap = facetData.byCategory?.[draftPrimary]?.topics || {};
+    } else if (currentAxis === 'type' && draftPrimary) {
+      topicMap = facetData.byType?.[draftPrimary]?.topics || {};
+    } else if (currentAxis === 'field' && draftPrimary) {
+      topicMap = facetData.byField?.[draftPrimary]?.topics || {};
+    }
+    return Object.entries(topicMap)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
+  }, [currentAxis, draftPrimary, facetData]);
+
+  const commitSlot = (options: { primary?: string | null; secondary?: string | null; topic?: string | null }) => {
+    if (activeFilterSlots.length >= 20) return;
+    const p = options.primary ?? draftPrimary;
+    const s = options.secondary ?? null;
+    const t = options.topic ?? null;
+    if (!p && !s && !t) return;
+
+    const label = t || s || p || '';
+    onAddFilterSlot({
+      id: `m-slot-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+      axis: currentAxis,
+      label,
+      category: currentAxis === 'category' ? p : undefined,
+      subCategory: currentAxis === 'category' ? s : undefined,
+      type: currentAxis === 'type' ? p : undefined,
+      subType: currentAxis === 'type' ? s : undefined,
+      field: currentAxis === 'field' ? p : undefined,
+      subField: currentAxis === 'field' ? s : undefined,
+      topic: t,
+    });
+  };
 
   return (
     <AnimatePresence>
@@ -84,14 +137,14 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-          className="relative w-full max-h-[78vh] h-[520px] bg-white rounded-t-3xl shadow-2xl flex flex-col overflow-hidden z-10"
+          className="relative w-full max-h-[82vh] h-[580px] bg-white rounded-t-3xl shadow-2xl flex flex-col overflow-hidden z-10"
         >
           {/* Top Drag Handle Bar */}
           <div className="w-full pt-3 pb-1 flex justify-center cursor-pointer" onClick={onClose}>
             <div className="w-10 h-1 bg-[#d5d5d8] rounded-full" />
           </div>
 
-          {/* Clean Dedicated Header depending on Active Tab */}
+          {/* Clean Dedicated Header */}
           <div className="px-5 py-2.5 border-b border-[#eeeeee] flex items-center justify-between shrink-0 font-sans">
             {activeTab === 'history' ? (
               <div className="flex items-center gap-2">
@@ -102,7 +155,7 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
             ) : (
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4 text-black" />
-                <span className="font-bold text-sm text-black">Filter Archive</span>
+                <span className="font-bold text-sm text-black">Filters</span>
                 <span className="text-xs font-mono text-[#888888]">({notes.length} notes)</span>
               </div>
             )}
@@ -119,7 +172,6 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
           {/* Dedicated View Body */}
           <div className="flex-1 relative overflow-hidden flex flex-col">
             {activeTab === 'history' ? (
-              // Dedicated View 1: History Only
               <div className="flex-1 relative overflow-hidden flex flex-col">
                 <HistoryLensStream
                   historyNotes={historyNotes}
@@ -132,60 +184,105 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
                 />
               </div>
             ) : (
-              // Dedicated View 2: Pure Filter Selector (No duplicate nested stream!)
-              <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4 font-sans pb-8">
-                {/* 1. All Notes Option */}
-                <div>
-                  <button
-                    onClick={() => {
-                      onSelectCategory(null);
-                      onSelectSubCategory(null);
-                      onSelectTopic(null);
-                    }}
-                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-medium transition-all text-left flex items-center justify-between border ${
-                      !selectedCategory
-                        ? 'bg-black text-white border-black font-semibold shadow-xs'
-                        : 'bg-[#f8f8f9] text-[#333333] border-black/8 hover:bg-[#f0f0f2]'
-                    }`}
-                  >
-                    <span>All Notes</span>
-                    <span className="text-[11px] font-mono opacity-80">{notes.length.toLocaleString()}</span>
-                  </button>
-                </div>
-
-                {/* 2. Categories Section */}
-                <div className="flex flex-col gap-2">
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 font-sans pb-8">
+                {/* 1. Active Stack Row */}
+                <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-[#f8f8fa] border border-black/8">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-mono uppercase tracking-wider text-[#777777] font-semibold">
-                      Category
+                      Filters
                     </span>
-                    {hasActiveFilter && (
+                    {activeFilterSlots.length > 0 && (
                       <button
-                        onClick={onResetFilters}
-                        className="flex items-center gap-1 text-[11px] text-[#888888] hover:text-black transition-colors"
+                        onClick={onClearAllSlots}
+                        className="flex items-center gap-1 text-[11px] text-[#888888] hover:text-black font-mono"
                       >
                         <RotateCcw className="w-3 h-3" />
-                        <span>Reset</span>
+                        <span>Clear All</span>
                       </button>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    {categories.map((cat) => {
-                      const isSelected = selectedCategory === cat;
-                      const count = taxonomy[cat]?.count || 0;
+                  {activeFilterSlots.length === 0 ? (
+                    <span className="text-xs font-mono text-[#999999] py-1 italic">
+                      No filters applied. Showing all notes.
+                    </span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {activeFilterSlots.map((slot) => {
+                        const badgeLetter = slot.axis === 'category' ? 'C' : slot.axis === 'field' ? 'F' : 'T';
+                        return (
+                          <span
+                            key={slot.id}
+                            className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-0.5 rounded-full bg-black text-white text-[11px] font-mono shadow-xs"
+                          >
+                            <span className="w-3.5 h-3.5 rounded-[3px] bg-white text-black flex items-center justify-center text-[9px] font-bold">
+                              {badgeLetter}
+                            </span>
+                            <span className="text-white/40 font-light select-none">|</span>
+                            <span className="max-w-[140px] truncate">{slot.label}</span>
+                            <button
+                              onClick={() => onRemoveFilterSlot(slot.id)}
+                              className="hover:text-red-300 p-0.5"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Axis Switcher: Category | Type | Field */}
+                <div className="flex items-center gap-1.5 p-1 bg-[#f4f4f6] rounded-xl">
+                  {(['category', 'type', 'field'] as const).map((axis) => {
+                    const isSelected = currentAxis === axis;
+                    const label = axis === 'category' ? 'Category' : axis === 'type' ? 'Type' : 'Field';
+                    return (
+                      <button
+                        key={axis}
+                        onClick={() => {
+                          setCurrentAxis(axis);
+                          setDraftPrimary(null);
+                        }}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                          isSelected
+                            ? 'bg-white text-black font-semibold shadow-xs'
+                            : 'text-[#666666] hover:text-black'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* 3. Primary Items Grid */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] font-mono text-[#888888] uppercase tracking-wider">
+                    Select {currentAxis === 'category' ? 'Category' : currentAxis === 'type' ? 'Type' : 'Field'}:
+                  </span>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {primaryList.map((item) => {
+                      const isSelected = draftPrimary === item.name;
+                      const hasSubsOrTopics = Boolean(
+                        (currentAxis === 'category' && (Object.keys(facetData.byCategory?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byCategory?.[item.name]?.topics || {}).length > 0)) ||
+                        (currentAxis === 'type' && (Object.keys(facetData.byType?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byType?.[item.name]?.topics || {}).length > 0)) ||
+                        (currentAxis === 'field' && (Object.keys(facetData.byField?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byField?.[item.name]?.topics || {}).length > 0))
+                      );
+
                       return (
                         <button
-                          key={cat}
+                          key={item.name}
                           onClick={() => {
-                            if (isSelected) {
-                              onSelectCategory(null);
-                              onSelectSubCategory(null);
-                              onSelectTopic(null);
+                            if (hasSubsOrTopics) {
+                              if (isSelected) {
+                                setDraftPrimary(null);
+                              } else {
+                                setDraftPrimary(item.name);
+                              }
                             } else {
-                              onSelectCategory(cat);
-                              onSelectSubCategory(null);
-                              onSelectTopic(null);
+                              commitSlot({ primary: item.name });
                             }
                           }}
                           className={`py-2 px-3 rounded-xl text-xs font-medium transition-all text-left flex items-center justify-between border ${
@@ -194,9 +291,9 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
                               : 'bg-white text-[#333333] border-black/8 hover:bg-[#f8f8f9]'
                           }`}
                         >
-                          <span className="truncate">{cat}</span>
+                          <span className="truncate">{item.name}</span>
                           <span className={`text-[10px] font-mono ml-1 ${isSelected ? 'text-white/80' : 'text-[#888888]'}`}>
-                            {count}
+                            {item.count}
                           </span>
                         </button>
                       );
@@ -204,112 +301,49 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
                   </div>
                 </div>
 
-                {/* 3. Sub-Categories Section (if category selected) */}
-                {selectedCategory && subCategories.length > 0 && (
-                  <div className="flex flex-col gap-2 pt-2 border-t border-[#f0f0f0]">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-mono uppercase tracking-wider text-[#777777] font-semibold">
-                        Subcategory ({selectedCategory})
-                      </span>
-                      {selectedSubCategory && (
-                        <button
-                          onClick={() => {
-                            onSelectSubCategory(null);
-                            onSelectTopic(null);
-                          }}
-                          className="text-[11px] font-mono text-[#888888] hover:text-black"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-
+                {/* 4. Sub-Categories / Sub-Types / Sub-Fields (if primary selected) */}
+                {draftPrimary && secondaryList.length > 0 && (
+                  <div className="flex flex-col gap-1.5 pt-2 border-t border-[#f0f0f0]">
+                    <span className="text-[11px] font-mono text-[#888888] uppercase tracking-wider">
+                      Sub-items ({draftPrimary}):
+                    </span>
                     <div className="flex flex-wrap gap-1.5">
-                      {subCategories.map((sub) => {
-                        const isSelected = selectedSubCategory === sub;
-                        const count = currentCategoryData?.subCategories[sub]?.count || 0;
-                        return (
-                          <button
-                            key={sub}
-                            onClick={() => {
-                              if (isSelected) {
-                                onSelectSubCategory(null);
-                                onSelectTopic(null);
-                              } else {
-                                onSelectSubCategory(sub);
-                                onSelectTopic(null);
-                              }
-                            }}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 border ${
-                              isSelected
-                                ? 'bg-black text-white border-black font-semibold shadow-xs'
-                                : 'bg-[#f8f8f9] text-[#333333] border-black/8 hover:bg-[#f0f0f2]'
-                            }`}
-                          >
-                            <span>{sub}</span>
-                            <span className={`text-[10px] font-mono ${isSelected ? 'text-white/80' : 'text-[#888888]'}`}>
-                              {count}
-                            </span>
-                          </button>
-                        );
-                      })}
+                      {secondaryList.map((sub) => (
+                        <button
+                          key={sub.name}
+                          onClick={() => commitSlot({ primary: draftPrimary, secondary: sub.name })}
+                          className="py-1.5 px-3 rounded-lg text-xs font-medium bg-[#f6f6f8] text-[#333333] hover:bg-black hover:text-white transition-colors border border-black/5 flex items-center gap-1"
+                        >
+                          <span>{sub.name}</span>
+                          <span className="text-[10px] text-[#888888]">({sub.count})</span>
+                          <Plus className="w-3 h-3 ml-0.5" />
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                {/* 4. Topics Section (if subcategory selected) */}
-                {selectedSubCategory && topics.length > 0 && (
-                  <div className="flex flex-col gap-2 pt-2 border-t border-[#f0f0f0]">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-mono uppercase tracking-wider text-[#777777] font-semibold">
-                        Topics ({selectedSubCategory})
-                      </span>
-                      {selectedTopic && (
-                        <button
-                          onClick={() => onSelectTopic(null)}
-                          className="text-[11px] font-mono text-[#888888] hover:text-black"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-
+                {/* 5. Topics (if primary selected) */}
+                {draftPrimary && contextualTopics.length > 0 && (
+                  <div className="flex flex-col gap-1.5 pt-2 border-t border-[#f0f0f0]">
+                    <span className="text-[11px] font-mono text-[#888888] uppercase tracking-wider">
+                      Related Topics:
+                    </span>
                     <div className="flex flex-wrap gap-1.5">
-                      {topics.map((top) => {
-                        const isSelected = selectedTopic === top;
-                        return (
-                          <button
-                            key={top}
-                            onClick={() => {
-                              if (isSelected) {
-                                onSelectTopic(null);
-                              } else {
-                                onSelectTopic(top);
-                              }
-                            }}
-                            className={`px-2.5 py-1 rounded-md text-[11px] font-mono transition-all border ${
-                              isSelected
-                                ? 'bg-black text-white border-black font-semibold shadow-xs'
-                                : 'bg-white text-[#444444] border-black/8 hover:bg-[#f8f8f9]'
-                            }`}
-                          >
-                            <span>• {top}</span>
-                          </button>
-                        );
-                      })}
+                      {contextualTopics.slice(0, 20).map((top) => (
+                        <button
+                          key={top.name}
+                          onClick={() => commitSlot({ primary: draftPrimary, topic: top.name })}
+                          className="py-1 px-2.5 rounded-full text-[11px] font-mono bg-white border border-black/15 text-[#333333] hover:border-black hover:bg-black hover:text-white transition-all flex items-center gap-1"
+                        >
+                          <span>#{top.name}</span>
+                          <span className="text-[9px] text-[#888888]">({top.count})</span>
+                          <Plus className="w-2.5 h-2.5" />
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
-
-                {/* 5. Sticky Done Button */}
-                <div className="mt-2 pt-3 border-t border-[#eeeeee]">
-                  <button
-                    onClick={onClose}
-                    className="w-full py-3 rounded-full bg-black text-white font-sans text-xs font-semibold shadow-md active:scale-[0.99] transition-transform"
-                  >
-                    View Notes ({notes.length.toLocaleString()})
-                  </button>
-                </div>
               </div>
             )}
           </div>

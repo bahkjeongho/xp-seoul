@@ -6,10 +6,14 @@ import {
   RotateCcw, 
   ChevronDown,
   SlidersHorizontal,
-  X
+  X,
+  Plus
 } from 'lucide-react';
 import { NoteDetailPanel } from './NoteDetailPanel';
 import { MobileDetailBottomSheet } from './MobileDetailBottomSheet';
+import type { FacetTaxonomyData } from './TopFilterBarFacet';
+import type { ActiveFilterSlot } from './MultiFacetFilterBar';
+import facetTaxonomyJson from '../data/facet-taxonomy.json';
 
 interface GlobeStreamCanvasProps {
   notes: NoteItem[];
@@ -19,6 +23,10 @@ interface GlobeStreamCanvasProps {
   onAddToHistory?: (note: NoteItem) => void;
   onSwitchToStream: () => void;
   onNavigateWikilink?: (title: string) => void;
+  activeFilterSlots?: ActiveFilterSlot[];
+  onAddFilterSlot?: (slot: ActiveFilterSlot) => void;
+  onRemoveFilterSlot?: (id: string) => void;
+  onClearAllSlots?: () => void;
 }
 
 export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
@@ -29,6 +37,10 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
   onAddToHistory,
   onSwitchToStream,
   onNavigateWikilink,
+  activeFilterSlots: activeFilterSlotsProp,
+  onAddFilterSlot: onAddFilterSlotProp,
+  onRemoveFilterSlot: onRemoveFilterSlotProp,
+  onClearAllSlots: onClearAllSlotsProp,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -45,11 +57,39 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
   const panRef = useRef({ x: 0, y: 0 });
   panRef.current = pan;
 
-  // Hierarchical Filter & Search states
+  // Hierarchical Multi-Facet Filter & Search states
+  const [facetData] = useState<FacetTaxonomyData>(facetTaxonomyJson as unknown as FacetTaxonomyData);
+  const [internalSlots, setInternalSlots] = useState<ActiveFilterSlot[]>([]);
+  const currentSlots = activeFilterSlotsProp ?? internalSlots;
+
+  const handleAddFilterSlot = (slot: ActiveFilterSlot) => {
+    if (onAddFilterSlotProp) {
+      onAddFilterSlotProp(slot);
+    } else {
+      setInternalSlots((prev) => (prev.length >= 20 ? prev : [...prev, slot]));
+    }
+  };
+
+  const handleRemoveFilterSlot = (id: string) => {
+    if (onRemoveFilterSlotProp) {
+      onRemoveFilterSlotProp(id);
+    } else {
+      setInternalSlots((prev) => prev.filter((s) => s.id !== id));
+    }
+  };
+
+  const handleClearAllSlots = () => {
+    if (onClearAllSlotsProp) {
+      onClearAllSlotsProp();
+    } else {
+      setInternalSlots([]);
+    }
+  };
+
+  const [globeFilterAxis, setGlobeFilterAxis] = useState<'category' | 'type' | 'field'>('category');
+  const [expandedPrimary, setExpandedPrimary] = useState<string | null>(null);
+  const [expandedSecondary, setExpandedSecondary] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
 
   // Mobile Filter Sheet & Mobile Search Overlay states
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -106,20 +146,31 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
 
   const isMobile = dimensions.width < 768;
 
-  // Filter notes hierarchically
+  // Filter notes with multi-facet stacked union matching
   const filteredNotes = useMemo(() => {
     let result = notes;
-    if (selectedCategory) {
-      result = result.filter((n) => n.category === selectedCategory);
+
+    if (currentSlots.length > 0) {
+      result = result.filter((note) => {
+        return currentSlots.some((slot) => {
+          let match = true;
+          if (slot.category && note.category !== slot.category) match = false;
+          if (slot.subCategory && note.subCategory !== slot.subCategory) match = false;
+          if (slot.type && note.type !== slot.type) match = false;
+          if (slot.subType && note.subType !== slot.subType) match = false;
+          if (slot.field && note.field !== slot.field) match = false;
+          if (slot.subField && note.subField !== slot.subField) match = false;
+          if (slot.topic) {
+            const hasTopic =
+              note.topic === slot.topic ||
+              (note.topics && note.topics.includes(slot.topic));
+            if (!hasTopic) match = false;
+          }
+          return match;
+        });
+      });
     }
-    if (selectedSubCategory) {
-      result = result.filter((n) => n.subCategory === selectedSubCategory);
-    }
-    if (selectedTopic) {
-      result = result.filter(
-        (n) => n.topic === selectedTopic || (n.topics && n.topics.includes(selectedTopic))
-      );
-    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(
@@ -130,7 +181,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       );
     }
     return result;
-  }, [notes, selectedCategory, selectedSubCategory, selectedTopic, searchQuery]);
+  }, [notes, currentSlots, searchQuery]);
 
   // Card grid geometry: Responsive to Desktop vs Mobile (matches reference video)
   const CARD_W = isMobile ? 104 : 168;
@@ -554,33 +605,130 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
 
   // Reset all filters and position
   const handleResetAll = () => {
-    setSelectedCategory(null);
-    setSelectedSubCategory(null);
-    setSelectedTopic(null);
+    handleClearAllSlots();
     setSearchQuery('');
     setPan({ x: 0, y: 0 });
   };
 
-  // Categories list
-  const categories = useMemo(() => {
-    return Object.keys(taxonomy).sort((a, b) => (taxonomy[b]?.count || 0) - (taxonomy[a]?.count || 0));
-  }, [taxonomy]);
+  const commitGlobeSlot = (options: {
+    primary?: string | null;
+    secondary?: string | null;
+    topic?: string | null;
+  }) => {
+    if (currentSlots.length >= 20) return;
+    const p = options.primary ?? expandedPrimary;
+    const s = options.secondary ?? null;
+    const t = options.topic ?? null;
+    if (!p && !s && !t) return;
 
-  // Sub-categories of selected category
-  const subCategories = useMemo(() => {
-    if (!selectedCategory || !taxonomy[selectedCategory]) return [];
-    const subs = taxonomy[selectedCategory].subCategories || {};
-    return Object.keys(subs).sort((a, b) => (subs[b]?.count || 0) - (subs[a]?.count || 0));
-  }, [selectedCategory, taxonomy]);
+    const label = t || s || p || '';
 
-  // Topics of selected sub-category
-  const topics = useMemo(() => {
-    if (!selectedCategory || !selectedSubCategory || !taxonomy[selectedCategory]) return [];
-    const topMap = taxonomy[selectedCategory].subCategories?.[selectedSubCategory]?.topics || {};
-    return Object.keys(topMap).sort((a, b) => (topMap[b] || 0) - (topMap[a] || 0));
-  }, [selectedCategory, selectedSubCategory, taxonomy]);
+    // Check if slot with identical criteria already exists
+    const existing = currentSlots.find((slot) => {
+      if (slot.axis !== globeFilterAxis) return false;
+      if (t) return slot.topic === t;
+      if (s) {
+        if (globeFilterAxis === 'category') return slot.subCategory === s;
+        if (globeFilterAxis === 'type') return slot.subType === s;
+        if (globeFilterAxis === 'field') return slot.subField === s;
+      }
+      if (p) {
+        if (globeFilterAxis === 'category') return slot.category === p && !slot.subCategory && !slot.topic;
+        if (globeFilterAxis === 'type') return slot.type === p && !slot.subType && !slot.topic;
+        if (globeFilterAxis === 'field') return slot.field === p && !slot.subField && !slot.topic;
+      }
+      return false;
+    });
 
-  const hasActiveFilter = Boolean(selectedCategory || selectedSubCategory || selectedTopic || searchQuery);
+    if (existing) {
+      handleRemoveFilterSlot(existing.id);
+      return;
+    }
+
+    const newSlot: ActiveFilterSlot = {
+      id: `globe-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+      axis: globeFilterAxis,
+      label,
+      category: globeFilterAxis === 'category' ? p : undefined,
+      subCategory: globeFilterAxis === 'category' ? s : undefined,
+      type: globeFilterAxis === 'type' ? p : undefined,
+      subType: globeFilterAxis === 'type' ? s : undefined,
+      field: globeFilterAxis === 'field' ? p : undefined,
+      subField: globeFilterAxis === 'field' ? s : undefined,
+      topic: t,
+    };
+
+    handleAddFilterSlot(newSlot);
+  };
+
+  // Primary list based on current globeFilterAxis
+  const globePrimaryList = useMemo(() => {
+    if (globeFilterAxis === 'category') {
+      return Object.entries(facetData.byCategory || {})
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([name, data]) => ({ name, count: data.count }));
+    }
+    if (globeFilterAxis === 'type') {
+      return Object.entries(facetData.byType || {})
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([name, data]) => ({ name, count: data.count }));
+    }
+    if (globeFilterAxis === 'field') {
+      return Object.entries(facetData.byField || {})
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([name, data]) => ({ name, count: data.count }));
+    }
+    return [];
+  }, [globeFilterAxis, facetData]);
+
+  // Secondary sub items for current axis + expandedPrimary
+  const globeSecondaryList = useMemo(() => {
+    if (!expandedPrimary) return [];
+    let subs: Record<string, { count: number }> = {};
+    if (globeFilterAxis === 'category') {
+      subs = facetData.byCategory?.[expandedPrimary]?.subs || {};
+    } else if (globeFilterAxis === 'type') {
+      subs = facetData.byType?.[expandedPrimary]?.subs || {};
+    } else if (globeFilterAxis === 'field') {
+      subs = facetData.byField?.[expandedPrimary]?.subs || {};
+    }
+    return Object.entries(subs)
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([name, data]) => ({ name, count: data.count }));
+  }, [globeFilterAxis, expandedPrimary, facetData]);
+
+  // Topics for current axis + expandedPrimary + optional expandedSecondary
+  const globeTopicsList = useMemo(() => {
+    if (!expandedPrimary) return [];
+    let topicMap: Record<string, number> = {};
+    if (globeFilterAxis === 'category') {
+      const cat = facetData.byCategory?.[expandedPrimary];
+      if (expandedSecondary && cat?.subs?.[expandedSecondary]) {
+        topicMap = cat.subs[expandedSecondary].topics || {};
+      } else {
+        topicMap = cat?.topics || {};
+      }
+    } else if (globeFilterAxis === 'type') {
+      const tp = facetData.byType?.[expandedPrimary];
+      if (expandedSecondary && tp?.subs?.[expandedSecondary]) {
+        topicMap = tp.subs[expandedSecondary].topics || {};
+      } else {
+        topicMap = tp?.topics || {};
+      }
+    } else if (globeFilterAxis === 'field') {
+      const fd = facetData.byField?.[expandedPrimary];
+      if (expandedSecondary && fd?.subs?.[expandedSecondary]) {
+        topicMap = fd.subs[expandedSecondary].topics || {};
+      } else {
+        topicMap = fd?.topics || {};
+      }
+    }
+    return Object.entries(topicMap)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
+  }, [globeFilterAxis, expandedPrimary, expandedSecondary, facetData]);
+
+  const hasActiveFilter = Boolean(currentSlots.length > 0 || searchQuery);
 
   return (
     <div className="w-full max-w-[100vw] h-screen flex flex-col bg-[#fbfbfb] text-black overflow-hidden select-none font-sans relative">
@@ -630,11 +778,241 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         </div>
       </header>
 
-      {/* --- 2. MAIN 3D GLOBE CANVAS (Strictly below the header, overflow hidden) --- */}
+      {/* --- DESKTOP ONLY: RIGHT TOP FLOATING FILTER BUTTONS (Lifted to top z-50 layer, strictly above 3D note cards) --- */}
+      <div className="hidden md:flex interactive-control fixed top-[72px] right-6 z-50 flex-col items-end gap-2 select-none font-sans max-h-[82vh] overflow-y-auto no-scrollbar pb-6 max-w-sm pointer-events-auto">
+        {/* Row 1: Reset & All Notes Pill */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {hasActiveFilter && (
+            <button
+              onClick={handleResetAll}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black text-white border border-black shadow-md text-xs font-sans font-medium active:scale-95 transition-all"
+              title="Clear all filters and search"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => handleClearAllSlots()}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all shadow-xs border text-right ${
+              currentSlots.length === 0
+                ? 'bg-black text-white border-black font-semibold shadow-md'
+                : 'bg-white/90 backdrop-blur-md text-[#333333] border-black/8 hover:bg-black hover:text-white'
+            }`}
+          >
+            All ({notes.length})
+          </button>
+        </div>
+
+        {/* Row 2: Active Stacked Filters (if any) */}
+        {currentSlots.length > 0 && (
+          <div className="flex flex-col items-end gap-1.5 w-full bg-white/90 backdrop-blur-md p-2.5 rounded-2xl border border-black/8 shadow-xs">
+            <div className="flex items-center justify-between w-full px-1">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[#777777] font-semibold">
+                Filters
+              </span>
+              <button
+                onClick={handleClearAllSlots}
+                className="text-[10px] font-mono text-[#888888] hover:text-black flex items-center gap-0.5"
+              >
+                <RotateCcw className="w-2.5 h-2.5" />
+                <span>Clear</span>
+              </button>
+            </div>
+            <div className="flex flex-wrap justify-end gap-1.5 w-full">
+              {currentSlots.map((slot) => {
+                const badgeLetter = slot.axis === 'category' ? 'C' : slot.axis === 'field' ? 'F' : 'T';
+                return (
+                  <motion.div
+                    key={slot.id}
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-full bg-black text-white text-[11px] font-mono shadow-xs"
+                  >
+                    <span className="w-3.5 h-3.5 rounded-[3px] bg-white text-black flex items-center justify-center text-[9px] font-bold shrink-0">
+                      {badgeLetter}
+                    </span>
+                    <span className="text-white/40 text-[10px] select-none">|</span>
+                    <span className="truncate max-w-[140px] font-medium">{slot.label}</span>
+                    <button
+                      onClick={() => handleRemoveFilterSlot(slot.id)}
+                      className="hover:text-red-300 p-0.5 rounded-full"
+                      aria-label="Remove filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Row 3: Axis Switcher (Category | Type | Field) */}
+        <div className="flex items-center gap-1 p-1 bg-white/90 backdrop-blur-md rounded-full border border-black/8 shadow-xs shrink-0">
+          {(['category', 'type', 'field'] as const).map((axis) => {
+            const isSelected = globeFilterAxis === axis;
+            const label = axis === 'category' ? 'Category' : axis === 'type' ? 'Type' : 'Field';
+            return (
+              <button
+                key={axis}
+                onClick={() => {
+                  setGlobeFilterAxis(axis);
+                  setExpandedPrimary(null);
+                  setExpandedSecondary(null);
+                }}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                  isSelected
+                    ? 'bg-black text-white font-semibold shadow-xs'
+                    : 'text-[#444444] hover:text-black hover:bg-black/5'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Row 4: Primary Items List (Expandable & Toggleable) */}
+        <div className="flex flex-col items-end gap-1.5 w-full">
+          {globePrimaryList.map((item) => {
+            const isExpanded = expandedPrimary === item.name;
+            const isPrimaryInSlots = currentSlots.some((s) => {
+              if (s.axis !== globeFilterAxis) return false;
+              if (globeFilterAxis === 'category') return s.category === item.name && !s.subCategory && !s.topic;
+              if (globeFilterAxis === 'type') return s.type === item.name && !s.subType && !s.topic;
+              if (globeFilterAxis === 'field') return s.field === item.name && !s.subField && !s.topic;
+              return false;
+            });
+            const hasSubsOrTopics = Boolean(
+              (globeFilterAxis === 'category' && (Object.keys(facetData.byCategory?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byCategory?.[item.name]?.topics || {}).length > 0)) ||
+              (globeFilterAxis === 'type' && (Object.keys(facetData.byType?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byType?.[item.name]?.topics || {}).length > 0)) ||
+              (globeFilterAxis === 'field' && (Object.keys(facetData.byField?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byField?.[item.name]?.topics || {}).length > 0))
+            );
+
+            return (
+              <div key={item.name} className="flex flex-col items-end gap-1 w-full">
+                {/* Primary Pill Button */}
+                <button
+                  onClick={() => {
+                    if (hasSubsOrTopics) {
+                      if (isExpanded) {
+                        setExpandedPrimary(null);
+                        setExpandedSecondary(null);
+                      } else {
+                        setExpandedPrimary(item.name);
+                        setExpandedSecondary(null);
+                      }
+                    } else {
+                      commitGlobeSlot({ primary: item.name });
+                    }
+                  }}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all shadow-xs border flex items-center justify-end gap-1.5 ${
+                    isPrimaryInSlots
+                      ? 'bg-black text-white border-black font-semibold shadow-md'
+                      : isExpanded
+                      ? 'bg-[#222222] text-white border-[#222222]'
+                      : 'bg-white/90 backdrop-blur-md text-[#333333] border-black/8 hover:bg-black hover:text-white'
+                  }`}
+                >
+                  <span>{item.name}</span>
+                  <span className={`text-[10px] font-mono ${isPrimaryInSlots || isExpanded ? 'text-white/70' : 'text-[#888888]'}`}>
+                    {item.count}
+                  </span>
+                  {hasSubsOrTopics && (
+                    <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  )}
+                </button>
+
+                {/* Expanded Secondary & Topics Accordion */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="flex flex-col items-end gap-1.5 pr-1 py-1 overflow-hidden w-full max-w-xs"
+                    >
+                      {/* Sub-items */}
+                      {globeSecondaryList.length > 0 && (
+                        <div className="flex flex-wrap justify-end gap-1 my-0.5">
+                          {globeSecondaryList.slice(0, 10).map((sub) => {
+                            const isSubInSlots = currentSlots.some((s) => {
+                              if (s.axis !== globeFilterAxis) return false;
+                              if (globeFilterAxis === 'category') return s.subCategory === sub.name && !s.topic;
+                              if (globeFilterAxis === 'type') return s.subType === sub.name && !s.topic;
+                              if (globeFilterAxis === 'field') return s.subField === sub.name && !s.topic;
+                              return false;
+                            });
+                            const isSubSelected = expandedSecondary === sub.name;
+
+                            return (
+                              <button
+                                key={sub.name}
+                                onClick={() => {
+                                  if (isSubSelected) {
+                                    setExpandedSecondary(null);
+                                  } else {
+                                    setExpandedSecondary(sub.name);
+                                  }
+                                  commitGlobeSlot({ primary: item.name, secondary: sub.name });
+                                }}
+                                className={`px-2.5 py-1 rounded-full text-[11px] font-sans transition-all border ${
+                                  isSubInSlots
+                                    ? 'bg-black text-white border-black font-medium'
+                                    : 'bg-white/85 backdrop-blur-md text-[#444444] border-black/8 hover:bg-black hover:text-white'
+                                }`}
+                              >
+                                ↳ {sub.name} ({sub.count})
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Topics */}
+                      {globeTopicsList.length > 0 && (
+                        <div className="flex flex-wrap justify-end gap-1 my-0.5">
+                          {globeTopicsList.slice(0, 12).map((top) => {
+                            const isTopInSlots = currentSlots.some((s) => s.topic === top.name);
+                            return (
+                              <button
+                                key={top.name}
+                                onClick={() => commitGlobeSlot({ primary: item.name, secondary: expandedSecondary, topic: top.name })}
+                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono transition-all border ${
+                                  isTopInSlots
+                                    ? 'bg-black text-white border-black font-bold'
+                                    : 'bg-white/85 backdrop-blur-md text-[#555555] border-black/8 hover:border-black/30 hover:text-black'
+                                }`}
+                              >
+                                • {top.name} ({top.count})
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* --- DESKTOP ONLY: BOTTOM FLOATING HELPER HINT --- */}
+      <div className="hidden md:flex fixed bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-4 py-2 rounded-full bg-white/90 backdrop-blur-md border border-black/8 text-[11px] font-sans text-[#666666] items-center gap-2 shadow-[0_6px_20px_rgba(0,0,0,0.06)] whitespace-nowrap">
+        <span className="w-1.5 h-1.5 rounded-full bg-black/60 shrink-0" />
+        <span>Drag freely in all directions · Click note to inflate</span>
+      </div>
+
+      {/* --- 2. MAIN 3D GLOBE CANVAS (Strictly below the header, overflow hidden, isolated z-0 stacking context) --- */}
       <div
         ref={containerRef}
         onWheel={handleWheel}
-        className="flex-1 w-full max-w-[100vw] h-full relative overflow-hidden cursor-grab active:cursor-grabbing touch-none select-none"
+        className="flex-1 w-full max-w-[100vw] h-full relative z-0 overflow-hidden cursor-grab active:cursor-grabbing touch-none select-none"
         style={{
           perspective: '1200px',
           touchAction: 'none',
@@ -644,141 +1022,6 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
           userSelect: 'none',
         }}
       >
-        {/* --- DESKTOP ONLY: RIGHT TOP FLOATING FILTER BUTTONS --- */}
-        <div className="hidden md:flex interactive-control fixed top-[72px] right-6 z-40 flex-col items-end gap-1.5 select-none font-sans max-h-[82vh] overflow-y-auto no-scrollbar pb-6">
-            {/* 1. Reset Button attached right at the top of the filters */}
-            <button
-              onClick={handleResetAll}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full shadow-xs border transition-all text-xs font-sans font-medium active:scale-95 mb-0.5 ${
-                hasActiveFilter
-                  ? 'bg-black text-white border-black shadow-md'
-                  : 'bg-white/90 backdrop-blur-md text-[#555555] border-black/8 hover:text-black hover:bg-white'
-              }`}
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Reset</span>
-            </button>
-
-            {/* 2. All Notes Pill */}
-            <button
-              onClick={() => {
-                setSelectedCategory(null);
-                setSelectedSubCategory(null);
-                setSelectedTopic(null);
-              }}
-              className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all shadow-xs border text-right ${
-                !selectedCategory
-                  ? 'bg-black text-white border-black font-semibold shadow-md'
-                  : 'bg-white/90 backdrop-blur-md text-[#333333] border-black/8 hover:bg-black hover:text-white'
-              }`}
-            >
-              All ({notes.length})
-            </button>
-
-            {/* 3. Level 1: Categories */}
-            {categories.map((cat) => {
-              const isCatSelected = selectedCategory === cat;
-              return (
-                <div key={cat} className="flex flex-col items-end gap-1 w-full">
-                  {/* Category Pill Button */}
-                  <button
-                    onClick={() => {
-                      if (isCatSelected) {
-                        setSelectedCategory(null);
-                        setSelectedSubCategory(null);
-                        setSelectedTopic(null);
-                      } else {
-                        setSelectedCategory(cat);
-                        setSelectedSubCategory(null);
-                        setSelectedTopic(null);
-                      }
-                    }}
-                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all shadow-xs border flex items-center justify-end gap-1.5 ${
-                      isCatSelected
-                        ? 'bg-black text-white border-black font-semibold shadow-md'
-                        : 'bg-white/90 backdrop-blur-md text-[#333333] border-black/8 hover:bg-black hover:text-white'
-                    }`}
-                  >
-                    <span>{cat}</span>
-                    {isCatSelected && <ChevronDown className="w-3 h-3 text-white" />}
-                  </button>
-
-                  {/* Level 2: Sub-Categories */}
-                  <AnimatePresence>
-                    {isCatSelected && subCategories.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="flex flex-col items-end gap-1 pr-1.5 my-0.5 overflow-hidden"
-                      >
-                        {subCategories.slice(0, 10).map((sub) => {
-                          const isSubSelected = selectedSubCategory === sub;
-                          return (
-                            <div key={sub} className="flex flex-col items-end gap-1 w-full">
-                              <button
-                                onClick={() => {
-                                  if (isSubSelected) {
-                                    setSelectedSubCategory(null);
-                                    setSelectedTopic(null);
-                                  } else {
-                                    setSelectedSubCategory(sub);
-                                    setSelectedTopic(null);
-                                  }
-                                }}
-                                className={`px-3 py-1 rounded-full text-[11px] font-sans font-medium transition-all shadow-2xs border ${
-                                  isSubSelected
-                                    ? 'bg-[#222222] text-white border-[#222222]'
-                                    : 'bg-white/85 backdrop-blur-md text-[#444444] border-black/8 hover:bg-black hover:text-white'
-                                }`}
-                              >
-                                ↳ {sub}
-                              </button>
-
-                              {/* Level 3: Topics */}
-                              <AnimatePresence>
-                                {isSubSelected && topics.length > 0 && (
-                                  <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    className="flex flex-col items-end gap-1 pr-1.5 my-0.5 overflow-hidden"
-                                  >
-                                    {topics.slice(0, 8).map((top) => {
-                                      const isTopSelected = selectedTopic === top;
-                                      return (
-                                        <button
-                                          key={top}
-                                          onClick={() => setSelectedTopic(isTopSelected ? null : top)}
-                                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono transition-all border ${
-                                            isTopSelected
-                                              ? 'bg-black text-white border-black font-semibold'
-                                              : 'bg-white/85 backdrop-blur-md text-[#555555] border-black/8 hover:border-black/30 hover:text-black'
-                                          }`}
-                                        >
-                                          • {top}
-                                        </button>
-                                      );
-                                    })}
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </div>
-                          );
-                        })}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
-          </div>
-
-        {/* --- DESKTOP ONLY: BOTTOM FLOATING HELPER HINT --- */}
-        <div className="hidden md:flex fixed bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-4 py-2 rounded-full bg-white/90 backdrop-blur-md border border-black/8 text-[11px] font-sans text-[#666666] items-center gap-2 shadow-[0_6px_20px_rgba(0,0,0,0.06)] whitespace-nowrap">
-          <span className="w-1.5 h-1.5 rounded-full bg-black/60 shrink-0" />
-          <span>Drag freely in all directions · Click note to inflate</span>
-        </div>
 
         {/* --- 3D GLOBE CARDS LAYER (Uniform Spacing, Zero Overlap, Razor-sharp Text) --- */}
         <div
@@ -917,7 +1160,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
               <button
                 onClick={() => setIsMobileFilterOpen(true)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
-                  selectedCategory || selectedSubCategory || selectedTopic
+                  currentSlots.length > 0
                     ? 'bg-black text-white shadow-xs'
                     : 'text-[#333333] hover:text-black active:bg-black/5'
                 }`}
@@ -925,9 +1168,9 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
                 <span className="truncate max-w-[85px]">
-                  {selectedTopic || selectedSubCategory || selectedCategory || '필터'}
+                  {currentSlots.length > 0 ? currentSlots[currentSlots.length - 1].label : '필터'}
                 </span>
-                {(selectedCategory || selectedSubCategory || selectedTopic) && (
+                {currentSlots.length > 0 && (
                   <span className="w-1.5 h-1.5 rounded-full bg-white ml-0.5" />
                 )}
               </button>
@@ -964,14 +1207,19 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-h-[75vh] bg-white rounded-t-[28px] shadow-2xl border-t border-black/10 flex flex-col overflow-hidden pb-8"
+              className="w-full max-h-[82vh] h-[580px] bg-white rounded-t-[28px] shadow-2xl border-t border-black/10 flex flex-col overflow-hidden pb-8 font-sans"
             >
+              {/* Top Drag Handle */}
+              <div className="w-full pt-3 pb-1 flex justify-center cursor-pointer" onClick={() => setIsMobileFilterOpen(false)}>
+                <div className="w-10 h-1 bg-[#d5d5d8] rounded-full" />
+              </div>
+
               {/* Sheet Header */}
-              <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-[#eeeeee]">
+              <div className="flex items-center justify-between px-6 py-2.5 border-b border-[#eeeeee]">
                 <div className="flex items-center gap-2">
                   <SlidersHorizontal className="w-4 h-4 text-black" />
-                  <span className="font-sans font-bold text-base text-black">Filter Archive</span>
-                  <span className="text-xs text-[#888888] font-mono">({filteredNotes.length.toLocaleString()})</span>
+                  <span className="font-sans font-bold text-base text-black">Filters</span>
+                  <span className="text-xs text-[#888888] font-mono">({filteredNotes.length.toLocaleString()} notes)</span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -993,111 +1241,170 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                 </div>
               </div>
 
-              {/* Sheet Content: Hierarchical Filter Buttons */}
-              <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-2">
-                {/* All Button */}
-                <button
-                  onClick={() => {
-                    setSelectedCategory(null);
-                    setSelectedSubCategory(null);
-                    setSelectedTopic(null);
-                  }}
-                  className={`w-full py-2.5 px-4 rounded-full text-xs font-medium transition-all text-left flex items-center justify-between border ${
-                    !selectedCategory
-                      ? 'bg-black text-white border-black font-semibold shadow-xs'
-                      : 'bg-white text-[#333333] border-black/8 hover:bg-[#f5f5f5]'
-                  }`}
-                >
-                  <span>All Notes</span>
-                  <span className="text-[11px] font-mono opacity-80">{notes.length}</span>
-                </button>
-
-                {/* Categories */}
-                {categories.map((cat) => {
-                  const isCatSelected = selectedCategory === cat;
-                  const count = taxonomy[cat]?.count || 0;
-                  return (
-                    <div key={cat} className="flex flex-col gap-1.5 w-full">
+              {/* Sheet Content */}
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 pb-6">
+                {/* 1. Active Stack Row */}
+                <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-[#f8f8fa] border border-black/8">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-[#777777] font-semibold">
+                      Filters
+                    </span>
+                    {currentSlots.length > 0 && (
                       <button
+                        onClick={handleClearAllSlots}
+                        className="flex items-center gap-1 text-[11px] text-[#888888] hover:text-black font-mono"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Clear All</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {currentSlots.length === 0 ? (
+                    <span className="text-xs font-mono text-[#999999] py-1 italic">
+                      No filters applied. Showing all notes.
+                    </span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {currentSlots.map((slot) => {
+                        const badgeLetter = slot.axis === 'category' ? 'C' : slot.axis === 'field' ? 'F' : 'T';
+                        return (
+                          <span
+                            key={slot.id}
+                            className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-0.5 rounded-full bg-black text-white text-[11px] font-mono shadow-xs"
+                          >
+                            <span className="w-3.5 h-3.5 rounded-[3px] bg-white text-black flex items-center justify-center text-[9px] font-bold">
+                              {badgeLetter}
+                            </span>
+                            <span className="text-white/40 font-light select-none">|</span>
+                            <span className="max-w-[140px] truncate">{slot.label}</span>
+                            <button
+                              onClick={() => handleRemoveFilterSlot(slot.id)}
+                              className="hover:text-red-300 p-0.5"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Axis Switcher: Category | Type | Field */}
+                <div className="flex items-center gap-1.5 p-1 bg-[#f4f4f6] rounded-xl">
+                  {(['category', 'type', 'field'] as const).map((axis) => {
+                    const isSelected = globeFilterAxis === axis;
+                    const label = axis === 'category' ? 'Category' : axis === 'type' ? 'Type' : 'Field';
+                    return (
+                      <button
+                        key={axis}
                         onClick={() => {
-                          if (isCatSelected) {
-                            setSelectedCategory(null);
-                            setSelectedSubCategory(null);
-                            setSelectedTopic(null);
-                          } else {
-                            setSelectedCategory(cat);
-                            setSelectedSubCategory(null);
-                            setSelectedTopic(null);
-                          }
+                          setGlobeFilterAxis(axis);
+                          setExpandedPrimary(null);
+                          setExpandedSecondary(null);
                         }}
-                        className={`w-full py-2.5 px-4 rounded-full text-xs font-medium transition-all text-left flex items-center justify-between border ${
-                          isCatSelected
-                            ? 'bg-black text-white border-black font-semibold shadow-xs'
-                            : 'bg-white text-[#333333] border-black/8 hover:bg-[#f5f5f5]'
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                          isSelected
+                            ? 'bg-white text-black font-semibold shadow-xs'
+                            : 'text-[#666666] hover:text-black'
                         }`}
                       >
-                        <div className="flex items-center gap-2">
-                          <span>{cat}</span>
-                          {isCatSelected && <ChevronDown className="w-3.5 h-3.5" />}
-                        </div>
-                        <span className="text-[11px] font-mono opacity-80">{count}</span>
+                        {label}
                       </button>
+                    );
+                  })}
+                </div>
 
-                      {/* Sub-categories */}
-                      {isCatSelected && subCategories.length > 0 && (
-                        <div className="pl-3 flex flex-col gap-1.5 py-1">
-                          {subCategories.slice(0, 12).map((sub) => {
-                            const isSubSelected = selectedSubCategory === sub;
-                            return (
-                              <div key={sub} className="flex flex-col gap-1">
-                                <button
-                                  onClick={() => {
-                                    if (isSubSelected) {
-                                      setSelectedSubCategory(null);
-                                      setSelectedTopic(null);
-                                    } else {
-                                      setSelectedSubCategory(sub);
-                                      setSelectedTopic(null);
-                                    }
-                                  }}
-                                  className={`w-full py-2 px-3.5 rounded-full text-[11px] font-medium text-left transition-all border ${
-                                    isSubSelected
-                                      ? 'bg-[#222222] text-white border-[#222222]'
-                                      : 'bg-[#f8f8f9] text-[#444444] border-black/6'
-                                  }`}
-                                >
-                                  ↳ {sub}
-                                </button>
+                {/* 3. Primary Items Grid */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] font-mono text-[#888888] uppercase tracking-wider">
+                    Select {globeFilterAxis === 'category' ? 'Category' : globeFilterAxis === 'type' ? 'Type' : 'Field'}:
+                  </span>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {globePrimaryList.map((item) => {
+                      const isSelected = expandedPrimary === item.name;
+                      const hasSubsOrTopics = Boolean(
+                        (globeFilterAxis === 'category' && (Object.keys(facetData.byCategory?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byCategory?.[item.name]?.topics || {}).length > 0)) ||
+                        (globeFilterAxis === 'type' && (Object.keys(facetData.byType?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byType?.[item.name]?.topics || {}).length > 0)) ||
+                        (globeFilterAxis === 'field' && (Object.keys(facetData.byField?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byField?.[item.name]?.topics || {}).length > 0))
+                      );
 
-                                {/* Topics */}
-                                {isSubSelected && topics.length > 0 && (
-                                  <div className="pl-3 flex flex-wrap gap-1.5 py-1">
-                                    {topics.slice(0, 10).map((top) => {
-                                      const isTopSelected = selectedTopic === top;
-                                      return (
-                                        <button
-                                          key={top}
-                                          onClick={() => setSelectedTopic(isTopSelected ? null : top)}
-                                          className={`px-3 py-1 rounded-full text-[10px] font-mono transition-all border ${
-                                            isTopSelected
-                                              ? 'bg-black text-white border-black font-semibold'
-                                              : 'bg-white text-[#555555] border-black/8'
-                                          }`}
-                                        >
-                                          # {top}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                      return (
+                        <button
+                          key={item.name}
+                          onClick={() => {
+                            if (hasSubsOrTopics) {
+                              if (isSelected) {
+                                setExpandedPrimary(null);
+                                setExpandedSecondary(null);
+                              } else {
+                                setExpandedPrimary(item.name);
+                                setExpandedSecondary(null);
+                              }
+                            } else {
+                              commitGlobeSlot({ primary: item.name });
+                            }
+                          }}
+                          className={`py-2 px-3 rounded-xl text-xs font-medium transition-all text-left flex items-center justify-between border ${
+                            isSelected
+                              ? 'bg-black text-white border-black font-semibold shadow-xs'
+                              : 'bg-white text-[#333333] border-black/8 hover:bg-[#f8f8f9]'
+                          }`}
+                        >
+                          <span className="truncate">{item.name}</span>
+                          <span className={`text-[10px] font-mono ml-1 ${isSelected ? 'text-white/80' : 'text-[#888888]'}`}>
+                            {item.count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 4. Sub-Categories / Sub-Types / Sub-Fields */}
+                {expandedPrimary && globeSecondaryList.length > 0 && (
+                  <div className="flex flex-col gap-1.5 pt-2 border-t border-[#f0f0f0]">
+                    <span className="text-[11px] font-mono text-[#888888] uppercase tracking-wider">
+                      Sub-items ({expandedPrimary}):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {globeSecondaryList.map((sub) => (
+                        <button
+                          key={sub.name}
+                          onClick={() => commitGlobeSlot({ primary: expandedPrimary, secondary: sub.name })}
+                          className="py-1.5 px-3 rounded-lg text-xs font-medium bg-[#f6f6f8] text-[#333333] hover:bg-black hover:text-white transition-colors border border-black/5 flex items-center gap-1"
+                        >
+                          <span>{sub.name}</span>
+                          <span className="text-[10px] text-[#888888]">({sub.count})</span>
+                          <Plus className="w-3 h-3 ml-0.5" />
+                        </button>
+                      ))}
                     </div>
-                  );
-                })}
+                  </div>
+                )}
+
+                {/* 5. Topics */}
+                {expandedPrimary && globeTopicsList.length > 0 && (
+                  <div className="flex flex-col gap-1.5 pt-2 border-t border-[#f0f0f0]">
+                    <span className="text-[11px] font-mono text-[#888888] uppercase tracking-wider">
+                      Related Topics:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {globeTopicsList.slice(0, 20).map((top) => (
+                        <button
+                          key={top.name}
+                          onClick={() => commitGlobeSlot({ primary: expandedPrimary, secondary: expandedSecondary, topic: top.name })}
+                          className="py-1 px-2.5 rounded-full text-[11px] font-mono bg-white border border-black/15 text-[#333333] hover:border-black hover:bg-black hover:text-white transition-all flex items-center gap-1"
+                        >
+                          <span>#{top.name}</span>
+                          <span className="text-[9px] text-[#888888]">({top.count})</span>
+                          <Plus className="w-2.5 h-2.5" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Done Button */}
@@ -1209,7 +1516,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
               className="flex items-center text-[13px] font-sans font-medium text-[#222222] hover:text-black active:opacity-70 transition-colors px-1"
             >
               <span>Filter</span>
-              {selectedCategory && (
+              {currentSlots.length > 0 && (
                 <span className="w-1.5 h-1.5 rounded-full bg-black ml-1.5" />
               )}
             </button>
@@ -1246,19 +1553,16 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         historyNotes={historyNotes || []}
         selectedNote={selectedNote}
         notes={filteredNotes}
-        taxonomy={taxonomy}
-        selectedCategory={selectedCategory}
-        selectedSubCategory={selectedSubCategory}
-        selectedTopic={selectedTopic}
+        facetData={facetData}
+        activeFilterSlots={currentSlots}
+        onAddFilterSlot={handleAddFilterSlot}
+        onRemoveFilterSlot={handleRemoveFilterSlot}
+        onClearAllSlots={handleClearAllSlots}
         onSelectNote={(note) => {
           setSelectedNote(note);
           if (onAddToHistory) onAddToHistory(note);
           setIsMobileSheetOpen(false);
         }}
-        onSelectCategory={setSelectedCategory}
-        onSelectSubCategory={setSelectedSubCategory}
-        onSelectTopic={setSelectedTopic}
-        onResetFilters={handleResetAll}
       />
     </div>
   );

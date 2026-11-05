@@ -1,6 +1,9 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import type { NoteItem, TaxonomyData } from '../types';
 import { TopFilterBar } from './TopFilterBar';
+import { MultiFacetFilterBar, type ActiveFilterSlot } from './MultiFacetFilterBar';
+import type { FacetTaxonomyData } from './TopFilterBarFacet';
+import facetTaxonomyJson from '../data/facet-taxonomy.json';
 import { MiddleNavColumn } from './MiddleNavColumn';
 import { MobileDetailBottomSheet } from './MobileDetailBottomSheet';
 import { NoteDetailPanel } from './NoteDetailPanel';
@@ -27,7 +30,9 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
   const [taxonomy, setTaxonomy] = useState<TaxonomyData>(initialTaxonomy);
   const [isLoading, setIsLoading] = useState<boolean>(initialNotes.length === 0);
 
-  // Filters State
+  // Filters State: Multi-Facet Stacked Filters (Up to 3)
+  const [activeFilterSlots, setActiveFilterSlots] = useState<ActiveFilterSlot[]>([]);
+  const [facetData] = useState<FacetTaxonomyData>(facetTaxonomyJson as unknown as FacetTaxonomyData);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
@@ -162,10 +167,26 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
 
   // Reset all filters
   const handleResetFilters = () => {
+    setActiveFilterSlots([]);
     setSelectedCategory(null);
     setSelectedSubCategory(null);
     setSelectedTopic(null);
     setSearchQuery('');
+  };
+
+  const handleAddFilterSlot = (slot: ActiveFilterSlot) => {
+    setActiveFilterSlots((prev) => {
+      if (prev.length >= 20) return prev;
+      return [...prev, slot];
+    });
+  };
+
+  const handleRemoveFilterSlot = (id: string) => {
+    setActiveFilterSlots((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const handleClearAllSlots = () => {
+    setActiveFilterSlots([]);
   };
 
   // Toast trigger for uncreated notes
@@ -227,21 +248,32 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
     showUnresolvedToast(target);
   };
 
-  // High performance filtering
+  // High performance filtering with Stacked (Union / OR) Multi-Facet Filters
   const filteredNotes = useMemo(() => {
     let result = notes;
 
-    if (selectedCategory) {
-      result = result.filter((n) => n.category === selectedCategory);
+    // When filter slots are stacked (Up to 3), note matches if it satisfies ANY of the active slots (Union / OR)
+    if (activeFilterSlots.length > 0) {
+      result = result.filter((note) => {
+        return activeFilterSlots.some((slot) => {
+          let match = true;
+          if (slot.category && note.category !== slot.category) match = false;
+          if (slot.subCategory && note.subCategory !== slot.subCategory) match = false;
+          if (slot.type && note.type !== slot.type) match = false;
+          if (slot.subType && note.subType !== slot.subType) match = false;
+          if (slot.field && note.field !== slot.field) match = false;
+          if (slot.subField && note.subField !== slot.subField) match = false;
+          if (slot.topic) {
+            const hasTopic =
+              note.topic === slot.topic ||
+              (note.topics && note.topics.includes(slot.topic));
+            if (!hasTopic) match = false;
+          }
+          return match;
+        });
+      });
     }
-    if (selectedSubCategory) {
-      result = result.filter((n) => n.subCategory === selectedSubCategory);
-    }
-    if (selectedTopic) {
-      result = result.filter(
-        (n) => n.topic === selectedTopic || (n.topics && n.topics.includes(selectedTopic))
-      );
-    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter((n) => {
@@ -256,7 +288,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
     }
 
     return result;
-  }, [notes, selectedCategory, selectedSubCategory, selectedTopic, searchQuery]);
+  }, [notes, activeFilterSlots, searchQuery]);
 
   // Keyboard shortcut: ESC to close detail panel
   useEffect(() => {
@@ -301,6 +333,10 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
           }
         }}
         onNavigateWikilink={(target) => handleNavigateWikilink(target)}
+        activeFilterSlots={activeFilterSlots}
+        onAddFilterSlot={handleAddFilterSlot}
+        onRemoveFilterSlot={handleRemoveFilterSlot}
+        onClearAllSlots={handleClearAllSlots}
       />
     );
   }
@@ -357,23 +393,6 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
                   Globe
                 </button>
               </div>
-
-              {/* Filter Prototypes Quick Switcher */}
-              <div className="hidden lg:flex items-center gap-1 text-[11px] font-mono border-l border-[#e5e5e5] pl-3 ml-1 text-[#888888]">
-                <span>Filter Test:</span>
-                <a
-                  href="/prototype-a"
-                  className="px-2 py-0.5 rounded-full bg-[#f4f4f5] hover:bg-black hover:text-white transition-colors text-black font-medium"
-                >
-                  Proto A (Faceted)
-                </a>
-                <a
-                  href="/prototype-b"
-                  className="px-2 py-0.5 rounded-full bg-[#f4f4f5] hover:bg-black hover:text-white transition-colors text-black font-medium"
-                >
-                  Proto B (Hybrid)
-                </a>
-              </div>
             </div>
 
             {/* Desktop Navigation Menu (Wiki, Blog, About) */}
@@ -415,22 +434,19 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
             </div>
           </div>
 
-          {/* Dynamic Hierarchical Button Filter Bar (Desktop only, hidden on mobile per user request) */}
+          {/* Dynamic Faceted Multi-Stack Filter Bar (Desktop only, hidden on mobile per user request) */}
           <div className="hidden md:block">
             {activeMenu === 'wiki' && (
-              <TopFilterBar
-                taxonomy={taxonomy}
+              <MultiFacetFilterBar
+                facetData={facetData}
                 totalNotesCount={notes.length}
                 filteredNotesCount={filteredNotes.length}
-                selectedCategory={selectedCategory}
-                selectedSubCategory={selectedSubCategory}
-                selectedTopic={selectedTopic}
+                activeFilterSlots={activeFilterSlots}
+                onAddFilterSlot={handleAddFilterSlot}
+                onRemoveFilterSlot={handleRemoveFilterSlot}
+                onClearAllSlots={handleClearAllSlots}
                 searchQuery={searchQuery}
-                onSelectCategory={setSelectedCategory}
-                onSelectSubCategory={setSelectedSubCategory}
-                onSelectTopic={setSelectedTopic}
                 onSearchChange={setSearchQuery}
-                onReset={handleResetFilters}
                 isDesktop={true}
               />
             )}
@@ -624,7 +640,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
                   setIsMobileSheetOpen(true);
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
-                  selectedCategory || selectedSubCategory || selectedTopic
+                  activeFilterSlots.length > 0
                     ? 'bg-black text-white shadow-xs'
                     : 'text-[#333333] hover:text-black active:bg-black/5'
                 }`}
@@ -632,15 +648,15 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
                 <span className="truncate max-w-[85px]">
-                  {selectedTopic || selectedSubCategory || selectedCategory || '필터'}
+                  {activeFilterSlots.length > 0 ? activeFilterSlots[activeFilterSlots.length - 1].label : '필터'}
                 </span>
-                {(selectedCategory || selectedSubCategory || selectedTopic) && (
+                {activeFilterSlots.length > 0 && (
                   <span className="w-1.5 h-1.5 rounded-full bg-white ml-0.5" />
                 )}
               </button>
 
               {/* Reset Button (only if active filter or search) */}
-              {(selectedCategory || selectedSubCategory || selectedTopic || searchQuery) && (
+              {(activeFilterSlots.length > 0 || searchQuery) && (
                 <button
                   onClick={handleResetFilters}
                   className="w-7 h-7 rounded-full bg-black/5 hover:bg-black/10 active:scale-90 flex items-center justify-center text-[#555555] hover:text-black transition-all ml-0.5"
@@ -664,18 +680,15 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
         historyNotes={historyNotes}
         selectedNote={selectedNote}
         notes={filteredNotes}
-        taxonomy={taxonomy}
-        selectedCategory={selectedCategory}
-        selectedSubCategory={selectedSubCategory}
-        selectedTopic={selectedTopic}
+        facetData={facetData}
+        activeFilterSlots={activeFilterSlots}
+        onAddFilterSlot={handleAddFilterSlot}
+        onRemoveFilterSlot={handleRemoveFilterSlot}
+        onClearAllSlots={handleClearAllSlots}
         onSelectNote={(note) => {
           selectNoteWithHistory(note, true);
           setIsMobileSheetOpen(false);
         }}
-        onSelectCategory={setSelectedCategory}
-        onSelectSubCategory={setSelectedSubCategory}
-        onSelectTopic={setSelectedTopic}
-        onResetFilters={handleResetFilters}
       />
 
       {/* --- MOBILE MENU DRAWER MODAL --- */}
