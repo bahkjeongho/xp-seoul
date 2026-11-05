@@ -61,11 +61,14 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
   const [clickOrigin, setClickOrigin] = useState<{ x: number; y: number } | null>(null);
 
-  // Drag interaction state
+  // Drag interaction state with momentum & rAF batching
   const isDraggingRef = useRef(false);
   const dragStartPosRef = useRef({ x: 0, y: 0 });
   const dragStartPanRef = useRef({ x: 0, y: 0 });
-  const lastMovePosRef = useRef({ x: 0, y: 0, time: 0 });
+  const targetPanRef = useRef({ x: 0, y: 0 });
+  const dragRafIdRef = useRef<number | null>(null);
+  const touchHistoryRef = useRef<Array<{ x: number; y: number; time: number }>>([]);
+  const mouseHistoryRef = useRef<Array<{ x: number; y: number; time: number }>>([]);
   const velocityRef = useRef({ x: 0, y: 0 });
   const animationFrameRef = useRef<number | null>(null);
   const totalDragDistanceRef = useRef(0);
@@ -145,10 +148,11 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     return Math.max(16, Math.ceil(Math.max(1, filteredNotes.length) / GRID_COLS));
   }, [filteredNotes.length, GRID_COLS]);
 
-  // Smooth Momentum glide physics on release
+  // Smooth Momentum glide physics on release (iOS/Apple style deceleration)
   const startMomentum = useCallback(() => {
-    const friction = 0.93;
-    const minVelocity = 0.2;
+    // 0.952 gives a long, silky, natural deceleration on mobile touch and desktop
+    const friction = 0.952;
+    const minVelocity = 0.12;
 
     const step = () => {
       velocityRef.current.x *= friction;
@@ -181,16 +185,25 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     // 1. Touch Handlers (iOS Safari & Android)
     const onTouchStart = (e: TouchEvent) => {
       if ((e.target as HTMLElement).closest('.interactive-control')) return;
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      if (dragRafIdRef.current !== null) {
+        cancelAnimationFrame(dragRafIdRef.current);
+        dragRafIdRef.current = null;
+      }
 
       const touch = e.touches[0];
       if (!touch) return;
 
+      const now = performance.now();
       isDraggingRef.current = true;
       totalDragDistanceRef.current = 0;
       dragStartPosRef.current = { x: touch.clientX, y: touch.clientY };
       dragStartPanRef.current = { ...panRef.current };
-      lastMovePosRef.current = { x: touch.clientX, y: touch.clientY, time: performance.now() };
+      targetPanRef.current = { ...panRef.current };
+      touchHistoryRef.current = [{ x: touch.clientX, y: touch.clientY, time: now }];
       velocityRef.current = { x: 0, y: 0 };
     };
 
@@ -205,75 +218,152 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       const touch = e.touches[0];
       if (!touch) return;
 
+      const now = performance.now();
       const dx = touch.clientX - dragStartPosRef.current.x;
       const dy = touch.clientY - dragStartPosRef.current.y;
       totalDragDistanceRef.current += Math.hypot(
-        touch.clientX - lastMovePosRef.current.x,
-        touch.clientY - lastMovePosRef.current.y
+        touch.clientX - (touchHistoryRef.current[touchHistoryRef.current.length - 1]?.x ?? touch.clientX),
+        touch.clientY - (touchHistoryRef.current[touchHistoryRef.current.length - 1]?.y ?? touch.clientY)
       );
 
-      const now = performance.now();
-      const dt = Math.max(1, now - lastMovePosRef.current.time);
-      velocityRef.current = {
-        x: ((touch.clientX - lastMovePosRef.current.x) / dt) * 14,
-        y: ((touch.clientY - lastMovePosRef.current.y) / dt) * 14,
-      };
-      lastMovePosRef.current = { x: touch.clientX, y: touch.clientY, time: now };
+      touchHistoryRef.current.push({ x: touch.clientX, y: touch.clientY, time: now });
+      while (touchHistoryRef.current.length > 2 && now - touchHistoryRef.current[0].time > 120) {
+        touchHistoryRef.current.shift();
+      }
 
-      setPan({
+      targetPanRef.current = {
         x: dragStartPanRef.current.x + dx,
         y: dragStartPanRef.current.y + dy,
-      });
+      };
+
+      // V-Sync rAF batching: updates at 60/120fps without micro-stutters
+      if (dragRafIdRef.current === null) {
+        dragRafIdRef.current = requestAnimationFrame(() => {
+          dragRafIdRef.current = null;
+          setPan(targetPanRef.current);
+        });
+      }
     };
 
     const onTouchEnd = () => {
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
+
+      if (dragRafIdRef.current !== null) {
+        cancelAnimationFrame(dragRafIdRef.current);
+        dragRafIdRef.current = null;
+      }
+      setPan(targetPanRef.current);
+
+      // Compute genuine flick velocity over the last 100ms
+      const now = performance.now();
+      const recent = touchHistoryRef.current.filter((p) => now - p.time <= 100);
+      if (recent.length >= 2) {
+        const first = recent[0];
+        const last = recent[recent.length - 1];
+        const dt = Math.max(12, last.time - first.time);
+        const vx = ((last.x - first.x) / dt) * 16;
+        const vy = ((last.y - first.y) / dt) * 16;
+        const speed = Math.hypot(vx, vy);
+        const maxSpeed = 38;
+        const scale = speed > maxSpeed ? maxSpeed / speed : 1;
+        velocityRef.current = {
+          x: vx * scale,
+          y: vy * scale,
+        };
+      } else {
+        velocityRef.current = { x: 0, y: 0 };
+      }
+
       startMomentum();
     };
 
     const onTouchCancel = () => {
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
+      if (dragRafIdRef.current !== null) {
+        cancelAnimationFrame(dragRafIdRef.current);
+        dragRafIdRef.current = null;
+      }
     };
 
     // 2. Mouse Handlers (Desktop)
     const onMouseDown = (e: MouseEvent) => {
       if ((e.target as HTMLElement).closest('.interactive-control')) return;
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      if (dragRafIdRef.current !== null) {
+        cancelAnimationFrame(dragRafIdRef.current);
+        dragRafIdRef.current = null;
+      }
 
+      const now = performance.now();
       isDraggingRef.current = true;
       totalDragDistanceRef.current = 0;
       dragStartPosRef.current = { x: e.clientX, y: e.clientY };
       dragStartPanRef.current = { ...panRef.current };
-      lastMovePosRef.current = { x: e.clientX, y: e.clientY, time: performance.now() };
+      targetPanRef.current = { ...panRef.current };
+      mouseHistoryRef.current = [{ x: e.clientX, y: e.clientY, time: now }];
       velocityRef.current = { x: 0, y: 0 };
     };
 
     const onMouseMove = (e: MouseEvent) => {
       if (!isDraggingRef.current) return;
 
+      const now = performance.now();
       const dx = e.clientX - dragStartPosRef.current.x;
       const dy = e.clientY - dragStartPosRef.current.y;
       totalDragDistanceRef.current += Math.hypot(e.movementX || 0, e.movementY || 0);
 
-      const now = performance.now();
-      const dt = Math.max(1, now - lastMovePosRef.current.time);
-      velocityRef.current = {
-        x: ((e.clientX - lastMovePosRef.current.x) / dt) * 14,
-        y: ((e.clientY - lastMovePosRef.current.y) / dt) * 14,
-      };
-      lastMovePosRef.current = { x: e.clientX, y: e.clientY, time: now };
+      mouseHistoryRef.current.push({ x: e.clientX, y: e.clientY, time: now });
+      while (mouseHistoryRef.current.length > 2 && now - mouseHistoryRef.current[0].time > 120) {
+        mouseHistoryRef.current.shift();
+      }
 
-      setPan({
+      targetPanRef.current = {
         x: dragStartPanRef.current.x + dx,
         y: dragStartPanRef.current.y + dy,
-      });
+      };
+
+      if (dragRafIdRef.current === null) {
+        dragRafIdRef.current = requestAnimationFrame(() => {
+          dragRafIdRef.current = null;
+          setPan(targetPanRef.current);
+        });
+      }
     };
 
     const onMouseUp = () => {
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
+
+      if (dragRafIdRef.current !== null) {
+        cancelAnimationFrame(dragRafIdRef.current);
+        dragRafIdRef.current = null;
+      }
+      setPan(targetPanRef.current);
+
+      const now = performance.now();
+      const recent = mouseHistoryRef.current.filter((p) => now - p.time <= 100);
+      if (recent.length >= 2) {
+        const first = recent[0];
+        const last = recent[recent.length - 1];
+        const dt = Math.max(12, last.time - first.time);
+        const vx = ((last.x - first.x) / dt) * 16;
+        const vy = ((last.y - first.y) / dt) * 16;
+        const speed = Math.hypot(vx, vy);
+        const maxSpeed = 38;
+        const scale = speed > maxSpeed ? maxSpeed / speed : 1;
+        velocityRef.current = {
+          x: vx * scale,
+          y: vy * scale,
+        };
+      } else {
+        velocityRef.current = { x: 0, y: 0 };
+      }
+
       startMomentum();
     };
 
@@ -548,6 +638,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         style={{
           perspective: '1200px',
           touchAction: 'none',
+          overscrollBehavior: 'none',
           WebkitTouchCallout: 'none',
           WebkitUserSelect: 'none',
           userSelect: 'none',
@@ -714,6 +805,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                   pointerEvents: item.opacity > 0.2 ? 'auto' : 'none',
                   backfaceVisibility: 'hidden',
                   WebkitBackfaceVisibility: 'hidden',
+                  willChange: 'transform, opacity',
+                  contain: 'layout style paint',
                   touchAction: 'none',
                 }}
                 className="group cursor-pointer select-none touch-none"
