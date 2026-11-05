@@ -805,8 +805,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                   pointerEvents: item.opacity > 0.2 ? 'auto' : 'none',
                   backfaceVisibility: 'hidden',
                   WebkitBackfaceVisibility: 'hidden',
-                  willChange: 'transform, opacity',
-                  contain: 'layout style paint',
+                  borderRadius: isMobile ? '18px' : '24px',
                   touchAction: 'none',
                 }}
                 className="group cursor-pointer select-none touch-none"
