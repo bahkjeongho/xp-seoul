@@ -333,16 +333,16 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
               </div>
 
               {/* View Mode Switcher Pill */}
-              <div className="hidden sm:flex items-center bg-[#f4f4f5] p-1 rounded-full border border-black/8 font-sans text-xs ml-2">
+              <div className="flex items-center bg-[#f4f4f5] p-0.5 sm:p-1 rounded-full border border-black/8 font-sans text-[11px] sm:text-xs ml-1 sm:ml-2">
                 <button
                   onClick={() => setViewMode('stream')}
-                  className="px-3 py-1 rounded-full bg-white text-black font-semibold shadow-2xs"
+                  className="px-2.5 sm:px-3 py-1 rounded-full bg-white text-black font-semibold shadow-2xs"
                 >
                   Stream
                 </button>
                 <button
                   onClick={() => setViewMode('globe')}
-                  className="px-3.5 py-1 rounded-full text-[#666666] hover:text-black transition-colors"
+                  className="px-2.5 sm:px-3.5 py-1 rounded-full text-[#666666] hover:text-black transition-colors"
                 >
                   Globe
                 </button>
@@ -650,6 +650,39 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
                       <div className="text-xs text-[#888888]">{item.desc}</div>
                     </button>
                   ))}
+
+                  {/* Mode switcher inside mobile menu */}
+                  <div className="pt-2 flex flex-col gap-2">
+                    <span className="text-[11px] uppercase tracking-wider text-[#888888]">View Layout</span>
+                    <div className="flex items-center bg-[#f4f4f5] p-1 rounded-full border border-black/8 font-sans text-xs">
+                      <button
+                        onClick={() => {
+                          setViewMode('stream');
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`flex-1 py-1.5 rounded-full text-center transition-all ${
+                          viewMode === 'stream'
+                            ? 'bg-white text-black font-semibold shadow-2xs'
+                            : 'text-[#666666]'
+                        }`}
+                      >
+                        Stream
+                      </button>
+                      <button
+                        onClick={() => {
+                          setViewMode('globe');
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`flex-1 py-1.5 rounded-full text-center transition-all ${
+                          viewMode === 'globe'
+                            ? 'bg-white text-black font-semibold shadow-2xs'
+                            : 'text-[#666666]'
+                        }`}
+                      >
+                        Globe
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
