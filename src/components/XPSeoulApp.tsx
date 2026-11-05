@@ -342,11 +342,9 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
                 </button>
                 <button
                   onClick={() => setViewMode('globe')}
-                  className="px-3 py-1 rounded-full text-[#666666] hover:text-black flex items-center gap-1.5 transition-colors"
+                  className="px-3.5 py-1 rounded-full text-[#666666] hover:text-black transition-colors"
                 >
-                  <Sparkles className="w-3 h-3 text-indigo-500" />
-                  <span>Globe</span>
-                  <span className="text-[9px] bg-black text-white px-1.5 py-0.2 rounded-full font-mono">BETA</span>
+                  Globe
                 </button>
               </div>
             </div>

@@ -3,11 +3,9 @@ import type { NoteItem, TaxonomyData } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
-  Compass, 
   RotateCcw, 
-  Sparkles,
-  SlidersHorizontal,
-  ChevronRight
+  ChevronDown,
+  X
 } from 'lucide-react';
 import { NoteDetailPanel } from './NoteDetailPanel';
 
@@ -36,9 +34,11 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
   const panRef = useRef({ x: 0, y: 0 });
   panRef.current = pan;
 
-  // Filter & Search states
+  // Hierarchical Filter & Search states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
 
   // Active / Selected note for inflation modal
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
@@ -66,11 +66,19 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
-  // Filter notes
+  // Filter notes hierarchically
   const filteredNotes = useMemo(() => {
     let result = notes;
     if (selectedCategory) {
       result = result.filter((n) => n.category === selectedCategory);
+    }
+    if (selectedSubCategory) {
+      result = result.filter((n) => n.subCategory === selectedSubCategory);
+    }
+    if (selectedTopic) {
+      result = result.filter(
+        (n) => n.topic === selectedTopic || (n.topics && n.topics.includes(selectedTopic))
+      );
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -82,22 +90,22 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       );
     }
     return result;
-  }, [notes, selectedCategory, searchQuery]);
+  }, [notes, selectedCategory, selectedSubCategory, selectedTopic, searchQuery]);
 
-  // Card grid geometry matching Figma (175px x 175px squircle)
-  const CARD_W = 175;
-  const CARD_H = 175;
-  const GAP = 26;
-  const STEP_X = CARD_W + GAP; // 201px
-  const STEP_Y = CARD_H + GAP; // 201px
+  // Card grid geometry: dense, tight 12px gap matching reference video
+  const CARD_W = 172;
+  const CARD_H = 172;
+  const GAP = 12; // tightly packed!
+  const STEP_X = CARD_W + GAP; // 184px
+  const STEP_Y = CARD_H + GAP; // 184px
 
   // Grid columns based on notes length
   const GRID_COLS = useMemo(() => {
-    return Math.max(14, Math.ceil(Math.sqrt(Math.max(1, filteredNotes.length) * 1.5)));
+    return Math.max(16, Math.ceil(Math.sqrt(Math.max(1, filteredNotes.length) * 1.5)));
   }, [filteredNotes.length]);
 
   const GRID_ROWS = useMemo(() => {
-    return Math.max(14, Math.ceil(Math.max(1, filteredNotes.length) / GRID_COLS));
+    return Math.max(16, Math.ceil(Math.max(1, filteredNotes.length) / GRID_COLS));
   }, [filteredNotes.length, GRID_COLS]);
 
   // Smooth Momentum glide physics on release
@@ -250,6 +258,11 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
   // Sphere radius
   const sphereRadius = Math.max(dimensions.width, dimensions.height) * 0.65;
 
+  // Header height & Top-right filter zone boundary to prevent card overlap
+  const HEADER_H = 57;
+  const filterAreaLeft = dimensions.width - 240;
+  const filterAreaBottom = 540;
+
   // Compute visible cards with 3D Spherical projection
   const visibleCards = useMemo(() => {
     if (filteredNotes.length === 0) return [];
@@ -289,20 +302,29 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         const note = filteredNotes[noteIndex];
         if (!note) continue;
 
-        const normDist = dist / sphereRadius;
-        const theta = normDist * (Math.PI / 2.2);
+        const normDist = Math.min(1.05, dist / sphereRadius);
 
-        const curvedDist = sphereRadius * Math.sin(theta);
-        const ratio = dist > 0 ? curvedDist / dist : 1;
-        const screenX = cx + dx * ratio - CARD_W / 2;
-        const screenY = cy + dy * ratio - CARD_H / 2;
+        // Spherical compression where center is exact 1.0 (cards stay tightly packed with 12px gap)
+        const compression = 1 - 0.26 * Math.pow(Math.min(1, normDist), 1.8);
+        const rawScreenX = cx + dx * compression - CARD_W / 2;
+        const rawScreenY = cy + dy * compression - CARD_H / 2;
 
-        const rotY = (dx / sphereRadius) * 40;
-        const rotX = -(dy / sphereRadius) * 40;
+        // Round to whole pixels to prevent subpixel text fuzziness
+        const screenX = Math.round(rawScreenX);
+        const screenY = Math.round(rawScreenY);
 
-        // Size differentiation: cards near center are 1.0, gently scaling down to 0.72 at perimeter
-        const scale = Math.max(0.72, 1 - Math.pow(normDist, 1.7) * 0.28);
-        const opacity = Math.max(0, 1 - Math.pow(normDist, 2.5));
+        // Do not render cards that are behind the header bar or in top-right filter area
+        if (screenY + CARD_H < HEADER_H) continue;
+        const activeFilterBottom = selectedCategory ? 640 : 460;
+        if (screenX + CARD_W > filterAreaLeft && screenY < activeFilterBottom) continue;
+
+        // Mild 3D tilt
+        const rotY = Number(((dx / sphereRadius) * 32).toFixed(1));
+        const rotX = Number((-(dy / sphereRadius) * 32).toFixed(1));
+
+        // Center: 1.0, gently scaling down to 0.74 at perimeter
+        const scale = Number(Math.max(0.74, 1 - Math.pow(normDist, 1.8) * 0.26).toFixed(2));
+        const opacity = Number(Math.max(0, 1 - Math.pow(normDist, 2.5)).toFixed(2));
         const zIndex = Math.round((1 - normDist) * 100);
 
         items.push({
@@ -333,6 +355,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     GRID_ROWS,
     STEP_X,
     STEP_Y,
+    filterAreaLeft,
+    filterAreaBottom,
   ]);
 
   // Handle card click
@@ -356,14 +380,35 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     setSelectedNote(note);
   };
 
-  const handleResetPosition = () => {
+  // Reset all filters and position
+  const handleResetAll = () => {
+    setSelectedCategory(null);
+    setSelectedSubCategory(null);
+    setSelectedTopic(null);
+    setSearchQuery('');
     setPan({ x: 0, y: 0 });
   };
 
-  // Top categories for vertical filter stack
-  const topCategories = useMemo(() => {
-    return Object.keys(taxonomy);
+  // Categories list
+  const categories = useMemo(() => {
+    return Object.keys(taxonomy).sort((a, b) => (taxonomy[b]?.count || 0) - (taxonomy[a]?.count || 0));
   }, [taxonomy]);
+
+  // Sub-categories of selected category
+  const subCategories = useMemo(() => {
+    if (!selectedCategory || !taxonomy[selectedCategory]) return [];
+    const subs = taxonomy[selectedCategory].subCategories || {};
+    return Object.keys(subs).sort((a, b) => (subs[b]?.count || 0) - (subs[a]?.count || 0));
+  }, [selectedCategory, taxonomy]);
+
+  // Topics of selected sub-category
+  const topics = useMemo(() => {
+    if (!selectedCategory || !selectedSubCategory || !taxonomy[selectedCategory]) return [];
+    const topMap = taxonomy[selectedCategory].subCategories?.[selectedSubCategory]?.topics || {};
+    return Object.keys(topMap).sort((a, b) => (topMap[b] || 0) - (topMap[a] || 0));
+  }, [selectedCategory, selectedSubCategory, taxonomy]);
+
+  const hasActiveFilter = Boolean(selectedCategory || selectedSubCategory || selectedTopic || searchQuery);
 
   return (
     <div
@@ -378,28 +423,27 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       className="w-full h-screen relative overflow-hidden select-none bg-[#fbfbfb] text-black cursor-grab active:cursor-grabbing font-sans"
       style={{ perspective: '1200px' }}
     >
-      {/* --- TOP CONTROL HEADER (Clean Monotone) --- */}
-      <header className="interactive-control fixed top-0 inset-x-0 z-50 px-6 py-3.5 flex items-center justify-between bg-[#fbfbfb]/96 backdrop-blur-2xl border-b border-black/8 select-none">
+      {/* --- TOP HEADER (Solid 100% Opaque, identical height to Stream mode) --- */}
+      <header className="interactive-control fixed top-0 inset-x-0 z-50 px-4 lg:px-8 py-3 flex items-center justify-between bg-white border-b border-[#eeeeee] select-none h-[57px] shadow-2xs">
         {/* Left: Brand & Mode Switcher */}
-        <div className="flex items-center gap-4 shrink-0">
-          <div className="flex items-baseline gap-2">
-            <span className="font-extrabold text-xl tracking-tight text-black font-sans">XP Seoul</span>
-            <span className="font-mono text-[10px] text-[#888888] uppercase tracking-widest hidden sm:inline">
-              Globe
-            </span>
-          </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={handleResetAll}
+            className="font-black text-2xl tracking-tight text-black font-sans hover:opacity-75 transition-opacity"
+          >
+            XP Seoul
+          </button>
 
-          {/* Mode Switcher Pill */}
-          <div className="flex items-center bg-[#f0f0f2] p-1 rounded-full border border-black/5 font-sans text-xs">
+          {/* Mode Switcher Pill (No star icon!) */}
+          <div className="flex items-center bg-[#f4f4f5] p-1 rounded-full border border-black/8 font-sans text-xs ml-2">
             <button
               onClick={onSwitchToStream}
               className="px-3 py-1 rounded-full text-[#666666] hover:text-black transition-colors"
             >
               Stream
             </button>
-            <button className="px-3.5 py-1 rounded-full bg-white text-black font-semibold shadow-2xs flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-black" />
-              <span>Globe</span>
+            <button className="px-3.5 py-1 rounded-full bg-white text-black font-semibold shadow-2xs">
+              Globe
             </button>
           </div>
         </div>
@@ -412,75 +456,155 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
             placeholder="Search notes on globe..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 rounded-full bg-[#f4f4f6] border border-black/5 text-xs text-black placeholder-[#999999] focus:outline-hidden focus:bg-white focus:border-black/20 transition-all font-sans"
+            className="w-full pl-9 pr-3 py-1.5 rounded-full bg-[#f4f4f5] border border-black/8 text-xs text-black placeholder-[#888888] focus:outline-hidden focus:bg-white focus:border-black/25 transition-all font-sans"
           />
         </div>
 
-        {/* Right Info & Reset */}
+        {/* Right: Visible Count */}
         <div className="flex items-center gap-3 shrink-0 font-sans">
-          <span className="font-mono text-[11px] text-[#888888] hidden md:inline">
-            <span className="font-semibold text-black">{filteredNotes.length.toLocaleString()}</span> Notes
+          <span className="font-mono text-[11px] text-[#888888]">
+            Archive · <span className="font-semibold text-black">{filteredNotes.length.toLocaleString()}</span>
           </span>
-          <button
-            onClick={handleResetPosition}
-            title="Reset Globe Center"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f4f4f6] hover:bg-[#eaeaea] text-[#555555] hover:text-black transition-all active:scale-95 border border-black/5 text-xs"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span className="hidden sm:inline">Reset</span>
-          </button>
         </div>
       </header>
 
-      {/* --- RIGHT FLOATING FILTER STACK (Exact Figma Style) --- */}
-      <div className="interactive-control fixed right-6 top-1/2 -translate-y-1/2 z-40 flex flex-col items-end gap-2 select-none font-sans">
-        <div className="bg-white/80 backdrop-blur-2xl border border-black/8 p-2 rounded-[22px] shadow-[0_12px_36px_rgba(0,0,0,0.06)] flex flex-col gap-1.5 max-h-[70vh] overflow-y-auto no-scrollbar">
-          <div className="px-3 py-1 text-[10px] font-mono uppercase tracking-wider text-[#999999] flex items-center gap-1.5">
-            <SlidersHorizontal className="w-3 h-3 text-black" />
-            <span>Filter</span>
-          </div>
+      {/* --- RIGHT TOP FLOATING FILTER BUTTONS (Individual Pills, No Box Container) --- */}
+      <div className="interactive-control fixed top-[72px] right-6 z-40 flex flex-col items-end gap-1.5 select-none font-sans max-h-[82vh] overflow-y-auto no-scrollbar pb-6">
+        {/* 1. Reset Button attached right at the top of the filters */}
+        <button
+          onClick={handleResetAll}
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full shadow-xs border transition-all text-xs font-sans font-medium active:scale-95 mb-0.5 ${
+            hasActiveFilter
+              ? 'bg-black text-white border-black'
+              : 'bg-white text-[#555555] border-black/8 hover:text-black hover:bg-[#f5f5f5]'
+          }`}
+        >
+          <RotateCcw className="w-3 h-3" />
+          <span>Reset</span>
+        </button>
 
-          <button
-            onClick={() => setSelectedCategory(null)}
-            className={`px-4 py-2 rounded-xl text-xs font-medium transition-all text-left flex items-center justify-between gap-3 ${
-              !selectedCategory
-                ? 'bg-black text-white shadow-xs'
-                : 'bg-[#f4f4f6] text-[#444444] hover:bg-[#eaeaea] hover:text-black'
-            }`}
-          >
-            <span>All</span>
-            <span className={`text-[10px] font-mono ${!selectedCategory ? 'text-white/70' : 'text-[#888888]'}`}>
-              {notes.length}
-            </span>
-          </button>
+        {/* 2. All Notes Pill */}
+        <button
+          onClick={() => {
+            setSelectedCategory(null);
+            setSelectedSubCategory(null);
+            setSelectedTopic(null);
+          }}
+          className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all shadow-xs border text-right ${
+            !selectedCategory
+              ? 'bg-black text-white border-black font-semibold'
+              : 'bg-white text-[#333333] border-black/8 hover:bg-black hover:text-white'
+          }`}
+        >
+          All ({notes.length})
+        </button>
 
-          {topCategories.map((cat) => {
-            const isSelected = selectedCategory === cat;
-            return (
+        {/* 3. Level 1: Categories */}
+        {categories.map((cat) => {
+          const isCatSelected = selectedCategory === cat;
+          return (
+            <div key={cat} className="flex flex-col items-end gap-1 w-full">
+              {/* Category Pill Button */}
               <button
-                key={cat}
-                onClick={() => setSelectedCategory(isSelected ? null : cat)}
-                className={`px-4 py-2 rounded-xl text-xs font-medium transition-all text-left flex items-center justify-between gap-3 ${
-                  isSelected
-                    ? 'bg-black text-white shadow-xs'
-                    : 'bg-[#f4f4f6] text-[#444444] hover:bg-[#eaeaea] hover:text-black'
+                onClick={() => {
+                  if (isCatSelected) {
+                    setSelectedCategory(null);
+                    setSelectedSubCategory(null);
+                    setSelectedTopic(null);
+                  } else {
+                    setSelectedCategory(cat);
+                    setSelectedSubCategory(null);
+                    setSelectedTopic(null);
+                  }
+                }}
+                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all shadow-xs border flex items-center justify-end gap-1.5 ${
+                  isCatSelected
+                    ? 'bg-black text-white border-black font-semibold'
+                    : 'bg-white text-[#333333] border-black/8 hover:bg-black hover:text-white'
                 }`}
               >
                 <span>{cat}</span>
-                {isSelected && <ChevronRight className="w-3 h-3 text-white" />}
+                {isCatSelected && <ChevronDown className="w-3 h-3 text-white" />}
               </button>
-            );
-          })}
-        </div>
+
+              {/* Level 2: Sub-Categories (Unfolds right below selected category) */}
+              <AnimatePresence>
+                {isCatSelected && subCategories.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex flex-col items-end gap-1 pr-1.5 my-0.5 overflow-hidden"
+                  >
+                    {subCategories.slice(0, 10).map((sub) => {
+                      const isSubSelected = selectedSubCategory === sub;
+                      return (
+                        <div key={sub} className="flex flex-col items-end gap-1 w-full">
+                          <button
+                            onClick={() => {
+                              if (isSubSelected) {
+                                setSelectedSubCategory(null);
+                                setSelectedTopic(null);
+                              } else {
+                                setSelectedSubCategory(sub);
+                                setSelectedTopic(null);
+                              }
+                            }}
+                            className={`px-3 py-1 rounded-full text-[11px] font-sans font-medium transition-all shadow-2xs border ${
+                              isSubSelected
+                                ? 'bg-[#333333] text-white border-[#333333]'
+                                : 'bg-[#f4f4f6] text-[#444444] border-black/6 hover:bg-[#e8e8ea] hover:text-black'
+                            }`}
+                          >
+                            ↳ {sub}
+                          </button>
+
+                          {/* Level 3: Topics (Unfolds right below selected sub-category) */}
+                          <AnimatePresence>
+                            {isSubSelected && topics.length > 0 && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="flex flex-col items-end gap-1 pr-1.5 my-0.5 overflow-hidden"
+                              >
+                                {topics.slice(0, 8).map((top) => {
+                                  const isTopSelected = selectedTopic === top;
+                                  return (
+                                    <button
+                                      key={top}
+                                      onClick={() => setSelectedTopic(isTopSelected ? null : top)}
+                                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono transition-all border ${
+                                        isTopSelected
+                                          ? 'bg-black text-white border-black font-semibold'
+                                          : 'bg-white text-[#666666] border-black/10 hover:border-black/30 hover:text-black'
+                                      }`}
+                                    >
+                                      • {top}
+                                    </button>
+                                  );
+                                })}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
       </div>
 
-      {/* --- FLOATING HELPER HINT --- */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-4 py-2 rounded-full bg-white/85 backdrop-blur-md border border-black/8 text-[11px] font-sans text-[#666666] flex items-center gap-2 shadow-[0_6px_20px_rgba(0,0,0,0.06)]">
-        <Compass className="w-3.5 h-3.5 text-black animate-spin" style={{ animationDuration: '16s' }} />
+      {/* --- BOTTOM FLOATING HELPER HINT --- */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-4 py-2 rounded-full bg-white/90 backdrop-blur-md border border-black/8 text-[11px] font-sans text-[#666666] flex items-center gap-2 shadow-[0_6px_20px_rgba(0,0,0,0.06)]">
+        <span className="w-1.5 h-1.5 rounded-full bg-black/60" />
         <span>Drag freely in all directions · Click note to inflate</span>
       </div>
 
-      {/* --- 3D GLOBE CARDS LAYER (Figma Light Aesthetic) --- */}
+      {/* --- 3D GLOBE CARDS LAYER (Crisp Text, No Blur, Dense 12px Gap) --- */}
       <div
         className={`absolute inset-0 transition-opacity duration-300 ${
           selectedNote ? 'opacity-20 pointer-events-none' : 'pointer-events-none'
@@ -499,34 +623,39 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                 height: `${CARD_H}px`,
                 left: 0,
                 top: 0,
-                transform: `translate3d(${item.screenX}px, ${item.screenY}px, 0px) rotateX(${item.rotX}deg) rotateY(${item.rotY}deg) scale(${item.scale})`,
+                transform: `translate3d(${item.screenX}px, ${item.screenY}px, 0px) rotateX(${item.rotX}deg) rotateY(${item.rotY}deg) scale(${item.scale}) translateZ(0)`,
                 opacity: item.opacity,
                 zIndex: item.zIndex,
                 pointerEvents: item.opacity > 0.2 ? 'auto' : 'none',
+                backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden',
               }}
               className="group cursor-pointer select-none"
             >
-              {/* Figma Liquid Glass Squircle Card */}
+              {/* Opaque white card for 100% razor sharp text rendering */}
               <div
                 style={{
-                  borderRadius: '26px',
+                  borderRadius: '24px',
+                  WebkitFontSmoothing: 'antialiased',
+                  MozOsxFontSmoothing: 'grayscale',
+                  textRendering: 'optimizeLegibility',
                 }}
-                className="w-full h-full p-4 flex flex-col items-start gap-[9px] bg-white/95 backdrop-blur-xl border border-black/8 shadow-[0_10px_28px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] transition-all duration-300 group-hover:border-black/25 group-hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)] group-hover:-translate-y-1 relative overflow-hidden"
+                className="w-full h-full p-3.5 flex flex-col items-start gap-[8px] bg-white border border-black/8 shadow-[0_4px_16px_rgba(0,0,0,0.06),0_1px_4px_rgba(0,0,0,0.03)] transition-all duration-200 group-hover:border-black/25 group-hover:shadow-[0_10px_28px_rgba(0,0,0,0.12)] relative overflow-hidden"
               >
-                {/* 1. Title (Figma Bold 17px) */}
-                <h3 className="font-sans font-bold text-[17px] text-black tracking-[-0.04em] leading-tight line-clamp-1 w-full shrink-0">
+                {/* 1. Title: Crisp Bold Geist Sans */}
+                <h3 className="font-sans font-bold text-[15.5px] text-black tracking-[-0.03em] leading-tight line-clamp-1 w-full shrink-0 antialiased">
                   {item.note.title}
                 </h3>
 
-                {/* 2. Topic Badge (Figma bg-[#1e1e1e] badge) */}
+                {/* 2. Topic Badge */}
                 <div className="bg-[#1e1e1e] flex items-center justify-center px-2 py-0.5 rounded-[4px] shrink-0 max-w-full truncate">
-                  <p className="font-mono text-[#ececec] text-[9.5px] tracking-[-0.2px] uppercase whitespace-nowrap truncate font-medium">
+                  <p className="font-mono text-[#ececec] text-[9.5px] tracking-tight uppercase whitespace-nowrap truncate font-medium antialiased">
                     {item.note.topic || item.note.category}
                   </p>
                 </div>
 
-                {/* 3. tl;dr / Summary (Figma 10px text, 16px leading) */}
-                <p className="text-[10px] text-[#444444] font-sans leading-[16px] tracking-[-0.3px] line-clamp-3 w-full">
+                {/* 3. tl;dr / Summary */}
+                <p className="text-[10px] text-[#444444] font-sans leading-[15px] tracking-tight line-clamp-3 w-full antialiased">
                   {tldrText}
                 </p>
               </div>
@@ -556,7 +685,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                 opacity: 0,
                 x: clickOrigin ? clickOrigin.x - cx : 0,
                 y: clickOrigin ? clickOrigin.y - cy : 0,
-                borderRadius: 26,
+                borderRadius: 24,
               }}
               animate={{
                 scale: 1,
@@ -570,7 +699,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                 opacity: 0,
                 x: clickOrigin ? clickOrigin.x - cx : 0,
                 y: clickOrigin ? clickOrigin.y - cy : 0,
-                borderRadius: 26,
+                borderRadius: 24,
               }}
               transition={{
                 type: 'spring',
