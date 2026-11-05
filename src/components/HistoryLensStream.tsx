@@ -160,21 +160,18 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
               }}
               animate={{
                 y: yOffset,
+                x: '-50%',
                 scale: scale,
                 opacity: opacity,
               }}
+              style={{ left: '50%', zIndex }}
               transition={{
                 type: 'spring',
                 stiffness: 300,
                 damping: 30,
                 mass: 0.8,
               }}
-              whileHover={{
-                scale: scale * 1.02,
-                cursor: 'pointer',
-              }}
-              style={{ zIndex }}
-              className={`absolute w-[250px] lg:w-[280px] h-[48px] px-3 py-1.5 flex items-center justify-between rounded-xl transition-all cursor-pointer ${
+              className={`absolute w-[calc(100%-48px)] max-w-[280px] h-[48px] px-3 py-1.5 flex items-center justify-between rounded-xl transition-all cursor-pointer ${
                 isTopFocus
                   ? isCurrentlySelected
                     ? 'bg-black text-white shadow-[0_6px_22px_rgba(0,0,0,0.18)] border border-black ring-1 ring-black/20'

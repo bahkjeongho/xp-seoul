@@ -92,9 +92,7 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
     <div
       ref={containerRef}
       onWheel={handleWheel}
-      className={`h-full relative overflow-hidden flex flex-col items-center justify-center select-none bg-[#fbfbfb] transition-all duration-500 ${
-        isCompact ? 'w-[280px] lg:w-[320px] shrink-0 border-r border-[#e8e8e8]' : 'flex-1'
-      }`}
+      className="h-full w-full relative overflow-hidden flex flex-col items-center justify-center select-none bg-[#fbfbfb] transition-all duration-500"
     >
       {/* Target Focus Ring (Figma frame style) */}
       <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center justify-center px-4">
@@ -143,9 +141,11 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
               }}
               animate={{
                 y: yOffset,
+                x: '-50%',
                 scale: scale,
                 opacity: opacity,
               }}
+              style={{ left: '50%' }}
               transition={{
                 type: 'spring',
                 stiffness: 280,
@@ -162,7 +162,7 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
                   : 'bg-white/80 border border-black/5 z-10 hover:bg-white hover:opacity-90'
               } ${
                 isCompact
-                  ? 'w-[250px] lg:w-[280px] h-[82px] px-3.5 py-2.5'
+                  ? 'w-[calc(100%-48px)] max-w-[280px] h-[82px] px-3.5 py-2.5'
                   : 'w-[calc(100vw-32px)] max-w-[350px] sm:max-w-[500px] md:max-w-[620px] lg:max-w-[700px] h-[110px] sm:h-[120px] lg:h-[132px] px-4 sm:px-6 py-3 sm:py-4'
               }`}
             >

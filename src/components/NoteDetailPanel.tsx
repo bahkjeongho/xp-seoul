@@ -181,7 +181,7 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
       </div>
 
       {/* Main Scrollable Canvas (Width tailored to 1080px) */}
-      <div className="flex-1 overflow-y-auto px-6 lg:px-12 py-8 flex flex-col items-center">
+      <div className={`flex-1 overflow-y-auto px-6 lg:px-12 py-8 flex flex-col items-center ${isMobile ? 'pb-28' : ''}`}>
         <div className="w-full max-w-[1080px] flex flex-col gap-6">
 
           {/* (1) Title Row & Top Right Taxonomy Hierarchy Buttons */}

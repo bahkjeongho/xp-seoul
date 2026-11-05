@@ -2,12 +2,13 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import type { NoteItem, TaxonomyData } from '../types';
 import { TopFilterBar } from './TopFilterBar';
 import { MiddleNavColumn } from './MiddleNavColumn';
+import { MobileDetailBottomSheet } from './MobileDetailBottomSheet';
 import { NoteDetailPanel } from './NoteDetailPanel';
 import { MenuNav } from './MenuNav';
 import { BlogView } from './BlogView';
 import { AboutView } from './AboutView';
 import { AnimatePresence, motion } from 'framer-motion';
-import { SlidersHorizontal, Menu as MenuIcon, X, AlertCircle } from 'lucide-react';
+import { History, SlidersHorizontal, Menu as MenuIcon, X, AlertCircle } from 'lucide-react';
 
 interface XPSeoulAppProps {
   initialNotes?: NoteItem[];
@@ -42,6 +43,10 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  // Mobile Bottom Sheet State (History & Filter while reading notes)
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState<boolean>(false);
+  const [mobileSheetTab, setMobileSheetTab] = useState<'history' | 'filter'>('history');
 
   // Detect Mobile Viewport
   useEffect(() => {
@@ -425,6 +430,80 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
 
         {activeMenu === 'about' && <AboutView />}
       </main>
+
+      {/* --- MOBILE NOTE READING FLOATING CONTROLLER BAR --- */}
+      <AnimatePresence>
+        {isMobile && isDetailOpen && selectedNote && !isMobileSheetOpen && (
+          <motion.div
+            initial={{ y: 60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 60, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+            className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#111111]/92 backdrop-blur-md text-white rounded-full px-3.5 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.35)] flex items-center gap-2 border border-white/15 select-none"
+          >
+            <button
+              onClick={() => {
+                setMobileSheetTab('history');
+                setIsMobileSheetOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono hover:bg-white/10 active:bg-white/20 transition-colors"
+            >
+              <History className="w-3.5 h-3.5 text-white" />
+              <span>History</span>
+              <span className="text-[10px] text-white/60">({historyNotes.length})</span>
+            </button>
+
+            <div className="w-px h-3.5 bg-white/20" />
+
+            <button
+              onClick={() => {
+                setMobileSheetTab('filter');
+                setIsMobileSheetOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono hover:bg-white/10 active:bg-white/20 transition-colors"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-white" />
+              <span>Filter</span>
+              {selectedCategory && (
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00ff88]" />
+              )}
+            </button>
+
+            <div className="w-px h-3.5 bg-white/20" />
+
+            <button
+              onClick={() => selectNoteWithHistory(null, true)}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono text-[#ff8888] hover:bg-white/10 active:bg-white/20 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Close</span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- MOBILE NOTE READING BOTTOM SHEET MODAL (History & Filter) --- */}
+      <MobileDetailBottomSheet
+        isOpen={isMobile && isMobileSheetOpen}
+        activeTab={mobileSheetTab}
+        onChangeTab={setMobileSheetTab}
+        onClose={() => setIsMobileSheetOpen(false)}
+        historyNotes={historyNotes}
+        selectedNote={selectedNote}
+        notes={filteredNotes}
+        taxonomy={taxonomy}
+        selectedCategory={selectedCategory}
+        selectedSubCategory={selectedSubCategory}
+        selectedTopic={selectedTopic}
+        onSelectNote={(note) => {
+          selectNoteWithHistory(note, true);
+          setIsMobileSheetOpen(false);
+        }}
+        onSelectCategory={setSelectedCategory}
+        onSelectSubCategory={setSelectedSubCategory}
+        onSelectTopic={setSelectedTopic}
+        onResetFilters={handleResetFilters}
+      />
 
       {/* --- MOBILE FILTER DRAWER MODAL --- */}
       <AnimatePresence>
