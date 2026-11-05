@@ -97,12 +97,12 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
       }`}
     >
       {/* Target Focus Ring (Figma frame style) */}
-      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center justify-center">
+      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center justify-center px-4">
         <div
           className={`border border-black/10 rounded-2xl pointer-events-none transition-all duration-500 ${
             isCompact
               ? 'w-[260px] lg:w-[290px] h-[90px]'
-              : 'w-[640px] lg:w-[720px] h-[130px] lg:h-[140px]'
+              : 'w-full max-w-[360px] sm:max-w-[520px] md:max-w-[640px] lg:max-w-[720px] h-[120px] sm:h-[130px] lg:h-[140px]'
           }`}
         />
       </div>
@@ -163,7 +163,7 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
               } ${
                 isCompact
                   ? 'w-[250px] lg:w-[280px] h-[82px] px-3.5 py-2.5'
-                  : 'w-[620px] lg:w-[700px] h-[120px] lg:h-[132px] px-6 py-4'
+                  : 'w-[calc(100vw-32px)] max-w-[350px] sm:max-w-[500px] md:max-w-[620px] lg:max-w-[700px] h-[110px] sm:h-[120px] lg:h-[132px] px-4 sm:px-6 py-3 sm:py-4'
               }`}
             >
               {/* Left Side: Title & Topic */}
@@ -205,28 +205,33 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
                 </div>
               </div>
 
-              {/* Right Side: tl;dr and Info Callout Snippets (Hidden or minimal in compact mode) */}
+              {/* Right Side: tl;dr and Info Callout Snippets (Hidden or minimal in compact / mobile mode) */}
               {!isCompact ? (
-                <div className="flex flex-col justify-center items-end text-right w-[240px] lg:w-[280px] pl-4 border-l border-[#f0f0f0]">
-                  {note.tldr ? (
-                    <p className="text-xs text-[#333333] leading-snug line-clamp-2 font-sans mb-1.5">
-                      {note.tldr}
-                    </p>
-                  ) : note.info ? (
-                    <p className="text-xs text-[#555555] leading-snug line-clamp-2 font-sans mb-1.5">
-                      {note.info}
-                    </p>
-                  ) : (
-                    <p className="text-[11px] font-mono text-[#aaaaaa] italic">
-                      Click to explore full note
-                    </p>
-                  )}
+                <>
+                  <div className="hidden sm:flex flex-col justify-center items-end text-right w-[240px] lg:w-[280px] pl-4 border-l border-[#f0f0f0]">
+                    {note.tldr ? (
+                      <p className="text-xs text-[#333333] leading-snug line-clamp-2 font-sans mb-1.5">
+                        {note.tldr}
+                      </p>
+                    ) : note.info ? (
+                      <p className="text-xs text-[#555555] leading-snug line-clamp-2 font-sans mb-1.5">
+                        {note.info}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] font-mono text-[#aaaaaa] italic">
+                        Click to explore full note
+                      </p>
+                    )}
 
-                  <div className="flex items-center gap-1 text-[11px] font-mono text-[#888888]">
-                    <span>Open Note</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <div className="flex items-center gap-1 text-[11px] font-mono text-[#888888]">
+                      <span>Open Note</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </div>
                   </div>
-                </div>
+                  <div className="sm:hidden shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-[#f4f4f4] text-black">
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
+                </>
               ) : (
                 <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-[#f4f4f4] text-black">
                   <ArrowRight className="w-3.5 h-3.5" />

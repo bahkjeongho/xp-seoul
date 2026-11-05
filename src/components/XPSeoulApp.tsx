@@ -6,7 +6,8 @@ import { NoteDetailPanel } from './NoteDetailPanel';
 import { MenuNav } from './MenuNav';
 import { BlogView } from './BlogView';
 import { AboutView } from './AboutView';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { SlidersHorizontal, Menu as MenuIcon, X } from 'lucide-react';
 
 interface XPSeoulAppProps {
   initialNotes?: NoteItem[];
@@ -31,17 +32,32 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
   const [activeMenu, setActiveMenu] = useState<'wiki' | 'blog' | 'about'>('wiki');
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
 
+  // Mobile Drawer State
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  // Detect Mobile Viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // Client-side fetch fallback if props were not provided at SSR
   useEffect(() => {
     if (notes.length === 0) {
       Promise.all([
-        fetch('/data/notes-light.json').then(r => r.json()),
-        fetch('/data/taxonomy.json').then(r => r.json()),
+        fetch('/data/notes-light.json').then((r) => r.json()),
+        fetch('/data/taxonomy.json').then((r) => r.json()),
       ]).then(([notesData, taxData]) => {
         setNotes(notesData);
         setTaxonomy(taxData);
         setIsLoading(false);
-      }).catch(err => {
+      }).catch((err) => {
         console.error('Failed to load local data:', err);
         setIsLoading(false);
       });
@@ -56,28 +72,64 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
     setSearchQuery('');
   };
 
+  // Wikilink click navigation handler (Core Feature)
+  const handleNavigateWikilink = (target: string) => {
+    if (!target) return;
+    const clean = target.replace(/^\[\[/, '').replace(/\]\]$/, '').trim().toLowerCase();
+
+    // 1. Try finding a note with matching title, id, or alias
+    const matchedNote = notes.find(
+      (n) =>
+        n.title.toLowerCase() === clean ||
+        n.id.toLowerCase() === clean ||
+        (n.aliases && n.aliases.some((a) => a.toLowerCase() === clean))
+    );
+
+    if (matchedNote) {
+      setSelectedNote(matchedNote);
+      setActiveMenu('wiki');
+      return;
+    }
+
+    // 2. Try matching Category
+    const categoryMatch = Object.keys(taxonomy).find((c) => c.toLowerCase() === clean);
+    if (categoryMatch) {
+      setSelectedCategory(categoryMatch);
+      setSelectedSubCategory(null);
+      setSelectedTopic(null);
+      setSelectedNote(null);
+      return;
+    }
+
+    // 3. Fallback: Search the term across the vault
+    setSearchQuery(target);
+    setSelectedNote(null);
+  };
+
   // High performance filtering
   const filteredNotes = useMemo(() => {
     let result = notes;
 
     if (selectedCategory) {
-      result = result.filter(n => n.category === selectedCategory);
+      result = result.filter((n) => n.category === selectedCategory);
     }
     if (selectedSubCategory) {
-      result = result.filter(n => n.subCategory === selectedSubCategory);
+      result = result.filter((n) => n.subCategory === selectedSubCategory);
     }
     if (selectedTopic) {
-      result = result.filter(n => n.topic === selectedTopic || (n.topics && n.topics.includes(selectedTopic)));
+      result = result.filter(
+        (n) => n.topic === selectedTopic || (n.topics && n.topics.includes(selectedTopic))
+      );
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      result = result.filter(n => {
+      result = result.filter((n) => {
         return (
           n.title.toLowerCase().includes(q) ||
-          (n.aliases && n.aliases.some(a => a.toLowerCase().includes(q))) ||
+          (n.aliases && n.aliases.some((a) => a.toLowerCase().includes(q))) ||
           (n.topic && n.topic.toLowerCase().includes(q)) ||
           (n.tldr && n.tldr.toLowerCase().includes(q)) ||
-          (n.cities && n.cities.some(c => c.toLowerCase().includes(q)))
+          (n.cities && n.cities.some((c) => c.toLowerCase().includes(q)))
         );
       });
     }
@@ -102,31 +154,60 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
     return (
       <div className="w-screen h-screen flex flex-col items-center justify-center bg-white font-mono text-xs text-[#888888] gap-3">
         <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin" />
-        <span className="tracking-widest uppercase">Indexing XP Seoul Archive...</span>
+        <span className="tracking-widest uppercase">Loading XP Seoul Vault...</span>
       </div>
     );
   }
 
   return (
-    <div className="w-screen h-screen flex overflow-hidden bg-white">
-      {/* 1. Left Column: Filter Hierarchy */}
-      <FilterSidebar
-        taxonomy={taxonomy}
-        totalNotesCount={notes.length}
-        filteredNotesCount={filteredNotes.length}
-        selectedCategory={selectedCategory}
-        selectedSubCategory={selectedSubCategory}
-        selectedTopic={selectedTopic}
-        searchQuery={searchQuery}
-        onSelectCategory={setSelectedCategory}
-        onSelectSubCategory={setSelectedSubCategory}
-        onSelectTopic={setSelectedTopic}
-        onSearchChange={setSearchQuery}
-        onReset={handleResetFilters}
-        isCompact={isDetailOpen}
-      />
+    <div className="w-screen h-screen flex flex-col md:flex-row overflow-hidden bg-white">
+      {/* --- MOBILE TOP NAVIGATION BAR (< 768px) --- */}
+      <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-[#eeeeee] bg-white z-40">
+        <button
+          onClick={handleResetFilters}
+          className="font-black text-xl tracking-tight text-black"
+        >
+          XP Seoul
+        </button>
 
-      {/* 2. Center Content Area (Dynamic based on Menu) */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsMobileFilterOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e5e5e5] text-xs font-mono text-black"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span>{selectedTopic || selectedSubCategory || selectedCategory || 'Filter'}</span>
+          </button>
+
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-1.5 rounded-lg border border-[#e5e5e5] text-black"
+          >
+            <MenuIcon className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* --- DESKTOP LEFT COLUMN: Organic Filter Sidebar (Hidden on Mobile) --- */}
+      <div className="hidden md:flex">
+        <FilterSidebar
+          taxonomy={taxonomy}
+          totalNotesCount={notes.length}
+          filteredNotesCount={filteredNotes.length}
+          selectedCategory={selectedCategory}
+          selectedSubCategory={selectedSubCategory}
+          selectedTopic={selectedTopic}
+          searchQuery={searchQuery}
+          onSelectCategory={setSelectedCategory}
+          onSelectSubCategory={setSelectedSubCategory}
+          onSelectTopic={setSelectedTopic}
+          onSearchChange={setSearchQuery}
+          onReset={handleResetFilters}
+          isCompact={isDetailOpen}
+        />
+      </div>
+
+      {/* --- CENTER / MAIN CONTENT CANVAS --- */}
       <main className="flex-1 h-full flex overflow-hidden relative">
         {activeMenu === 'wiki' && (
           <ScrollLensStream
@@ -137,34 +218,146 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
           />
         )}
 
-        {activeMenu === 'blog' && (
-          <BlogView />
-        )}
+        {activeMenu === 'blog' && <BlogView />}
 
-        {activeMenu === 'about' && (
-          <AboutView />
-        )}
+        {activeMenu === 'about' && <AboutView />}
 
-        {/* 3. Detail Split Panel (Opens on Right 50% when a note is selected) */}
+        {/* --- DESKTOP & MOBILE NOTE DETAIL PANEL (1080px Canvas View) --- */}
         <AnimatePresence>
           {isDetailOpen && selectedNote && (
             <NoteDetailPanel
               note={selectedNote}
               onClose={() => setSelectedNote(null)}
+              onNavigateWikilink={handleNavigateWikilink}
+              isMobile={isMobile}
             />
           )}
         </AnimatePresence>
       </main>
 
-      {/* 4. Right Column: Menu Navigation */}
-      <MenuNav
-        activeMenu={activeMenu}
-        onSelectMenu={(menu) => {
-          setActiveMenu(menu);
-          if (menu !== 'wiki') setSelectedNote(null);
-        }}
-        isCompact={isDetailOpen}
-      />
+      {/* --- DESKTOP RIGHT COLUMN: Menu Navigation (Hidden on Mobile) --- */}
+      <div className="hidden md:flex">
+        <MenuNav
+          activeMenu={activeMenu}
+          onSelectMenu={(menu) => {
+            setActiveMenu(menu);
+            if (menu !== 'wiki') setSelectedNote(null);
+          }}
+          isCompact={isDetailOpen}
+        />
+      </div>
+
+      {/* --- MOBILE FILTER DRAWER MODAL --- */}
+      <AnimatePresence>
+        {isMobileFilterOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="md:hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex justify-end"
+          >
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 26, stiffness: 260 }}
+              className="w-[85vw] max-w-[340px] h-full bg-white flex flex-col p-6 shadow-2xl"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-[#eeeeee]">
+                <span className="font-mono text-xs uppercase font-bold">Filter Categories</span>
+                <button
+                  onClick={() => setIsMobileFilterOpen(false)}
+                  className="p-1 rounded-full hover:bg-black/5"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto pt-4">
+                <FilterSidebar
+                  taxonomy={taxonomy}
+                  totalNotesCount={notes.length}
+                  filteredNotesCount={filteredNotes.length}
+                  selectedCategory={selectedCategory}
+                  selectedSubCategory={selectedSubCategory}
+                  selectedTopic={selectedTopic}
+                  searchQuery={searchQuery}
+                  onSelectCategory={(cat) => {
+                    setSelectedCategory(cat);
+                  }}
+                  onSelectSubCategory={(sub) => {
+                    setSelectedSubCategory(sub);
+                  }}
+                  onSelectTopic={(top) => {
+                    setSelectedTopic(top);
+                    setIsMobileFilterOpen(false);
+                  }}
+                  onSearchChange={setSearchQuery}
+                  onReset={handleResetFilters}
+                  isCompact={false}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- MOBILE MENU DRAWER MODAL --- */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="md:hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex justify-end"
+          >
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 26, stiffness: 260 }}
+              className="w-[75vw] max-w-[280px] h-full bg-white flex flex-col p-6 shadow-2xl justify-between"
+            >
+              <div className="flex flex-col gap-6">
+                <div className="flex items-center justify-between pb-4 border-b border-[#eeeeee]">
+                  <span className="font-mono text-xs uppercase font-bold">Navigation</span>
+                  <button
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-1 rounded-full hover:bg-black/5"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-4 font-mono">
+                  {[
+                    { id: 'wiki', label: 'Wiki', desc: 'Curated Archive' },
+                    { id: 'blog', label: 'Blog', desc: 'Thoughts & Essays' },
+                    { id: 'about', label: 'About', desc: 'Site Info' },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveMenu(item.id as any);
+                        setIsMobileMenuOpen(false);
+                        if (item.id !== 'wiki') setSelectedNote(null);
+                      }}
+                      className="text-left py-2 border-b border-[#f5f5f5]"
+                    >
+                      <div className="text-xl font-bold text-black">{item.label}</div>
+                      <div className="text-xs text-[#888888]">{item.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="font-mono text-[10px] text-[#aaaaaa]">
+                XP Seoul · 2026
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
