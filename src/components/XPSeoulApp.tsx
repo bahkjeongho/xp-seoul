@@ -9,7 +9,7 @@ import { MenuNav } from './MenuNav';
 import { BlogView } from './BlogView';
 import { AboutView } from './AboutView';
 import { AnimatePresence, motion } from 'framer-motion';
-import { History, SlidersHorizontal, Menu as MenuIcon, X, AlertCircle, Sparkles, RotateCcw } from 'lucide-react';
+import { History, SlidersHorizontal, Menu as MenuIcon, X, AlertCircle, Sparkles, RotateCcw, Search } from 'lucide-react';
 
 interface XPSeoulAppProps {
   initialNotes?: NoteItem[];
@@ -44,8 +44,8 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Mobile Drawer State
-  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
 
   // Mobile Bottom Sheet State (History & Filter while reading notes)
@@ -108,8 +108,9 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
       const urlParams = new URLSearchParams(window.location.search);
       const noteParam = urlParams.get('note');
       if (noteParam) {
+        const clean = noteParam.normalize().toLowerCase();
         const found = notes.find(
-          (n) => n.id.toLowerCase() === noteParam.toLowerCase() || n.title.toLowerCase() === noteParam.toLowerCase()
+          (n) => n.id.normalize().toLowerCase() === clean || n.title.normalize().toLowerCase() === clean
         );
         if (found) {
           setSelectedNote(found);
@@ -286,6 +287,13 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
         notes={notes}
         taxonomy={taxonomy}
         knownTitles={knownTitles}
+        historyNotes={historyNotes}
+        onAddToHistory={(note) => {
+          setHistoryNotes((prev) => {
+            const filtered = prev.filter((n) => n.id !== note.id);
+            return [note, ...filtered].slice(0, 100);
+          });
+        }}
         onSwitchToStream={() => {
           setViewMode('stream');
           if (typeof window !== 'undefined' && window.location.pathname.startsWith('/globe')) {
@@ -378,6 +386,9 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
 
             {/* Mobile Menu Toggle Button */}
             <div className="md:hidden flex items-center gap-2">
+              <span className="font-mono text-[11px] text-[#888888]">
+                {filteredNotes.length.toLocaleString()}
+              </span>
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
                 className="p-1.5 rounded-lg border border-[#e5e5e5] text-black hover:bg-[#f5f5f5] transition-colors"
@@ -388,24 +399,64 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
             </div>
           </div>
 
-          {/* Dynamic Hierarchical Button Filter Bar (Level 1 -> 2 -> 3) across Desktop & Mobile */}
-          {activeMenu === 'wiki' && (
-            <TopFilterBar
-              taxonomy={taxonomy}
-              totalNotesCount={notes.length}
-              filteredNotesCount={filteredNotes.length}
-              selectedCategory={selectedCategory}
-              selectedSubCategory={selectedSubCategory}
-              selectedTopic={selectedTopic}
-              searchQuery={searchQuery}
-              onSelectCategory={setSelectedCategory}
-              onSelectSubCategory={setSelectedSubCategory}
-              onSelectTopic={setSelectedTopic}
-              onSearchChange={setSearchQuery}
-              onReset={handleResetFilters}
-              isDesktop={!isMobile}
-            />
-          )}
+          {/* Dynamic Hierarchical Button Filter Bar (Desktop only, hidden on mobile per user request) */}
+          <div className="hidden md:block">
+            {activeMenu === 'wiki' && (
+              <TopFilterBar
+                taxonomy={taxonomy}
+                totalNotesCount={notes.length}
+                filteredNotesCount={filteredNotes.length}
+                selectedCategory={selectedCategory}
+                selectedSubCategory={selectedSubCategory}
+                selectedTopic={selectedTopic}
+                searchQuery={searchQuery}
+                onSelectCategory={setSelectedCategory}
+                onSelectSubCategory={setSelectedSubCategory}
+                onSelectTopic={setSelectedTopic}
+                onSearchChange={setSearchQuery}
+                onReset={handleResetFilters}
+                isDesktop={true}
+              />
+            )}
+          </div>
+
+          {/* Mobile Search Dropdown Bar (Stream mode) */}
+          <AnimatePresence>
+            {isMobile && isMobileSearchOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="md:hidden z-40 bg-white border-t border-[#eeeeee] px-4 py-2 flex items-center gap-2 overflow-hidden shrink-0 shadow-2xs"
+              >
+                <div className="relative flex-1">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#888888]" />
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Search notes in stream..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-8 pr-7 py-1.5 rounded-full bg-[#f4f4f5] border border-black/8 text-xs text-black placeholder-[#888888] focus:outline-hidden font-sans"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#888888] hover:text-black"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={() => setIsMobileSearchOpen(false)}
+                  className="text-xs font-sans text-[#666666] shrink-0 px-1"
+                >
+                  Cancel
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </header>
       )}
 
@@ -526,51 +577,53 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
         )}
       </AnimatePresence>
 
-      {/* --- MOBILE MAIN STREAM FLOATING CONTROLLER BAR (Stream | Globe + Filter) --- */}
+      {/* --- MOBILE MAIN STREAM FLOATING CONTROLLER BAR (검색 | 필터) --- */}
       {isMobile && activeMenu === 'wiki' && !isDetailOpen && (
-        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/85 backdrop-blur-xl rounded-full px-2 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.14)] flex items-center gap-1.5 border border-black/10 select-none font-sans whitespace-nowrap">
-          {/* Segmented Mode Switcher */}
-          <div className="flex items-center bg-[#f0f0f2] p-0.5 rounded-full font-sans text-xs">
-            <button
-              className="px-3.5 py-1.5 rounded-full bg-black text-white font-semibold shadow-xs transition-all"
-            >
-              Stream
-            </button>
-            <button
-              onClick={() => setViewMode('globe')}
-              className="px-3 py-1.5 rounded-full text-[#666666] hover:text-black font-medium transition-all"
-            >
-              Globe
-            </button>
-          </div>
+        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/85 backdrop-blur-xl rounded-full px-3.5 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.14)] flex items-center gap-2 border border-black/10 select-none font-sans whitespace-nowrap">
+          {/* Search Button */}
+          <button
+            onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
+              searchQuery || isMobileSearchOpen
+                ? 'bg-black text-white shadow-xs'
+                : 'text-[#333333] hover:text-black active:bg-black/5'
+            }`}
+            aria-label="Toggle search"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span className="truncate max-w-[85px]">{searchQuery || '검색'}</span>
+          </button>
 
           {/* Hairline Divider */}
-          <div className="w-[1px] h-4 bg-black/12 mx-0.5" />
+          <div className="w-[1px] h-3.5 bg-black/15" />
 
           {/* Filter Button */}
           <button
-            onClick={() => setIsMobileFilterOpen(true)}
+            onClick={() => {
+              setMobileSheetTab('filter');
+              setIsMobileSheetOpen(true);
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
-              selectedCategory || selectedSubCategory || selectedTopic || searchQuery
+              selectedCategory || selectedSubCategory || selectedTopic
                 ? 'bg-black text-white shadow-xs'
                 : 'text-[#333333] hover:text-black active:bg-black/5'
             }`}
             aria-label="Open filter"
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span className="truncate max-w-[80px]">
-              {selectedTopic || selectedSubCategory || selectedCategory || 'Filter'}
+            <span className="truncate max-w-[85px]">
+              {selectedTopic || selectedSubCategory || selectedCategory || '필터'}
             </span>
-            {(selectedCategory || selectedSubCategory || selectedTopic || searchQuery) && !selectedCategory && (
+            {(selectedCategory || selectedSubCategory || selectedTopic) && (
               <span className="w-1.5 h-1.5 rounded-full bg-white ml-0.5" />
             )}
           </button>
 
-          {/* Reset Button (only if active filter) */}
+          {/* Reset Button (only if active filter or search) */}
           {(selectedCategory || selectedSubCategory || selectedTopic || searchQuery) && (
             <button
               onClick={handleResetFilters}
-              className="w-7 h-7 rounded-full bg-black/5 hover:bg-black/10 active:scale-90 flex items-center justify-center text-[#555555] hover:text-black transition-all"
+              className="w-7 h-7 rounded-full bg-black/5 hover:bg-black/10 active:scale-90 flex items-center justify-center text-[#555555] hover:text-black transition-all ml-0.5"
               aria-label="Reset all filters"
               title="Reset filters"
             >
@@ -602,61 +655,6 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
         onSelectTopic={setSelectedTopic}
         onResetFilters={handleResetFilters}
       />
-
-      {/* --- MOBILE FILTER DRAWER MODAL --- */}
-      <AnimatePresence>
-        {isMobileFilterOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="md:hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex justify-end"
-          >
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 26, stiffness: 260 }}
-              className="w-[85vw] max-w-[340px] h-full bg-white flex flex-col p-6 shadow-2xl"
-            >
-              <div className="flex items-center justify-between pb-4 border-b border-[#eeeeee]">
-                <span className="font-mono text-xs uppercase font-bold">Filter Categories</span>
-                <button
-                  onClick={() => setIsMobileFilterOpen(false)}
-                  className="p-1 rounded-full hover:bg-black/5"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto pt-4">
-                <FilterSidebar
-                  taxonomy={taxonomy}
-                  totalNotesCount={notes.length}
-                  filteredNotesCount={filteredNotes.length}
-                  selectedCategory={selectedCategory}
-                  selectedSubCategory={selectedSubCategory}
-                  selectedTopic={selectedTopic}
-                  searchQuery={searchQuery}
-                  onSelectCategory={(cat) => {
-                    setSelectedCategory(cat);
-                  }}
-                  onSelectSubCategory={(sub) => {
-                    setSelectedSubCategory(sub);
-                  }}
-                  onSelectTopic={(top) => {
-                    setSelectedTopic(top);
-                    setIsMobileFilterOpen(false);
-                  }}
-                  onSearchChange={setSearchQuery}
-                  onReset={handleResetFilters}
-                  isCompact={false}
-                />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* --- MOBILE MENU DRAWER MODAL --- */}
       <AnimatePresence>

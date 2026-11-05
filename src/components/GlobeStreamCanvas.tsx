@@ -9,11 +9,14 @@ import {
   X
 } from 'lucide-react';
 import { NoteDetailPanel } from './NoteDetailPanel';
+import { MobileDetailBottomSheet } from './MobileDetailBottomSheet';
 
 interface GlobeStreamCanvasProps {
   notes: NoteItem[];
   taxonomy: TaxonomyData;
   knownTitles?: Set<string>;
+  historyNotes?: NoteItem[];
+  onAddToHistory?: (note: NoteItem) => void;
   onSwitchToStream: () => void;
   onNavigateWikilink?: (title: string) => void;
 }
@@ -22,6 +25,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
   notes,
   taxonomy,
   knownTitles,
+  historyNotes,
+  onAddToHistory,
   onSwitchToStream,
   onNavigateWikilink,
 }) => {
@@ -49,6 +54,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
   // Mobile Filter Sheet & Mobile Search Overlay states
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [mobileSheetTab, setMobileSheetTab] = useState<'history' | 'filter'>('filter');
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
 
   // Active / Selected note for inflation modal
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
@@ -75,6 +82,24 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     window.addEventListener('resize', updateDimensions);
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
+
+  // Read initial note from URL (?note=...)
+  useEffect(() => {
+    if (notes.length > 0 && typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const noteParam = urlParams.get('note');
+      if (noteParam) {
+        const clean = noteParam.normalize().toLowerCase();
+        const found = notes.find(
+          (n) => n.id.normalize().toLowerCase() === clean || n.title.normalize().toLowerCase() === clean
+        );
+        if (found) {
+          setSelectedNote(found);
+          if (onAddToHistory) onAddToHistory(found);
+        }
+      }
+    }
+  }, [notes]);
 
   const isMobile = dimensions.width < 768;
 
@@ -389,6 +414,9 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       y: screenY + HEADER_H + CARD_H / 2,
     });
     setSelectedNote(note);
+    if (onAddToHistory) {
+      onAddToHistory(note);
+    }
   };
 
   // Reset all filters and position
@@ -425,7 +453,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     <div className="w-full max-w-[100vw] h-screen flex flex-col bg-[#fbfbfb] text-black overflow-hidden select-none font-sans relative">
       {/* --- 1. TOP HEADER (Solid 100% Opaque, identical height to Stream mode, completely OUTSIDE 3D container!) --- */}
       <header className="interactive-control w-full max-w-[100vw] h-[57px] bg-white border-b border-[#eeeeee] px-4 sm:px-6 md:px-8 flex items-center justify-between z-50 shrink-0 select-none shadow-2xs box-border">
-        {/* Left: Brand & Desktop Mode Switcher */}
+        {/* Left: Brand & Mode Switcher */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             onClick={handleResetAll}
@@ -434,15 +462,15 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
             XP Seoul
           </button>
 
-          {/* Desktop Mode Switcher Pill */}
-          <div className="hidden md:flex items-center bg-[#f4f4f5] p-1 rounded-full border border-black/8 font-sans text-xs ml-2">
+          {/* Mode Switcher Pill (Visible on both Mobile & Desktop) */}
+          <div className="flex items-center bg-[#f4f4f5] p-0.5 sm:p-1 rounded-full border border-black/8 font-sans text-[11px] sm:text-xs ml-1 sm:ml-2">
             <button
               onClick={onSwitchToStream}
-              className="px-3 py-1 rounded-full text-[#666666] hover:text-black transition-colors"
+              className="px-2.5 sm:px-3 py-1 rounded-full text-[#666666] hover:text-black transition-colors"
             >
               Stream
             </button>
-            <button className="px-3.5 py-1 rounded-full bg-white text-black font-semibold shadow-2xs">
+            <button className="px-2.5 sm:px-3.5 py-1 rounded-full bg-white text-black font-semibold shadow-2xs">
               Globe
             </button>
           </div>
@@ -460,30 +488,12 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
           />
         </div>
 
-        {/* Right: Visible Count (Desktop only) */}
-        <div className="hidden md:flex items-center gap-3 shrink-0 font-sans">
+        {/* Right: Visible Count */}
+        <div className="flex items-center gap-3 shrink-0 font-sans">
           <span className="font-mono text-[11px] text-[#888888]">
-            Archive · <span className="font-semibold text-black">{filteredNotes.length.toLocaleString()}</span>
+            <span className="hidden sm:inline">Archive · </span>
+            <span className="font-semibold text-black">{filteredNotes.length.toLocaleString()}</span>
           </span>
-        </div>
-
-        {/* Right: Mobile Header Controls (Search Toggle & Count) */}
-        <div className="flex md:hidden items-center gap-2 shrink-0">
-          <span className="font-mono text-[11px] text-[#888888] mr-0.5">
-            {filteredNotes.length.toLocaleString()}
-          </span>
-
-          <button
-            onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-            className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${
-              isMobileSearchOpen || searchQuery
-                ? 'bg-black text-white border-black'
-                : 'bg-[#f4f4f5] text-[#555555] border-black/8 hover:text-black'
-            }`}
-            aria-label="Toggle search"
-          >
-            <Search className="w-3.5 h-3.5" />
-          </button>
         </div>
       </header>
 
@@ -743,57 +753,58 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         </div>
       </div>
 
-      {/* --- MOBILE BOTTOM FLOATING CONTROLLER BAR (Stream | Globe + Filter + Reset) --- */}
-      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/85 backdrop-blur-xl rounded-full px-2 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.14)] flex items-center gap-1.5 border border-black/10 select-none font-sans whitespace-nowrap">
-        {/* Segmented Mode Switcher */}
-        <div className="flex items-center bg-[#f0f0f2] p-0.5 rounded-full font-sans text-xs">
+      {/* --- MOBILE MAIN GLOBE FLOATING BAR (검색 | 필터) --- */}
+      {isMobile && !selectedNote && (
+        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/85 backdrop-blur-xl rounded-full px-3.5 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.14)] flex items-center gap-2 border border-black/10 select-none font-sans whitespace-nowrap">
+          {/* Search Button */}
           <button
-            onClick={onSwitchToStream}
-            className="px-3 py-1.5 rounded-full text-[#666666] hover:text-black font-medium transition-all"
+            onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
+              searchQuery || isMobileSearchOpen
+                ? 'bg-black text-white shadow-xs'
+                : 'text-[#333333] hover:text-black active:bg-black/5'
+            }`}
+            aria-label="Toggle search"
           >
-            Stream
+            <Search className="w-3.5 h-3.5" />
+            <span className="truncate max-w-[85px]">{searchQuery || '검색'}</span>
           </button>
+
+          {/* Hairline Divider */}
+          <div className="w-[1px] h-3.5 bg-black/15" />
+
+          {/* Filter Button */}
           <button
-            className="px-3.5 py-1.5 rounded-full bg-black text-white font-semibold shadow-xs transition-all"
+            onClick={() => setIsMobileFilterOpen(true)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
+              selectedCategory || selectedSubCategory || selectedTopic
+                ? 'bg-black text-white shadow-xs'
+                : 'text-[#333333] hover:text-black active:bg-black/5'
+            }`}
+            aria-label="Open filter"
           >
-            Globe
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span className="truncate max-w-[85px]">
+              {selectedTopic || selectedSubCategory || selectedCategory || '필터'}
+            </span>
+            {(selectedCategory || selectedSubCategory || selectedTopic) && (
+              <span className="w-1.5 h-1.5 rounded-full bg-white ml-0.5" />
+            )}
           </button>
-        </div>
 
-        {/* Hairline Divider */}
-        <div className="w-[1px] h-4 bg-black/12 mx-0.5" />
-
-        {/* Filter Button */}
-        <button
-          onClick={() => setIsMobileFilterOpen(true)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
-            hasActiveFilter
-              ? 'bg-black text-white shadow-xs'
-              : 'text-[#333333] hover:text-black active:bg-black/5'
-          }`}
-          aria-label="Open filter"
-        >
-          <SlidersHorizontal className="w-3.5 h-3.5" />
-          <span className="truncate max-w-[80px]">
-            {selectedTopic || selectedSubCategory || selectedCategory || 'Filter'}
-          </span>
-          {hasActiveFilter && !selectedCategory && (
-            <span className="w-1.5 h-1.5 rounded-full bg-white ml-0.5" />
+          {/* Reset Button (only if active filter or search) */}
+          {hasActiveFilter && (
+            <button
+              onClick={handleResetAll}
+              className="w-7 h-7 rounded-full bg-black/5 hover:bg-black/10 active:scale-90 flex items-center justify-center text-[#555555] hover:text-black transition-all ml-0.5"
+              aria-label="Reset all filters"
+              title="Reset filters"
+            >
+              <RotateCcw className="w-3 h-3" />
+            </button>
           )}
-        </button>
-
-        {/* Reset Button (only if active filter) */}
-        {hasActiveFilter && (
-          <button
-            onClick={handleResetAll}
-            className="w-7 h-7 rounded-full bg-black/5 hover:bg-black/10 active:scale-90 flex items-center justify-center text-[#555555] hover:text-black transition-all"
-            aria-label="Reset all filters"
-            title="Reset filters"
-          >
-            <RotateCcw className="w-3 h-3" />
-          </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* --- MOBILE FILTER BOTTOM SHEET --- */}
       <AnimatePresence>
@@ -1036,6 +1047,77 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
           </div>
         )}
       </AnimatePresence>
+
+      {/* --- MOBILE GLOBE NOTE READING FLOATING CONTROLLER BAR (Filter - Close - History) --- */}
+      <AnimatePresence>
+        {isMobile && selectedNote && !isMobileSheetOpen && (
+          <motion.div
+            initial={{ y: 60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 60, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+            className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[110] bg-white/85 backdrop-blur-xl text-black rounded-full px-4 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.12)] flex items-center gap-3 border border-black/10 select-none font-sans"
+          >
+            {/* 1. Left: Filter Button */}
+            <button
+              onClick={() => {
+                setMobileSheetTab('filter');
+                setIsMobileSheetOpen(true);
+              }}
+              className="flex items-center text-[13px] font-sans font-medium text-[#222222] hover:text-black active:opacity-70 transition-colors px-1"
+            >
+              <span>Filter</span>
+              {selectedCategory && (
+                <span className="w-1.5 h-1.5 rounded-full bg-black ml-1.5" />
+              )}
+            </button>
+
+            {/* 2. Center: Close Button (Circular X icon) */}
+            <button
+              onClick={() => setSelectedNote(null)}
+              className="w-7 h-7 rounded-full bg-black/5 hover:bg-black/10 active:scale-90 flex items-center justify-center text-black transition-all"
+              aria-label="Close Note"
+            >
+              <X className="w-3.5 h-3.5 stroke-[2.2]" />
+            </button>
+
+            {/* 3. Right: History Button */}
+            <button
+              onClick={() => {
+                setMobileSheetTab('history');
+                setIsMobileSheetOpen(true);
+              }}
+              className="flex items-center text-[13px] font-sans font-medium text-[#222222] hover:text-black active:opacity-70 transition-colors px-1"
+            >
+              <span>History</span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- MOBILE GLOBE NOTE READING BOTTOM SHEET (History & Filter) --- */}
+      <MobileDetailBottomSheet
+        isOpen={isMobile && Boolean(selectedNote) && isMobileSheetOpen}
+        activeTab={mobileSheetTab}
+        onChangeTab={setMobileSheetTab}
+        onClose={() => setIsMobileSheetOpen(false)}
+        historyNotes={historyNotes || []}
+        selectedNote={selectedNote}
+        notes={filteredNotes}
+        taxonomy={taxonomy}
+        selectedCategory={selectedCategory}
+        selectedSubCategory={selectedSubCategory}
+        selectedTopic={selectedTopic}
+        onSelectNote={(note) => {
+          setSelectedNote(note);
+          if (onAddToHistory) onAddToHistory(note);
+          setIsMobileSheetOpen(false);
+        }}
+        onSelectCategory={setSelectedCategory}
+        onSelectSubCategory={setSelectedSubCategory}
+        onSelectTopic={setSelectedTopic}
+        onResetFilters={handleResetAll}
+      />
     </div>
   );
 };
