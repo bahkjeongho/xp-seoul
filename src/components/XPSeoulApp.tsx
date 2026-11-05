@@ -431,7 +431,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
         {activeMenu === 'about' && <AboutView />}
       </main>
 
-      {/* --- MOBILE NOTE READING FLOATING CONTROLLER BAR --- */}
+      {/* --- MOBILE NOTE READING FLOATING CONTROLLER BAR (Glassmorphism Light / Filter - Close - History) --- */}
       <AnimatePresence>
         {isMobile && isDetailOpen && selectedNote && !isMobileSheetOpen && (
           <motion.div
@@ -439,44 +439,43 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 60, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-            className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#111111]/92 backdrop-blur-md text-white rounded-full px-3.5 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.35)] flex items-center gap-2 border border-white/15 select-none"
+            className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/85 backdrop-blur-xl text-black rounded-full px-4 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.12)] flex items-center gap-3 border border-black/10 select-none font-sans"
           >
-            <button
-              onClick={() => {
-                setMobileSheetTab('history');
-                setIsMobileSheetOpen(true);
-              }}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono hover:bg-white/10 active:bg-white/20 transition-colors"
-            >
-              <History className="w-3.5 h-3.5 text-white" />
-              <span>History</span>
-              <span className="text-[10px] text-white/60">({historyNotes.length})</span>
-            </button>
-
-            <div className="w-px h-3.5 bg-white/20" />
-
+            {/* 1. Left: Filter Button (Text only, Geist sans) */}
             <button
               onClick={() => {
                 setMobileSheetTab('filter');
                 setIsMobileSheetOpen(true);
               }}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono hover:bg-white/10 active:bg-white/20 transition-colors"
+              className="flex items-center text-[13px] font-sans font-medium text-[#222222] hover:text-black active:opacity-70 transition-colors px-1"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5 text-white" />
               <span>Filter</span>
               {selectedCategory && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[#00ff88]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-black ml-1.5" />
               )}
             </button>
 
-            <div className="w-px h-3.5 bg-white/20" />
-
+            {/* 2. Center: Close Button (Circular X icon without text) */}
             <button
               onClick={() => selectNoteWithHistory(null, true)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono text-[#ff8888] hover:bg-white/10 active:bg-white/20 transition-colors"
+              className="w-7 h-7 rounded-full bg-black/5 hover:bg-black/10 active:scale-90 flex items-center justify-center text-black transition-all"
+              aria-label="Close Note"
             >
-              <X className="w-3.5 h-3.5" />
-              <span>Close</span>
+              <X className="w-3.5 h-3.5 stroke-[2.2]" />
+            </button>
+
+            {/* 3. Right: History Button (Text only, Geist sans) */}
+            <button
+              onClick={() => {
+                setMobileSheetTab('history');
+                setIsMobileSheetOpen(true);
+              }}
+              className="flex items-center text-[13px] font-sans font-medium text-[#222222] hover:text-black active:opacity-70 transition-colors px-1"
+            >
+              <span>History</span>
+              <span className="text-[11px] text-[#888888] font-sans ml-1">
+                ({historyNotes.length})
+              </span>
             </button>
           </motion.div>
         )}

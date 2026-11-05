@@ -8,7 +8,7 @@ import { ScrollLensStream } from './ScrollLensStream';
 interface MobileDetailBottomSheetProps {
   isOpen: boolean;
   activeTab: 'history' | 'filter';
-  onChangeTab: (tab: 'history' | 'filter') => void;
+  onChangeTab?: (tab: 'history' | 'filter') => void;
   onClose: () => void;
   historyNotes: NoteItem[];
   selectedNote: NoteItem | null;
@@ -27,7 +27,6 @@ interface MobileDetailBottomSheetProps {
 export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = ({
   isOpen,
   activeTab,
-  onChangeTab,
   onClose,
   historyNotes,
   selectedNote,
@@ -77,7 +76,7 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/50 backdrop-blur-xs"
+          className="absolute inset-0 bg-black/40 backdrop-blur-xs"
         />
 
         {/* Bottom Sheet Modal */}
@@ -93,53 +92,35 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
             <div className="w-10 h-1 bg-[#d5d5d8] rounded-full" />
           </div>
 
-          {/* Tab Switcher Header */}
-          <div className="px-4 py-2 border-b border-[#eeeeee] flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-1 bg-[#f4f4f5] p-1 rounded-xl font-mono text-xs">
-              <button
-                onClick={() => onChangeTab('history')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all ${
-                  activeTab === 'history'
-                    ? 'bg-black text-white font-semibold shadow-xs'
-                    : 'text-[#666666] hover:text-black'
-                }`}
-              >
-                <History className="w-3.5 h-3.5" />
-                <span>History</span>
-                <span className={`text-[10px] ${activeTab === 'history' ? 'text-white/70' : 'text-[#888888]'}`}>
-                  ({historyNotes.length})
-                </span>
-              </button>
-
-              <button
-                onClick={() => onChangeTab('filter')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all ${
-                  activeTab === 'filter'
-                    ? 'bg-black text-white font-semibold shadow-xs'
-                    : 'text-[#666666] hover:text-black'
-                }`}
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span>Filter & Stream</span>
-                <span className={`text-[10px] ${activeTab === 'filter' ? 'text-white/70' : 'text-[#888888]'}`}>
-                  ({notes.length})
-                </span>
-              </button>
-            </div>
+          {/* Clean Dedicated Header depending on Active Tab */}
+          <div className="px-5 py-2.5 border-b border-[#eeeeee] flex items-center justify-between shrink-0 font-sans">
+            {activeTab === 'history' ? (
+              <div className="flex items-center gap-2">
+                <History className="w-4 h-4 text-black" />
+                <span className="font-bold text-sm text-black">Recent History</span>
+                <span className="text-xs font-mono text-[#888888]">({historyNotes.length})</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4 text-black" />
+                <span className="font-bold text-sm text-black">Filter Archive</span>
+                <span className="text-xs font-mono text-[#888888]">({notes.length} notes)</span>
+              </div>
+            )}
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-full hover:bg-[#f0f0f0] text-[#666666] transition-colors"
+              className="w-7 h-7 rounded-full bg-black/5 hover:bg-black/10 active:scale-95 flex items-center justify-center text-black transition-all"
               aria-label="Close sheet"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5 stroke-[2.2]" />
             </button>
           </div>
 
-          {/* Tab Body */}
+          {/* Dedicated View Body */}
           <div className="flex-1 relative overflow-hidden flex flex-col">
             {activeTab === 'history' ? (
-              // Tab 1: Recent History Lens Stream
+              // Dedicated View 1: History Only
               <div className="flex-1 relative overflow-hidden flex flex-col">
                 <HistoryLensStream
                   historyNotes={historyNotes}
@@ -151,20 +132,20 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
                 />
               </div>
             ) : (
-              // Tab 2: Filter & Archive Stream
+              // Dedicated View 2: Filter & Archive Stream Only
               <div className="flex-1 relative overflow-hidden flex flex-col">
                 {/* Compact Filter Buttons Bar */}
                 <div className="border-b border-[#eeeeee] bg-white flex flex-col shrink-0 py-2 px-3 shadow-2xs">
-                  {/* Category Row */}
+                  {/* Category Header Row */}
                   <div className="flex items-center justify-between pb-1 text-[10px] font-mono text-[#888888]">
-                    <span className="font-bold text-black uppercase">Filter by Category</span>
+                    <span className="font-bold text-black uppercase">Category</span>
                     {hasActiveFilter && (
                       <button
                         onClick={onResetFilters}
-                        className="flex items-center gap-1 text-[10px] text-[#888888] hover:text-black"
+                        className="flex items-center gap-1 text-[10px] text-[#888888] hover:text-black transition-colors"
                       >
                         <RotateCcw className="w-2.5 h-2.5" />
-                        <span>Reset</span>
+                        <span>Reset Filters</span>
                       </button>
                     )}
                   </div>
@@ -179,7 +160,7 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
                       }}
                       className={`px-2.5 py-1 rounded-md text-[11px] font-mono shrink-0 transition-colors ${
                         !selectedCategory
-                          ? 'bg-black text-white font-semibold'
+                          ? 'bg-black text-white font-semibold shadow-xs'
                           : 'bg-[#f4f4f5] text-[#555555] hover:bg-[#eaeaea]'
                       }`}
                     >
