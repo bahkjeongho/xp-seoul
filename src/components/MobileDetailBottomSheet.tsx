@@ -125,6 +125,7 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
                 <HistoryLensStream
                   historyNotes={historyNotes}
                   selectedNote={selectedNote}
+                  mode="center"
                   onSelectNote={(n) => {
                     onSelectNote(n);
                     onClose();

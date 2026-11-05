@@ -52,6 +52,25 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
     });
   }, [notes.length]);
 
+  // Touch gesture support for mobile swiping
+  const touchStartY = useRef<number | null>(null);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === null) return;
+    const currentY = e.touches[0].clientY;
+    const deltaY = touchStartY.current - currentY;
+    if (Math.abs(deltaY) > 24) {
+      const step = deltaY > 0 ? 1 : -1;
+      setActiveIndex(prev => Math.max(0, Math.min(notes.length - 1, prev + step)));
+      touchStartY.current = currentY;
+    }
+  };
+  const handleTouchEnd = () => {
+    touchStartY.current = null;
+  };
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -92,6 +111,9 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
     <div
       ref={containerRef}
       onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       className="h-full w-full relative overflow-hidden flex flex-col items-center justify-center select-none bg-[#fbfbfb] transition-all duration-500"
     >
       {/* Target Focus Ring (Figma frame style) */}

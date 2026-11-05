@@ -473,9 +473,6 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
               className="flex items-center text-[13px] font-sans font-medium text-[#222222] hover:text-black active:opacity-70 transition-colors px-1"
             >
               <span>History</span>
-              <span className="text-[11px] text-[#888888] font-sans ml-1">
-                ({historyNotes.length})
-              </span>
             </button>
           </motion.div>
         )}
