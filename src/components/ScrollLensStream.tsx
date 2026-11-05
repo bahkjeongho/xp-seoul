@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import type { NoteItem } from '../types';
-import { Compass, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Compass, ArrowRight, Check } from 'lucide-react';
 
 interface ScrollLensStreamProps {
   notes: NoteItem[];
@@ -16,178 +17,91 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
   isCompact = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState<number>(0);
+  const scrollTimeoutRef = useRef<any>(null);
 
-  // Continuous floating-point scroll position for 120fps fluid physics
-  const [scrollPos, setScrollPos] = useState<number>(0);
-  const currentPosRef = useRef<number>(0);
-  currentPosRef.current = scrollPos;
-
-  const targetPosRef = useRef<number>(0);
-  const animFrameRef = useRef<number | null>(null);
-  const snapTimeoutRef = useRef<any>(null);
-
-  // Card Step Geometry (distance in pixels between adjacent items)
-  const STEP_PX = isCompact ? 76 : 116;
-
-  // Frame-rate independent exponential interpolation loop (Lenis / Apple physics)
-  const startSpringLoop = useCallback(() => {
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-
-    let lastTime = performance.now();
-
-    const loop = (now: number) => {
-      const dt = Math.min(0.04, (now - lastTime) / 1000);
-      lastTime = now;
-
-      const target = targetPosRef.current;
-      const current = currentPosRef.current;
-      const diff = target - current;
-
-      // Frame-rate independent critically-damped spring decay (smooth at both 60Hz and 120Hz ProMotion)
-      const factor = 1 - Math.exp(-18 * dt);
-      const next = current + diff * factor;
-
-      if (Math.abs(diff) < 0.001) {
-        currentPosRef.current = target;
-        setScrollPos(target);
-        animFrameRef.current = null;
-        return;
-      }
-
-      currentPosRef.current = next;
-      setScrollPos(next);
-      animFrameRef.current = requestAnimationFrame(loop);
-    };
-
-    animFrameRef.current = requestAnimationFrame(loop);
-  }, []);
-
-  // Snap to specific index
-  const snapTo = useCallback((index: number) => {
-    const clamped = Math.max(0, Math.min(notes.length - 1, index));
-    targetPosRef.current = clamped;
-    startSpringLoop();
-  }, [notes.length, startSpringLoop]);
+  // Keep active index in bounds if notes change
+  useEffect(() => {
+    if (activeIndex >= notes.length) {
+      setActiveIndex(Math.max(0, notes.length - 1));
+    }
+  }, [notes.length]);
 
   // Sync active index if selectedNote is set from outside
   useEffect(() => {
     if (selectedNote) {
-      const idx = notes.findIndex((n) => n.id === selectedNote.id);
-      if (idx !== -1 && idx !== Math.round(targetPosRef.current)) {
-        snapTo(idx);
+      const idx = notes.findIndex(n => n.id === selectedNote.id);
+      if (idx !== -1 && idx !== activeIndex) {
+        setActiveIndex(idx);
       }
     }
-  }, [selectedNote, notes, snapTo]);
+  }, [selectedNote, notes]);
 
-  // Native non-passive touch & wheel event listeners for 100% fluid, interruption-free scrolling
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+  // Smooth wheel navigation with accumulator and damping
+  const wheelAccumulatorRef = useRef<number>(0);
+  const lastWheelTimeRef = useRef<number>(0);
 
-    // --- 1. TRACKPAD & MOUSE WHEEL (Continuous Smooth Flow) ---
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
 
-      // Continuous wheel nudge
-      const deltaItems = (e.deltaY / STEP_PX) * 0.42;
-      let newTarget = targetPosRef.current + deltaItems;
-      newTarget = Math.max(0, Math.min(notes.length - 1, newTarget));
-      targetPosRef.current = newTarget;
+    const now = performance.now();
+    const dt = now - lastWheelTimeRef.current;
+    lastWheelTimeRef.current = now;
 
-      startSpringLoop();
+    // Reset accumulator on pause (>160ms) to ensure clean stops
+    if (dt > 160) {
+      wheelAccumulatorRef.current = 0;
+    }
 
-      // Settle gently onto nearest whole item when scrolling pauses
-      clearTimeout(snapTimeoutRef.current);
-      snapTimeoutRef.current = setTimeout(() => {
-        targetPosRef.current = Math.round(targetPosRef.current);
-        startSpringLoop();
-      }, 100);
-    };
+    // Dampen trackpad flick spikes so cards don't rush past
+    const clampedDelta = Math.sign(e.deltaY) * Math.min(50, Math.abs(e.deltaY));
+    wheelAccumulatorRef.current += clampedDelta;
 
-    // --- 2. MOBILE TOUCH GESTURES (1:1 Direct Finger Tracking + Inertia Flick) ---
-    let isDragging = false;
-    let touchStartY = 0;
-    let touchStartPos = 0;
-    let lastTouchY = 0;
-    let lastTouchTime = 0;
-    let touchVelocity = 0; // in px / sec
+    const THRESHOLD = 52; // Natural, comfortable trackpad threshold
+    if (Math.abs(wheelAccumulatorRef.current) >= THRESHOLD) {
+      const step = wheelAccumulatorRef.current > 0 ? 1 : -1;
+      wheelAccumulatorRef.current = wheelAccumulatorRef.current > 0
+        ? Math.max(0, wheelAccumulatorRef.current - THRESHOLD)
+        : Math.min(0, wheelAccumulatorRef.current + THRESHOLD);
 
-    const onTouchStart = (e: TouchEvent) => {
-      if ((e.target as HTMLElement).closest('.interactive-control')) return;
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      clearTimeout(snapTimeoutRef.current);
+      setActiveIndex(prev => Math.max(0, Math.min(notes.length - 1, prev + step)));
+    }
+  }, [notes.length]);
 
-      const touch = e.touches[0];
-      if (!touch) return;
+  // Touch gesture support for mobile swiping with continuous drag feel
+  const touchStartY = useRef<number | null>(null);
+  const lastTouchYRef = useRef<number>(0);
+  const touchAccumulatorRef = useRef<number>(0);
 
-      isDragging = true;
-      touchStartY = touch.clientY;
-      touchStartPos = currentPosRef.current;
-      lastTouchY = touch.clientY;
-      lastTouchTime = performance.now();
-      touchVelocity = 0;
-    };
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+    lastTouchYRef.current = e.touches[0].clientY;
+    touchAccumulatorRef.current = 0;
+  };
 
-    const onTouchMove = (e: TouchEvent) => {
-      if (!isDragging) return;
-      if (e.cancelable) e.preventDefault();
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === null) return;
+    const currentY = e.touches[0].clientY;
+    const dy = lastTouchYRef.current - currentY;
+    lastTouchYRef.current = currentY;
 
-      const touch = e.touches[0];
-      if (!touch) return;
+    touchAccumulatorRef.current += dy;
+    const TOUCH_THRESHOLD = 36; // Responsive mobile swipe threshold
 
-      const currentY = touch.clientY;
-      const dy = touchStartY - currentY; // dragging finger up = moving stream down
-      const deltaItems = dy / STEP_PX;
+    if (Math.abs(touchAccumulatorRef.current) >= TOUCH_THRESHOLD) {
+      const step = touchAccumulatorRef.current > 0 ? 1 : -1;
+      touchAccumulatorRef.current = touchAccumulatorRef.current > 0
+        ? Math.max(0, touchAccumulatorRef.current - TOUCH_THRESHOLD)
+        : Math.min(0, touchAccumulatorRef.current + TOUCH_THRESHOLD);
 
-      let newPos = touchStartPos + deltaItems;
-      // Soft boundary spring resistance
-      if (newPos < 0) newPos *= 0.35;
-      if (newPos > notes.length - 1) {
-        const over = newPos - (notes.length - 1);
-        newPos = notes.length - 1 + over * 0.35;
-      }
+      setActiveIndex(prev => Math.max(0, Math.min(notes.length - 1, prev + step)));
+    }
+  };
 
-      const now = performance.now();
-      const dt = Math.max(1, now - lastTouchTime);
-      touchVelocity = ((currentY - lastTouchY) / dt) * 1000;
-      lastTouchY = currentY;
-      lastTouchTime = now;
-
-      currentPosRef.current = newPos;
-      targetPosRef.current = newPos;
-      setScrollPos(newPos);
-    };
-
-    const onTouchEnd = () => {
-      if (!isDragging) return;
-      isDragging = false;
-
-      // Project momentum from release velocity
-      const velocityItems = -touchVelocity / STEP_PX;
-      const momentumProjected = velocityItems * 0.22;
-
-      let snappedTarget = Math.round(currentPosRef.current + momentumProjected);
-      snappedTarget = Math.max(0, Math.min(notes.length - 1, snappedTarget));
-
-      targetPosRef.current = snappedTarget;
-      startSpringLoop();
-    };
-
-    // Attach non-passive listeners for smooth continuous response
-    el.addEventListener('wheel', onWheel, { passive: false });
-    el.addEventListener('touchstart', onTouchStart, { passive: false });
-    window.addEventListener('touchmove', onTouchMove, { passive: false });
-    window.addEventListener('touchend', onTouchEnd, { passive: false });
-    window.addEventListener('touchcancel', onTouchEnd, { passive: false });
-
-    return () => {
-      el.removeEventListener('wheel', onWheel);
-      el.removeEventListener('touchstart', onTouchStart);
-      window.removeEventListener('touchmove', onTouchMove);
-      window.removeEventListener('touchend', onTouchEnd);
-      window.removeEventListener('touchcancel', onTouchEnd);
-    };
-  }, [STEP_PX, notes.length, startSpringLoop]);
+  const handleTouchEnd = () => {
+    touchStartY.current = null;
+    touchAccumulatorRef.current = 0;
+  };
 
   // Keyboard navigation
   useEffect(() => {
@@ -196,24 +110,23 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
 
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        snapTo(Math.min(notes.length - 1, Math.round(targetPosRef.current) + 1));
+        setActiveIndex(prev => Math.min(notes.length - 1, prev + 1));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        snapTo(Math.max(0, Math.round(targetPosRef.current) - 1));
+        setActiveIndex(prev => Math.max(0, prev - 1));
       } else if (e.key === 'Enter') {
-        const current = notes[Math.round(currentPosRef.current)];
+        const current = notes[activeIndex];
         if (current) onSelectNote(current);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [notes, snapTo, onSelectNote]);
+  }, [notes, activeIndex, onSelectNote]);
 
-  const activeIndex = Math.max(0, Math.min(notes.length - 1, Math.round(scrollPos)));
-  const windowRadius = 5;
-  const startIndex = Math.max(0, Math.floor(scrollPos) - windowRadius);
-  const endIndex = Math.min(notes.length - 1, Math.ceil(scrollPos) + windowRadius);
+  const windowRadius = 4;
+  const startIndex = Math.max(0, activeIndex - windowRadius);
+  const endIndex = Math.min(notes.length - 1, activeIndex + windowRadius);
   const visibleNotes = notes.slice(startIndex, endIndex + 1);
 
   if (notes.length === 0) {
@@ -229,18 +142,17 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
   return (
     <div
       ref={containerRef}
-      className="h-full w-full relative overflow-hidden flex flex-col items-center justify-center select-none touch-none bg-[#fbfbfb]"
-      style={{
-        touchAction: 'none',
-        WebkitTouchCallout: 'none',
-        WebkitUserSelect: 'none',
-        userSelect: 'none',
-      }}
+      onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className="h-full w-full relative overflow-hidden flex flex-col items-center justify-center select-none touch-none bg-[#fbfbfb] transition-all duration-500"
+      style={{ touchAction: 'none' }}
     >
       {/* Target Focus Ring (Figma frame style) */}
-      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center justify-center px-4 z-0">
+      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center justify-center px-4">
         <div
-          className={`border border-black/10 rounded-2xl pointer-events-none transition-all duration-300 ${
+          className={`border border-black/10 rounded-2xl pointer-events-none transition-all duration-500 ${
             isCompact
               ? 'w-[260px] lg:w-[290px] h-[90px]'
               : 'w-full max-w-[360px] sm:max-w-[520px] md:max-w-[640px] lg:max-w-[720px] h-[120px] sm:h-[130px] lg:h-[140px]'
@@ -255,48 +167,66 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
           <span>{activeIndex + 1} / {notes.length}</span>
         </span>
         {!isCompact && (
-          <span className="hidden sm:inline">Scroll freely or use ↑ ↓ · Click to open note</span>
+          <span className="hidden sm:inline">Scroll or use ↑ ↓ · Click to open note</span>
         )}
       </div>
 
-      {/* The Central Lens Stream Stack (Continuous Subpixel Rendering) */}
-      <div className="relative w-full flex flex-col items-center justify-center h-[760px] pointer-events-none">
+      {/* The Central Lens Stream Stack */}
+      <div className="relative w-full flex flex-col items-center justify-center h-[760px]">
         {visibleNotes.map((note, indexInWindow) => {
           const actualIndex = startIndex + indexInWindow;
-          const distance = actualIndex - scrollPos; // Smooth continuous float
-          const absDist = Math.abs(distance);
-          const isCenter = absDist < 0.5;
+          const distance = actualIndex - activeIndex;
+          const isCenter = distance === 0;
+          const isCurrentSelected = selectedNote?.id === note.id;
 
-          // Scale & Opacity Calculations smoothly modulated by continuous distance
+          // Scale & Opacity Calculations based on Distance
           const scale = isCompact
-            ? Math.max(0.74, 1 - absDist * 0.08)
-            : Math.max(0.68, 1 - absDist * 0.085);
+            ? Math.max(0.75, 1 - Math.abs(distance) * 0.08)
+            : Math.max(0.68, 1 - Math.abs(distance) * 0.09);
 
-          const opacity = Math.max(0.08, Math.min(1, 1 - Math.pow(absDist / 4.2, 1.8)));
-          const yOffset = distance * STEP_PX;
-          const zIndex = Math.round((1 - Math.min(1, absDist / 6)) * 40);
+          const opacity = Math.max(0.18, 1 - Math.abs(distance) * 0.24);
+          const yOffset = distance * (isCompact ? 72 : 110);
 
           return (
-            <div
+            <motion.div
               key={note.id}
               onClick={() => {
-                snapTo(actualIndex);
+                setActiveIndex(actualIndex);
                 onSelectNote(note);
               }}
-              style={{
-                position: 'absolute',
-                left: '50%',
-                top: '50%',
-                transform: `translate3d(-50%, calc(-50% + ${yOffset}px), 0px) scale(${scale})`,
-                opacity: opacity,
-                zIndex: zIndex,
-                pointerEvents: opacity > 0.2 ? 'auto' : 'none',
-                willChange: 'transform, opacity',
+              initial={{
+                y: distance > 0 ? yOffset + 45 : yOffset - 45,
+                x: '-50%',
+                scale: scale * 0.96,
+                opacity: 0,
               }}
-              className={`flex items-center justify-between rounded-xl select-none touch-none cursor-pointer transition-shadow duration-200 ${
+              animate={{
+                y: yOffset,
+                x: '-50%',
+                scale: scale,
+                opacity: opacity,
+              }}
+              exit={{
+                y: distance > 0 ? yOffset + 45 : yOffset - 45,
+                x: '-50%',
+                scale: scale * 0.96,
+                opacity: 0,
+              }}
+              style={{ left: '50%' }}
+              transition={{
+                type: 'spring',
+                stiffness: 220,
+                damping: 28,
+                mass: 0.8,
+              }}
+              whileHover={{
+                scale: scale * 1.02,
+                cursor: 'pointer',
+              }}
+              className={`absolute flex items-center justify-between rounded-xl transition-colors select-none touch-none ${
                 isCenter
-                  ? 'bg-white shadow-[0_14px_36px_rgba(0,0,0,0.08)] border border-black/10 ring-1 ring-black/5'
-                  : 'bg-white/80 border border-black/5 hover:bg-white hover:opacity-95'
+                  ? 'bg-white shadow-[0_14px_36px_rgba(0,0,0,0.08)] border border-black/10 ring-1 ring-black/5 z-20'
+                  : 'bg-white/80 border border-black/5 z-10 hover:bg-white hover:opacity-90'
               } ${
                 isCompact
                   ? 'w-[calc(100%-48px)] max-w-[280px] h-[82px] px-3.5 py-2.5'
@@ -304,7 +234,7 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
               }`}
             >
               {/* Left Side: Title & Topic */}
-              <div className="flex flex-col justify-center gap-1.5 flex-1 min-w-0 pr-3 pointer-events-none">
+              <div className="flex flex-col justify-center gap-1.5 flex-1 min-w-0 pr-3">
                 <div className="flex items-center gap-2">
                   <h3
                     className={`font-semibold tracking-[-0.03em] truncate text-black font-sans ${
@@ -342,10 +272,10 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
                 </div>
               </div>
 
-              {/* Right Side: tl;dr and Info Callout Snippets */}
+              {/* Right Side: tl;dr and Info Callout Snippets (Hidden or minimal in compact / mobile mode) */}
               {!isCompact ? (
                 <>
-                  <div className="hidden sm:flex flex-col justify-center items-end text-right w-[240px] lg:w-[280px] pl-4 border-l border-[#f0f0f0] pointer-events-none">
+                  <div className="hidden sm:flex flex-col justify-center items-end text-right w-[240px] lg:w-[280px] pl-4 border-l border-[#f0f0f0]">
                     {note.tldr ? (
                       <p className="text-xs text-[#333333] leading-snug line-clamp-2 font-sans mb-1.5">
                         {note.tldr}
@@ -365,26 +295,26 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
                       <ArrowRight className="w-3 h-3" />
                     </div>
                   </div>
-                  <div className="sm:hidden shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-[#f4f4f4] text-black pointer-events-none">
+                  <div className="sm:hidden shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-[#f4f4f4] text-black">
                     <ArrowRight className="w-3.5 h-3.5" />
                   </div>
                 </>
               ) : (
-                <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-[#f4f4f4] text-black pointer-events-none">
+                <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-[#f4f4f4] text-black">
                   <ArrowRight className="w-3.5 h-3.5" />
                 </div>
               )}
-            </div>
+            </motion.div>
           );
         })}
       </div>
 
-      {/* Bottom Stream Progress Bar (Smooth Continuous Scrubber) */}
+      {/* Bottom Stream Progress Bar */}
       <div className="absolute bottom-6 inset-x-8 flex flex-col gap-1 items-center z-10 pointer-events-none">
         <div className={`h-0.5 bg-[#e0e0e0] rounded-full overflow-hidden ${isCompact ? 'w-24' : 'w-48'}`}>
           <div
-            className="h-full bg-black rounded-full"
-            style={{ width: `${Math.max(1, Math.min(100, ((scrollPos + 1) / notes.length) * 100))}%` }}
+            className="h-full bg-black transition-all duration-150 rounded-full"
+            style={{ width: `${((activeIndex + 1) / notes.length) * 100}%` }}
           />
         </div>
       </div>
