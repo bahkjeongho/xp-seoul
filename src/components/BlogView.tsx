@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ArrowLeft, Clock, Tag } from 'lucide-react';
+import { useLenisScroll } from '../hooks/useLenisScroll';
 
 interface BlogPost {
   title: string;
@@ -50,10 +51,18 @@ const SAMPLE_POSTS: BlogPost[] = [
 
 export const BlogView: React.FC = () => {
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+  const detailContainerRef = useRef<HTMLDivElement>(null);
+  const listContainerRef = useRef<HTMLDivElement>(null);
+
+  useLenisScroll(detailContainerRef, [selectedPost?.title]);
+  useLenisScroll(listContainerRef, []);
 
   if (selectedPost) {
     return (
-      <div className="flex-1 h-full overflow-y-auto bg-white px-8 lg:px-24 py-16 max-w-4xl mx-auto flex flex-col gap-10">
+      <div
+        ref={detailContainerRef}
+        className="flex-1 h-full overflow-y-auto bg-white px-8 lg:px-24 py-16 max-w-4xl mx-auto flex flex-col gap-10"
+      >
         <button
           onClick={() => setSelectedPost(null)}
           className="inline-flex items-center gap-2 font-mono text-xs text-[#888888] hover:text-black transition-colors"
@@ -86,7 +95,10 @@ export const BlogView: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 h-full overflow-y-auto bg-white px-8 lg:px-20 py-16 flex flex-col gap-12 max-w-5xl mx-auto">
+    <div
+      ref={listContainerRef}
+      className="flex-1 h-full overflow-y-auto bg-white px-8 lg:px-20 py-16 flex flex-col gap-12 max-w-5xl mx-auto"
+    >
       <header className="flex flex-col gap-2 border-b border-black pb-6">
         <span className="font-mono text-xs uppercase tracking-widest text-[#888888]">Journal & Critique</span>
         <h1 className="text-4xl lg:text-6xl font-black tracking-[-0.05em] text-black">

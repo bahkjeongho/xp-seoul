@@ -48,16 +48,16 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
     const dt = now - lastWheelTimeRef.current;
     lastWheelTimeRef.current = now;
 
-    // Reset accumulator on pause (>160ms) to ensure clean stops
-    if (dt > 160) {
+    // Reset accumulator on pause (>140ms) to ensure clean stops
+    if (dt > 140) {
       wheelAccumulatorRef.current = 0;
     }
 
-    // Dampen trackpad flick spikes so cards don't rush past
-    const clampedDelta = Math.sign(e.deltaY) * Math.min(50, Math.abs(e.deltaY));
+    // Dampen trackpad flick spikes so cards glide smoothly without rushing
+    const clampedDelta = Math.sign(e.deltaY) * Math.min(36, Math.abs(e.deltaY));
     wheelAccumulatorRef.current += clampedDelta;
 
-    const THRESHOLD = 52; // Natural, comfortable trackpad threshold
+    const THRESHOLD = 44; // Gentle, fluid trackpad threshold
     if (Math.abs(wheelAccumulatorRef.current) >= THRESHOLD) {
       const step = wheelAccumulatorRef.current > 0 ? 1 : -1;
       wheelAccumulatorRef.current = wheelAccumulatorRef.current > 0
@@ -215,9 +215,9 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
               style={{ left: '50%' }}
               transition={{
                 type: 'spring',
-                stiffness: 220,
-                damping: 28,
-                mass: 0.8,
+                stiffness: 155,
+                damping: 24,
+                mass: 0.7,
               }}
               whileHover={{
                 scale: scale * 1.02,

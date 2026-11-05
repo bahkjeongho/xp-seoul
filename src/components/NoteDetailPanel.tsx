@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { X, ExternalLink, Globe, MapPin, Music, Radio, Link as LinkIcon } from 'lucide-react';
 import { renderFullNoteHtml } from '../utils/markdown';
 import { getAllExternalLinks, type ExternalLinkItem } from '../utils/links';
+import { useLenisScroll } from '../hooks/useLenisScroll';
 
 interface NoteDetailPanelProps {
   note: NoteItem;
@@ -152,6 +153,10 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
     return arr.map(t => String(t).replace(/^\[\[/, '').replace(/\]\]$/, '').replace(/^#/, '').trim()).filter(Boolean);
   }, [fullNote.allProps]);
 
+  // Lenis smooth scrolling for Note Detail reading container
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  useLenisScroll(scrollContainerRef, [fullNote.id]);
+
   return (
     <motion.section
       initial={{ opacity: 0, x: isMobile ? 0 : 30 }}
@@ -180,8 +185,12 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
         </button>
       </div>
 
-      {/* Main Scrollable Canvas (Width tailored to 1080px) */}
-      <div className={`flex-1 overflow-y-auto px-6 lg:px-12 py-8 flex flex-col items-center ${isMobile ? 'pb-28' : ''}`}>
+      {/* Main Scrollable Canvas with Lenis integration */}
+      <div
+        ref={scrollContainerRef}
+        className={`flex-1 overflow-y-auto px-6 lg:px-12 py-8 flex flex-col items-center ${isMobile ? 'pb-28' : ''}`}
+        style={{ scrollBehavior: 'smooth' }}
+      >
         <div className="w-full max-w-[1080px] flex flex-col gap-6">
 
           {/* (1) Title Row & Top Right Taxonomy Hierarchy Buttons */}

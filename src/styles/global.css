@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "@fontsource/geist-sans";
 @import "@fontsource/geist-mono";
+@import "lenis/dist/lenis.css";
 
 @theme {
   --font-sans: 'Geist Sans', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Pretendard', sans-serif;
