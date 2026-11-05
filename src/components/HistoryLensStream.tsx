@@ -141,11 +141,11 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
               scale = Math.max(0.70, 0.88 - beyond * 0.06);
               opacity = Math.max(0.08, 0.60 - beyond * 0.22);
             }
-            yOffset = distance * 48;
+            yOffset = distance * 38;
             zIndex = 20 - distance;
           } else {
             // distance < 0 (item scrolled above)
-            yOffset = distance * 44;
+            yOffset = distance * 36;
             scale = Math.max(0.8, 1 + distance * 0.1);
             opacity = Math.max(0.1, 1 + distance * 0.5);
             zIndex = 10;
@@ -174,18 +174,18 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
                 cursor: 'pointer',
               }}
               style={{ zIndex }}
-              className={`absolute w-[250px] lg:w-[280px] h-[52px] px-3 py-1.5 flex items-center justify-between rounded-xl transition-all cursor-pointer ${
+              className={`absolute w-[250px] lg:w-[280px] h-[46px] px-3 py-1 flex items-center justify-between rounded-xl transition-all cursor-pointer ${
                 isTopFocus
                   ? isCurrentlySelected
-                    ? 'bg-black text-white shadow-[0_8px_24px_rgba(0,0,0,0.18)] border border-black ring-1 ring-black/20'
-                    : 'bg-white text-black shadow-[0_8px_24px_rgba(0,0,0,0.08)] border border-black/15 ring-1 ring-black/5'
+                    ? 'bg-black text-white shadow-[0_6px_20px_rgba(0,0,0,0.18)] border border-black ring-1 ring-black/20'
+                    : 'bg-white text-black shadow-[0_6px_20px_rgba(0,0,0,0.08)] border border-black/15 ring-1 ring-black/5'
                   : 'bg-white/95 text-[#333333] border border-black/8 hover:bg-white hover:opacity-100 shadow-sm'
               }`}
             >
               {/* Left Side: Title & Topic */}
               <div className="flex flex-col justify-center min-w-0 pr-2">
                 <span
-                  className={`font-sans font-medium text-[13px] tracking-[-0.02em] truncate ${
+                  className={`font-sans font-medium text-[12px] tracking-[-0.02em] truncate ${
                     isTopFocus && isCurrentlySelected ? 'text-white font-semibold' : 'text-black'
                   }`}
                 >
@@ -193,7 +193,7 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
                 </span>
                 {note.topic && (
                   <span
-                    className={`font-mono text-[9px] uppercase tracking-wider truncate mt-0.5 ${
+                    className={`font-mono text-[8.5px] uppercase tracking-wider truncate mt-0.5 ${
                       isTopFocus && isCurrentlySelected ? 'text-white/70' : 'text-[#888888]'
                     }`}
                   >
@@ -204,13 +204,13 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
 
               {/* Right Side: Arrow Badge */}
               <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-colors ${
                   isTopFocus && isCurrentlySelected
                     ? 'bg-white/20 text-white'
                     : 'bg-[#f4f4f5] text-[#666666]'
                 }`}
               >
-                <ArrowRight className="w-3 h-3" />
+                <ArrowRight className="w-2.5 h-2.5" />
               </div>
             </motion.div>
           );

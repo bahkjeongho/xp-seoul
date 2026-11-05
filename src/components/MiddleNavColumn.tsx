@@ -78,18 +78,15 @@ export const MiddleNavColumn: React.FC<MiddleNavColumnProps> = ({
   // When note is selected: Unified Navigation Column
   return (
     <div className="w-[280px] lg:w-[320px] h-full flex flex-col bg-[#fbfbfb] border-r border-[#e8e8e8] shrink-0 select-none overflow-hidden">
-      {/* (1) Top Brand Header with Home Navigation */}
-      <div className="px-4 py-2.5 border-b border-[#eeeeee] flex items-center justify-between bg-white shrink-0">
+      {/* (1) Top Brand Header with Home Navigation (Clean logo without ESC pill) */}
+      <div className="px-4 py-2 border-b border-[#eeeeee] flex items-center justify-between bg-white shrink-0">
         <button
           onClick={onGoHome}
-          title="Return to Main Overview (ESC)"
-          className="flex items-center gap-2 group text-left"
+          title="Return to Main Overview"
+          className="flex items-center gap-1.5 group text-left"
         >
-          <span className="font-black text-lg tracking-tight text-black font-sans group-hover:opacity-70 transition-opacity">
+          <span className="font-black text-lg tracking-tight text-black font-sans group-hover:opacity-60 transition-opacity">
             XP Seoul
-          </span>
-          <span className="font-mono text-[9px] text-[#888888] px-1.5 py-0.5 rounded bg-[#f4f4f5] group-hover:bg-black group-hover:text-white transition-colors">
-            ESC
           </span>
         </button>
 
@@ -98,8 +95,8 @@ export const MiddleNavColumn: React.FC<MiddleNavColumnProps> = ({
         </span>
       </div>
 
-      {/* (2) Upper Section: Recent History Lens Stream (Compact ~34% height) */}
-      <div className="h-[34%] min-h-[190px] border-b border-[#e8e8e8] relative flex flex-col bg-[#fcfcfd] overflow-hidden">
+      {/* (2) Upper Section: Recent History Lens Stream (Compact fixed 185px height so filters sit high up) */}
+      <div className="h-[185px] border-b border-[#e8e8e8] relative flex flex-col bg-[#fcfcfd] shrink-0 overflow-hidden">
         <HistoryLensStream
           historyNotes={historyNotes}
           selectedNote={selectedNote}
@@ -107,11 +104,11 @@ export const MiddleNavColumn: React.FC<MiddleNavColumnProps> = ({
         />
       </div>
 
-      {/* (3) Middle Section: Dynamic Filter Bar between History & Stream (Utilizing the Gap!) */}
+      {/* (3) Middle Section: Dynamic Hierarchical Filter Bar (Compact & Slim) */}
       {onSelectCategory && (
-        <div className="border-b border-[#e8e8e8] bg-white flex flex-col shrink-0 py-1.5 shadow-2xs">
+        <div className="border-b border-[#e8e8e8] bg-white flex flex-col shrink-0 py-1 shadow-2xs">
           {/* Filter Header Row */}
-          <div className="px-3.5 pb-1 flex items-center justify-between text-[9px] font-mono uppercase text-[#888888]">
+          <div className="px-3 pb-0.5 flex items-center justify-between text-[9px] font-mono uppercase text-[#888888]">
             <span className="font-bold flex items-center gap-1 text-black">
               <span>Filter Stream</span>
               {selectedCategory && (
@@ -132,7 +129,7 @@ export const MiddleNavColumn: React.FC<MiddleNavColumnProps> = ({
           </div>
 
           {/* Level 1: Categories */}
-          <div className="flex items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 py-1 gap-1">
+          <div className="flex items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 py-0.5 gap-1">
             <button
               onClick={() => {
                 onSelectCategory(null);
@@ -177,7 +174,7 @@ export const MiddleNavColumn: React.FC<MiddleNavColumnProps> = ({
 
           {/* Level 2: Sub-Categories (if Category is selected) */}
           {selectedCategory && subCategories.length > 0 && onSelectSubCategory && (
-            <div className="flex items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pt-1 gap-1 border-t border-[#f0f0f0] mt-0.5">
+            <div className="flex items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pt-0.5 gap-1 border-t border-[#f0f0f0] mt-0.5">
               <span className="text-[9px] font-mono text-[#999999] uppercase shrink-0">
                 SUB:
               </span>
@@ -223,7 +220,7 @@ export const MiddleNavColumn: React.FC<MiddleNavColumnProps> = ({
 
           {/* Level 3: Topics (if Sub-Category is selected) */}
           {selectedSubCategory && topics.length > 0 && onSelectTopic && (
-            <div className="flex items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pt-1 gap-1 border-t border-[#f0f0f0] mt-0.5">
+            <div className="flex items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pt-0.5 gap-1 border-t border-[#f0f0f0] mt-0.5">
               <span className="text-[9px] font-mono text-[#999999] uppercase shrink-0">
                 TOPIC:
               </span>
@@ -264,8 +261,8 @@ export const MiddleNavColumn: React.FC<MiddleNavColumnProps> = ({
         </div>
       )}
 
-      {/* (4) Lower Section: Compact Archive Scroll Stream */}
-      <div className="flex-1 min-h-[220px] relative overflow-hidden flex flex-col">
+      {/* (4) Lower Section: Spacious Archive Scroll Stream (Maintains Full Height!) */}
+      <div className="flex-1 min-h-[300px] relative overflow-hidden flex flex-col">
         <div className="px-4 py-1.5 border-b border-[#eeeeee] bg-[#f7f7f8] flex items-center justify-between text-[9px] font-mono uppercase text-[#888888]">
           <span>Archive Stream</span>
           <span>{notes.length} notes</span>
