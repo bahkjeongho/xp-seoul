@@ -256,14 +256,11 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
   const cx = dimensions.width / 2;
   const cy = canvasHeight / 2;
 
-  // Sphere radius
-  const sphereRadius = Math.max(dimensions.width, canvasHeight) * 0.65;
+  // Sphere radius and curvature
+  const sphereRadius = Math.max(dimensions.width, canvasHeight) * 0.72;
+  const kCurvature = 0.36;
 
-  // Top-right filter zone boundary to prevent card overlap
-  const filterAreaLeft = dimensions.width - 250;
-  const filterAreaBottom = selectedCategory ? 620 : 440;
-
-  // Compute visible cards with 3D Spherical projection
+  // Compute visible cards with 3D Spherical conformal projection
   const visibleCards = useMemo(() => {
     if (filteredNotes.length === 0) return [];
 
@@ -276,18 +273,16 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       opacity: number;
       rotX: number;
       rotY: number;
-      translateZ: number;
       zIndex: number;
     }> = [];
 
-    const minCol = Math.floor((-pan.x - sphereRadius) / STEP_X);
-    const maxCol = Math.ceil((-pan.x + dimensions.width + sphereRadius) / STEP_X);
-    const minRow = Math.floor((-pan.y - sphereRadius) / STEP_Y);
-    const maxRow = Math.ceil((-pan.y + canvasHeight + sphereRadius) / STEP_Y);
+    const minCol = Math.floor((-pan.x - sphereRadius * 1.3) / STEP_X);
+    const maxCol = Math.ceil((-pan.x + dimensions.width + sphereRadius * 1.3) / STEP_X);
+    const minRow = Math.floor((-pan.y - sphereRadius * 1.3) / STEP_Y);
+    const maxRow = Math.ceil((-pan.y + canvasHeight + sphereRadius * 1.3) / STEP_Y);
 
     for (let r = minRow; r <= maxRow; r++) {
       for (let c = minCol; c <= maxCol; c++) {
-        // Natural grid position without collapsing coordinates:
         const cardCenterX = c * STEP_X + pan.x + CARD_W / 2;
         const cardCenterY = r * STEP_Y + pan.y + CARD_H / 2;
 
@@ -296,7 +291,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         const dist = Math.hypot(dx, dy);
 
         // Cull cards outside sphere horizon
-        if (dist > sphereRadius * 1.1) continue;
+        if (dist > sphereRadius * 1.25) continue;
 
         const total = filteredNotes.length;
         const wrappedCol = ((c % GRID_COLS) + GRID_COLS) % GRID_COLS;
@@ -305,25 +300,29 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         const note = filteredNotes[noteIndex];
         if (!note) continue;
 
-        const screenX = Math.round(cardCenterX - CARD_W / 2);
-        const screenY = Math.round(cardCenterY - CARD_H / 2);
+        // Spherical curvature compression factor
+        const normDist = dist / sphereRadius;
+        const rFactor = 1.0 / Math.sqrt(1.0 + kCurvature * Math.pow(normDist, 2));
 
-        // Cull cards outside canvas or under the top-right filter buttons
-        if (screenY + CARD_H < 0 || screenY > canvasHeight + 100) continue;
-        if (screenX + CARD_W < -100 || screenX > dimensions.width + 100) continue;
-        if (screenX + CARD_W > filterAreaLeft && screenY < filterAreaBottom) continue;
+        // Curvilinear spherical screen positions
+        const curvedCenterX = cx + dx * rFactor;
+        const curvedCenterY = cy + dy * rFactor;
 
-        const normDist = Math.min(1.0, dist / sphereRadius);
+        const screenX = Math.round(curvedCenterX - CARD_W / 2);
+        const screenY = Math.round(curvedCenterY - CARD_H / 2);
 
-        // 3D Spherical normal rotation & depth
-        const rotY = Number(((dx / sphereRadius) * 26).toFixed(1));
-        const rotX = Number((-(dy / sphereRadius) * 26).toFixed(1));
-        const translateZ = Number((-(1 - Math.cos(normDist * (Math.PI / 2))) * 140).toFixed(1));
+        // Cull cards that have completely scrolled outside the visible screen buffer
+        if (screenY + CARD_H < -80 || screenY > canvasHeight + 80) continue;
+        if (screenX + CARD_W < -80 || screenX > dimensions.width + 80) continue;
 
-        // Organic Scale: Center is 1.0, gently scaling to 0.76 at horizon
-        const scale = Number(Math.max(0.76, 1 - Math.pow(normDist, 1.6) * 0.24).toFixed(2));
-        const opacity = Number(Math.max(0, 1 - Math.pow(normDist, 2.8)).toFixed(2));
-        const zIndex = Math.round((1 - normDist) * 100);
+        // Dynamic 3D Spherical Normal Rotation
+        const rotY = Number(((dx / sphereRadius) * 40 * rFactor).toFixed(1));
+        const rotX = Number((-(dy / sphereRadius) * 40 * rFactor).toFixed(1));
+
+        // Organic scale tapering matching curvature derivative so cards never collide
+        const scale = Number(Math.max(0.48, Math.pow(rFactor, 2.8)).toFixed(2));
+        const opacity = Number(Math.max(0, Math.min(1, 1 - Math.pow(normDist / 1.15, 3.2))).toFixed(2));
+        const zIndex = Math.round((1 - Math.min(1, normDist)) * 100);
 
         items.push({
           note,
@@ -334,7 +333,6 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
           opacity,
           rotX,
           rotY,
-          translateZ,
           zIndex,
         });
       }
@@ -354,8 +352,6 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     GRID_ROWS,
     STEP_X,
     STEP_Y,
-    filterAreaLeft,
-    filterAreaBottom,
   ]);
 
   // Handle card click
@@ -476,8 +472,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
             onClick={handleResetAll}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full shadow-xs border transition-all text-xs font-sans font-medium active:scale-95 mb-0.5 ${
               hasActiveFilter
-                ? 'bg-black text-white border-black'
-                : 'bg-white text-[#555555] border-black/8 hover:text-black hover:bg-[#f5f5f5]'
+                ? 'bg-black text-white border-black shadow-md'
+                : 'bg-white/90 backdrop-blur-md text-[#555555] border-black/8 hover:text-black hover:bg-white'
             }`}
           >
             <RotateCcw className="w-3 h-3" />
@@ -493,8 +489,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
             }}
             className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all shadow-xs border text-right ${
               !selectedCategory
-                ? 'bg-black text-white border-black font-semibold'
-                : 'bg-white text-[#333333] border-black/8 hover:bg-black hover:text-white'
+                ? 'bg-black text-white border-black font-semibold shadow-md'
+                : 'bg-white/90 backdrop-blur-md text-[#333333] border-black/8 hover:bg-black hover:text-white'
             }`}
           >
             All ({notes.length})
@@ -520,8 +516,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                   }}
                   className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all shadow-xs border flex items-center justify-end gap-1.5 ${
                     isCatSelected
-                      ? 'bg-black text-white border-black font-semibold'
-                      : 'bg-white text-[#333333] border-black/8 hover:bg-black hover:text-white'
+                      ? 'bg-black text-white border-black font-semibold shadow-md'
+                      : 'bg-white/90 backdrop-blur-md text-[#333333] border-black/8 hover:bg-black hover:text-white'
                   }`}
                 >
                   <span>{cat}</span>
@@ -553,8 +549,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                               }}
                               className={`px-3 py-1 rounded-full text-[11px] font-sans font-medium transition-all shadow-2xs border ${
                                 isSubSelected
-                                  ? 'bg-[#333333] text-white border-[#333333]'
-                                  : 'bg-[#f4f4f6] text-[#444444] border-black/6 hover:bg-[#e8e8ea] hover:text-black'
+                                  ? 'bg-[#222222] text-white border-[#222222]'
+                                  : 'bg-white/85 backdrop-blur-md text-[#444444] border-black/8 hover:bg-black hover:text-white'
                               }`}
                             >
                               ↳ {sub}
@@ -578,7 +574,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                                         className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono transition-all border ${
                                           isTopSelected
                                             ? 'bg-black text-white border-black font-semibold'
-                                            : 'bg-white text-[#666666] border-black/10 hover:border-black/30 hover:text-black'
+                                            : 'bg-white/85 backdrop-blur-md text-[#555555] border-black/8 hover:border-black/30 hover:text-black'
                                         }`}
                                       >
                                         • {top}
@@ -624,7 +620,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                   height: `${CARD_H}px`,
                   left: 0,
                   top: 0,
-                  transform: `translate3d(${item.screenX}px, ${item.screenY}px, ${item.translateZ}px) rotateX(${item.rotX}deg) rotateY(${item.rotY}deg) scale(${item.scale})`,
+                  transform: `translate3d(${item.screenX}px, ${item.screenY}px, 0px) rotateX(${item.rotX}deg) rotateY(${item.rotY}deg) scale(${item.scale})`,
                   opacity: item.opacity,
                   zIndex: item.zIndex,
                   pointerEvents: item.opacity > 0.2 ? 'auto' : 'none',
