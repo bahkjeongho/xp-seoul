@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import type { NoteItem } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { History, SlidersHorizontal, X, RotateCcw, Plus, ChevronRight } from 'lucide-react';
+import { History, SlidersHorizontal, X, RotateCcw, Plus, ChevronRight, Shuffle } from 'lucide-react';
 import { HistoryLensStream } from './HistoryLensStream';
 import type { FacetTaxonomyData } from './TopFilterBarFacet';
-import type { ActiveFilterSlot } from './MultiFacetFilterBar';
+import type { ActiveFilterSlot, SortOrder } from './MultiFacetFilterBar';
 
 interface MobileDetailBottomSheetProps {
   isOpen: boolean;
@@ -19,6 +19,9 @@ interface MobileDetailBottomSheetProps {
   onAddFilterSlot: (slot: ActiveFilterSlot) => void;
   onRemoveFilterSlot: (id: string) => void;
   onClearAllSlots: () => void;
+  sortOrder?: SortOrder;
+  onSortOrderChange?: (order: SortOrder) => void;
+  onReshuffle?: () => void;
   onSelectNote: (note: NoteItem) => void;
 }
 
@@ -34,11 +37,14 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
   onAddFilterSlot,
   onRemoveFilterSlot,
   onClearAllSlots,
+  sortOrder = 'random',
+  onSortOrderChange,
+  onReshuffle,
   onSelectNote,
 }) => {
   if (!isOpen) return null;
 
-  const [currentAxis, setCurrentAxis] = useState<'category' | 'type' | 'field'>('category');
+  const [currentAxis, setCurrentAxis] = useState<'category' | 'type' | 'field' | 'region'>('category');
   const [draftPrimary, setDraftPrimary] = useState<string | null>(null);
 
   // Primary list for current axis
@@ -55,6 +61,11 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
     }
     if (currentAxis === 'field') {
       return Object.entries(facetData.byField || {})
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([name, data]) => ({ name, count: data.count }));
+    }
+    if (currentAxis === 'region') {
+      return Object.entries(facetData.byRegion || {})
         .sort((a, b) => b[1].count - a[1].count)
         .map(([name, data]) => ({ name, count: data.count }));
     }
@@ -79,6 +90,11 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
         .sort((a, b) => b[1].count - a[1].count)
         .map(([name, data]) => ({ name, count: data.count }));
     }
+    if (currentAxis === 'region') {
+      return Object.entries(facetData.byRegion?.[draftPrimary]?.subs || {})
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([name, data]) => ({ name, count: data.count }));
+    }
     return [];
   }, [currentAxis, draftPrimary, facetData]);
 
@@ -91,6 +107,8 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
       topicMap = facetData.byType?.[draftPrimary]?.topics || {};
     } else if (currentAxis === 'field' && draftPrimary) {
       topicMap = facetData.byField?.[draftPrimary]?.topics || {};
+    } else if (currentAxis === 'region' && draftPrimary) {
+      topicMap = facetData.byRegion?.[draftPrimary]?.topics || {};
     }
     return Object.entries(topicMap)
       .sort((a, b) => b[1] - a[1])
@@ -115,6 +133,8 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
       subType: currentAxis === 'type' ? s : undefined,
       field: currentAxis === 'field' ? p : undefined,
       subField: currentAxis === 'field' ? s : undefined,
+      country: currentAxis === 'region' ? p : undefined,
+      city: currentAxis === 'region' ? s : undefined,
       topic: t,
     });
   };
@@ -209,7 +229,14 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
                   ) : (
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {activeFilterSlots.map((slot) => {
-                        const badgeLetter = slot.axis === 'category' ? 'C' : slot.axis === 'field' ? 'F' : 'T';
+                        const badgeLetter =
+                          slot.axis === 'category'
+                            ? 'C'
+                            : slot.axis === 'field'
+                            ? 'F'
+                            : slot.axis === 'region'
+                            ? 'R'
+                            : 'T';
                         return (
                           <span
                             key={slot.id}
@@ -233,11 +260,66 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
                   )}
                 </div>
 
-                {/* 2. Axis Switcher: Category | Type | Field */}
+                {/* 2. Sort Order Segmented Selector */}
+                {onSortOrderChange && (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f8f8fa] border border-black/8 font-mono text-xs">
+                    <span className="text-[11px] uppercase tracking-wider text-[#777777] font-semibold">
+                      Sort
+                    </span>
+                    <div className="flex items-center bg-white p-0.5 rounded-lg border border-black/10">
+                      <button
+                        onClick={() => {
+                          if (sortOrder === 'random') {
+                            onReshuffle?.();
+                          } else {
+                            onSortOrderChange('random');
+                          }
+                        }}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 ${
+                          sortOrder === 'random'
+                            ? 'bg-black text-white shadow-xs font-semibold'
+                            : 'text-[#666666]'
+                        }`}
+                      >
+                        <Shuffle className="w-2.5 h-2.5" />
+                        <span>Random</span>
+                      </button>
+                      <button
+                        onClick={() => onSortOrderChange('asc')}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+                          sortOrder === 'asc'
+                            ? 'bg-black text-white shadow-xs font-semibold'
+                            : 'text-[#666666]'
+                        }`}
+                      >
+                        A → Z
+                      </button>
+                      <button
+                        onClick={() => onSortOrderChange('desc')}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+                          sortOrder === 'desc'
+                            ? 'bg-black text-white shadow-xs font-semibold'
+                            : 'text-[#666666]'
+                        }`}
+                      >
+                        Z → A
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Axis Switcher: Category | Type | Field | Region */}
                 <div className="flex items-center gap-1.5 p-1 bg-[#f4f4f6] rounded-xl">
-                  {(['category', 'type', 'field'] as const).map((axis) => {
+                  {(['category', 'type', 'field', 'region'] as const).map((axis) => {
                     const isSelected = currentAxis === axis;
-                    const label = axis === 'category' ? 'Category' : axis === 'type' ? 'Type' : 'Field';
+                    const label =
+                      axis === 'category'
+                        ? 'Category'
+                        : axis === 'type'
+                        ? 'Type'
+                        : axis === 'field'
+                        ? 'Field'
+                        : 'Region';
                     return (
                       <button
                         key={axis}
@@ -257,10 +339,10 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
                   })}
                 </div>
 
-                {/* 3. Primary Items Grid */}
+                {/* 4. Primary Items Grid */}
                 <div className="flex flex-col gap-1.5">
                   <span className="text-[11px] font-mono text-[#888888] uppercase tracking-wider">
-                    Select {currentAxis === 'category' ? 'Category' : currentAxis === 'type' ? 'Type' : 'Field'}:
+                    Select {currentAxis === 'category' ? 'Category' : currentAxis === 'type' ? 'Type' : currentAxis === 'field' ? 'Field' : 'Country'}:
                   </span>
                   <div className="grid grid-cols-2 gap-1.5">
                     {primaryList.map((item) => {
@@ -268,7 +350,8 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
                       const hasSubsOrTopics = Boolean(
                         (currentAxis === 'category' && (Object.keys(facetData.byCategory?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byCategory?.[item.name]?.topics || {}).length > 0)) ||
                         (currentAxis === 'type' && (Object.keys(facetData.byType?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byType?.[item.name]?.topics || {}).length > 0)) ||
-                        (currentAxis === 'field' && (Object.keys(facetData.byField?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byField?.[item.name]?.topics || {}).length > 0))
+                        (currentAxis === 'field' && (Object.keys(facetData.byField?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byField?.[item.name]?.topics || {}).length > 0)) ||
+                        (currentAxis === 'region' && (Object.keys(facetData.byRegion?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byRegion?.[item.name]?.topics || {}).length > 0))
                       );
 
                       return (
@@ -292,20 +375,18 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
                           }`}
                         >
                           <span className="truncate">{item.name}</span>
-                          <span className={`text-[10px] font-mono ml-1 ${isSelected ? 'text-white/80' : 'text-[#888888]'}`}>
-                            {item.count}
-                          </span>
+                          <span className={`text-[10px] font-mono ml-1 ${isSelected ? 'text-white/80' : 'text-[#888888]'}`}>{item.count}</span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* 4. Sub-Categories / Sub-Types / Sub-Fields (if primary selected) */}
+                {/* 5. Sub-Categories / Sub-Types / Sub-Fields / Cities (if primary selected) */}
                 {draftPrimary && secondaryList.length > 0 && (
                   <div className="flex flex-col gap-1.5 pt-2 border-t border-[#f0f0f0]">
                     <span className="text-[11px] font-mono text-[#888888] uppercase tracking-wider">
-                      Sub-items ({draftPrimary}):
+                      {currentAxis === 'region' ? 'Cities' : 'Sub-items'} ({draftPrimary}):
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {secondaryList.map((sub) => (

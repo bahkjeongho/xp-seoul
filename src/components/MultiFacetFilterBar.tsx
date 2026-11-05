@@ -1,18 +1,22 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, RotateCcw, ChevronRight, Plus } from 'lucide-react';
+import { Search, X, RotateCcw, ChevronRight, Plus, Shuffle } from 'lucide-react';
 import type { FacetTaxonomyData } from './TopFilterBarFacet';
+
+export type SortOrder = 'random' | 'asc' | 'desc';
 
 export interface ActiveFilterSlot {
   id: string;
-  axis: 'category' | 'type' | 'field';
-  label: string; // e.g. "The Arts" or "Visual Art" or "Art Platform"
+  axis: 'category' | 'type' | 'field' | 'region';
+  label: string; // e.g. "The Arts" or "Visual Art" or "Art Platform" or "South Korea" or "Seoul"
   category?: string | null;
   subCategory?: string | null;
   type?: string | null;
   subType?: string | null;
   field?: string | null;
   subField?: string | null;
+  country?: string | null;
+  city?: string | null;
   topic?: string | null;
 }
 
@@ -26,6 +30,9 @@ interface MultiFacetFilterBarProps {
   onClearAllSlots: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  sortOrder?: SortOrder;
+  onSortOrderChange?: (order: SortOrder) => void;
+  onReshuffle?: () => void;
   isDesktop?: boolean;
 }
 
@@ -39,9 +46,12 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
   onClearAllSlots,
   searchQuery,
   onSearchChange,
+  sortOrder = 'random',
+  onSortOrderChange,
+  onReshuffle,
   isDesktop = false,
 }) => {
-  const [currentAxis, setCurrentAxis] = useState<'category' | 'type' | 'field'>('category');
+  const [currentAxis, setCurrentAxis] = useState<'category' | 'type' | 'field' | 'region'>('category');
   const [isSearchOpen, setIsSearchOpen] = useState(Boolean(searchQuery));
 
   // Draft filter selections before adding to stack
@@ -69,6 +79,11 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
         .sort((a, b) => b[1].count - a[1].count)
         .map(([name, data]) => ({ name, count: data.count }));
     }
+    if (currentAxis === 'region') {
+      return Object.entries(facetData.byRegion || {})
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([name, data]) => ({ name, count: data.count }));
+    }
     return [];
   }, [currentAxis, facetData]);
 
@@ -89,6 +104,12 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
     }
     if (currentAxis === 'field') {
       const parent = facetData.byField?.[draftPrimary];
+      return Object.entries(parent?.subs || {})
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([name, data]) => ({ name, count: data.count }));
+    }
+    if (currentAxis === 'region') {
+      const parent = facetData.byRegion?.[draftPrimary];
       return Object.entries(parent?.subs || {})
         .sort((a, b) => b[1].count - a[1].count)
         .map(([name, data]) => ({ name, count: data.count }));
@@ -116,6 +137,12 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
         topicMap = facetData.byField?.[draftPrimary]?.subs?.[draftSecondary]?.topics || {};
       } else {
         topicMap = facetData.byField?.[draftPrimary]?.topics || {};
+      }
+    } else if (currentAxis === 'region' && draftPrimary) {
+      if (draftSecondary) {
+        topicMap = facetData.byRegion?.[draftPrimary]?.subs?.[draftSecondary]?.topics || {};
+      } else {
+        topicMap = facetData.byRegion?.[draftPrimary]?.topics || {};
       }
     }
 
@@ -149,6 +176,8 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
       subType: currentAxis === 'type' ? s : undefined,
       field: currentAxis === 'field' ? p : undefined,
       subField: currentAxis === 'field' ? s : undefined,
+      country: currentAxis === 'region' ? p : undefined,
+      city: currentAxis === 'region' ? s : undefined,
       topic: t,
     };
 
@@ -170,11 +199,18 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
         {/* Active Slots list */}
         {activeFilterSlots.length === 0 ? (
           <span className="text-xs font-mono text-[#888888] shrink-0 italic">
-            Select category, type, or field below to add filter
+            Select category, type, field, or region below to add filter
           </span>
         ) : (
           activeFilterSlots.map((slot) => {
-            const badgeLetter = slot.axis === 'category' ? 'C' : slot.axis === 'field' ? 'F' : 'T';
+            const badgeLetter =
+              slot.axis === 'category'
+                ? 'C'
+                : slot.axis === 'field'
+                ? 'F'
+                : slot.axis === 'region'
+                ? 'R'
+                : 'T';
             return (
               <motion.div
                 key={slot.id}
@@ -183,7 +219,7 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
                 exit={{ scale: 0.9, opacity: 0 }}
                 className="inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full bg-black text-white text-xs font-mono shrink-0 shadow-xs"
               >
-                {/* Rounded box badge for C, F, T */}
+                {/* Rounded box badge for C, F, T, R */}
                 <span className="w-4 h-4 rounded-[4px] bg-white text-black flex items-center justify-center text-[10px] font-bold shrink-0">
                   {badgeLetter}
                 </span>
@@ -215,7 +251,7 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
         )}
       </div>
 
-      {/* 2. AXIS TABS: Category | Type | Field (No Icons, No 'Pick Dimension', Clean Text) */}
+      {/* 2. AXIS TABS: Category | Type | Field | Region + Sort Controls + Search */}
       <div className="flex items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 lg:px-8 py-2 gap-1.5 border-b border-[#f0f0f2] bg-[#fafafa]">
         {/* Category */}
         <button
@@ -265,10 +301,74 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
           Field
         </button>
 
+        {/* Region */}
+        <button
+          onClick={() => {
+            setCurrentAxis('region');
+            setDraftPrimary(null);
+            setDraftSecondary(null);
+          }}
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 ${
+            currentAxis === 'region'
+              ? 'bg-black text-white shadow-xs font-semibold'
+              : 'bg-white border border-[#e5e5e7] text-[#444444] hover:bg-[#efeff1]'
+          }`}
+        >
+          Region
+        </button>
+
+        {/* Note Sort Controls */}
+        {onSortOrderChange && (
+          <div className="ml-auto flex items-center bg-[#eeeeee]/80 p-0.5 rounded-lg border border-[#e0e0e3] text-[11px] font-mono shrink-0">
+            <button
+              onClick={() => {
+                if (sortOrder === 'random') {
+                  onReshuffle?.();
+                } else {
+                  onSortOrderChange('random');
+                }
+              }}
+              className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1 ${
+                sortOrder === 'random'
+                  ? 'bg-white text-black font-semibold shadow-2xs'
+                  : 'text-[#666666] hover:text-black'
+              }`}
+              title="Random sort (click again to reshuffle)"
+            >
+              <Shuffle className="w-3 h-3" />
+              <span>Random</span>
+            </button>
+            <button
+              onClick={() => onSortOrderChange('asc')}
+              className={`px-2 py-1 rounded-md transition-all ${
+                sortOrder === 'asc'
+                  ? 'bg-white text-black font-semibold shadow-2xs'
+                  : 'text-[#666666] hover:text-black'
+              }`}
+              title="Alphabetical A to Z"
+            >
+              A → Z
+            </button>
+            <button
+              onClick={() => onSortOrderChange('desc')}
+              className={`px-2 py-1 rounded-md transition-all ${
+                sortOrder === 'desc'
+                  ? 'bg-white text-black font-semibold shadow-2xs'
+                  : 'text-[#666666] hover:text-black'
+              }`}
+              title="Alphabetical Z to A"
+            >
+              Z → A
+            </button>
+          </div>
+        )}
+
         {/* Search Toggle Button */}
         <button
           onClick={() => setIsSearchOpen((p) => !p)}
-          className={`ml-auto p-1.5 rounded-md border text-xs font-mono transition-colors shrink-0 flex items-center justify-center ${
+          className={`p-1.5 rounded-md border text-xs font-mono transition-colors shrink-0 flex items-center justify-center ${
+            !onSortOrderChange ? 'ml-auto ' : ''
+          }${
             isSearchOpen || searchQuery
               ? 'bg-black text-white border-black'
               : 'bg-white text-[#666666] border-[#eeeeee] hover:bg-[#eaeaea]'
@@ -332,7 +432,7 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
           >
             <div className="flex items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 lg:px-8 py-2 gap-2">
               <span className="text-[10px] font-mono text-[#999999] uppercase tracking-wider shrink-0 flex items-center gap-1">
-                <span>SUB</span>
+                <span>{currentAxis === 'region' ? 'CITY' : 'SUB'}</span>
                 <ChevronRight className="w-2.5 h-2.5" />
               </span>
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import type { NoteItem, TaxonomyData } from '../types';
 import { TopFilterBar } from './TopFilterBar';
-import { MultiFacetFilterBar, type ActiveFilterSlot } from './MultiFacetFilterBar';
+import { MultiFacetFilterBar, type ActiveFilterSlot, type SortOrder } from './MultiFacetFilterBar';
 import type { FacetTaxonomyData } from './TopFilterBarFacet';
 import facetTaxonomyJson from '../data/facet-taxonomy.json';
 import { MiddleNavColumn } from './MiddleNavColumn';
@@ -56,6 +56,19 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
   // Mobile Bottom Sheet State (History & Filter while reading notes)
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState<boolean>(false);
   const [mobileSheetTab, setMobileSheetTab] = useState<'history' | 'filter'>('history');
+
+  // Note Sorting State (Default: 'random' per user request)
+  const [sortOrder, setSortOrder] = useState<SortOrder>('random');
+  const [shuffleSeed, setShuffleSeed] = useState<number>(0);
+
+  // Stable random order mapping per note
+  const randomRanks = useMemo(() => {
+    const map = new Map<string, number>();
+    notes.forEach((n) => {
+      map.set(n.id, Math.random());
+    });
+    return map;
+  }, [notes, shuffleSeed]);
 
   // Detect Mobile Viewport
   useEffect(() => {
@@ -248,11 +261,19 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
     showUnresolvedToast(target);
   };
 
-  // High performance filtering with Stacked (Union / OR) Multi-Facet Filters
+  // High performance filtering with Stacked (Union / OR) Multi-Facet Filters & Sorting
   const filteredNotes = useMemo(() => {
     let result = notes;
 
-    // When filter slots are stacked (Up to 3), note matches if it satisfies ANY of the active slots (Union / OR)
+    const hasSearch = Boolean(searchQuery.trim());
+
+    // When not searching, filter out unlisted sub-item notes (K-Pop Idol, Academic Program, Sports Team)
+    // from the general browsing stream
+    if (!hasSearch) {
+      result = result.filter((n) => !n.unlisted);
+    }
+
+    // When filter slots are stacked, note matches if it satisfies ANY of the active slots (Union / OR)
     if (activeFilterSlots.length > 0) {
       result = result.filter((note) => {
         return activeFilterSlots.some((slot) => {
@@ -263,6 +284,8 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
           if (slot.subType && note.subType !== slot.subType) match = false;
           if (slot.field && note.field !== slot.field) match = false;
           if (slot.subField && note.subField !== slot.subField) match = false;
+          if (slot.country && (!note.countries || !note.countries.includes(slot.country))) match = false;
+          if (slot.city && (!note.cities || !note.cities.includes(slot.city))) match = false;
           if (slot.topic) {
             const hasTopic =
               note.topic === slot.topic ||
@@ -282,13 +305,24 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
           (n.aliases && n.aliases.some((a) => a.toLowerCase().includes(q))) ||
           (n.topic && n.topic.toLowerCase().includes(q)) ||
           (n.tldr && n.tldr.toLowerCase().includes(q)) ||
-          (n.cities && n.cities.some((c) => c.toLowerCase().includes(q)))
+          (n.cities && n.cities.some((c) => c.toLowerCase().includes(q))) ||
+          (n.countries && n.countries.some((c) => c.toLowerCase().includes(q)))
         );
       });
     }
 
+    // Apply Sorting: Random (default), A → Z, Z → A
+    if (sortOrder === 'asc') {
+      result = [...result].sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
+    } else if (sortOrder === 'desc') {
+      result = [...result].sort((a, b) => b.title.localeCompare(a.title, undefined, { sensitivity: 'base' }));
+    } else {
+      // Default: 'random'
+      result = [...result].sort((a, b) => (randomRanks.get(a.id) ?? 0) - (randomRanks.get(b.id) ?? 0));
+    }
+
     return result;
-  }, [notes, activeFilterSlots, searchQuery]);
+  }, [notes, activeFilterSlots, searchQuery, sortOrder, randomRanks]);
 
   // Keyboard shortcut: ESC to close detail panel
   useEffect(() => {
@@ -337,6 +371,9 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
         onAddFilterSlot={handleAddFilterSlot}
         onRemoveFilterSlot={handleRemoveFilterSlot}
         onClearAllSlots={handleClearAllSlots}
+        sortOrder={sortOrder}
+        onSortOrderChange={setSortOrder}
+        onReshuffle={() => setShuffleSeed((s) => s + 1)}
       />
     );
   }
@@ -447,6 +484,9 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
                 onClearAllSlots={handleClearAllSlots}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
+                sortOrder={sortOrder}
+                onSortOrderChange={setSortOrder}
+                onReshuffle={() => setShuffleSeed((s) => s + 1)}
                 isDesktop={true}
               />
             )}
@@ -685,6 +725,9 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
         onAddFilterSlot={handleAddFilterSlot}
         onRemoveFilterSlot={handleRemoveFilterSlot}
         onClearAllSlots={handleClearAllSlots}
+        sortOrder={sortOrder}
+        onSortOrderChange={setSortOrder}
+        onReshuffle={() => setShuffleSeed((s) => s + 1)}
         onSelectNote={(note) => {
           selectNoteWithHistory(note, true);
           setIsMobileSheetOpen(false);

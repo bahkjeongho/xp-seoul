@@ -23,6 +23,7 @@ export interface NoteItem {
   summary?: string;
   rawContent?: string;
   allProps?: Record<string, string | string[]>;
+  unlisted?: boolean;
 }
 
 export interface TaxonomyCategory {

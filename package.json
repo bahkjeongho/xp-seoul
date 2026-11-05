@@ -9,7 +9,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "update": "node scripts/build-data.mjs",
+    "sync": "node scripts/build-data.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^7.1.2",

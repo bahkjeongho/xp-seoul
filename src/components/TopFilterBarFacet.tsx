@@ -9,6 +9,7 @@ export interface FacetTaxonomyData {
   byCategory: Record<string, { count: number; subs: Record<string, { count: number; topics: Record<string, number> }>; topics: Record<string, number> }>;
   byType: Record<string, { count: number; subs: Record<string, { count: number; topics: Record<string, number> }>; topics: Record<string, number> }>;
   byField: Record<string, { count: number; subs: Record<string, { count: number; topics: Record<string, number> }>; topics: Record<string, number> }>;
+  byRegion?: Record<string, { count: number; subs: Record<string, { count: number; topics: Record<string, number> }>; topics: Record<string, number> }>;
 }
 
 export interface PrototypeFilterState {

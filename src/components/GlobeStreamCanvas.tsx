@@ -7,12 +7,13 @@ import {
   ChevronDown,
   SlidersHorizontal,
   X,
-  Plus
+  Plus,
+  Shuffle
 } from 'lucide-react';
 import { NoteDetailPanel } from './NoteDetailPanel';
 import { MobileDetailBottomSheet } from './MobileDetailBottomSheet';
 import type { FacetTaxonomyData } from './TopFilterBarFacet';
-import type { ActiveFilterSlot } from './MultiFacetFilterBar';
+import type { ActiveFilterSlot, SortOrder } from './MultiFacetFilterBar';
 import facetTaxonomyJson from '../data/facet-taxonomy.json';
 
 interface GlobeStreamCanvasProps {
@@ -27,6 +28,9 @@ interface GlobeStreamCanvasProps {
   onAddFilterSlot?: (slot: ActiveFilterSlot) => void;
   onRemoveFilterSlot?: (id: string) => void;
   onClearAllSlots?: () => void;
+  sortOrder?: SortOrder;
+  onSortOrderChange?: (order: SortOrder) => void;
+  onReshuffle?: () => void;
 }
 
 export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
@@ -41,6 +45,9 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
   onAddFilterSlot: onAddFilterSlotProp,
   onRemoveFilterSlot: onRemoveFilterSlotProp,
   onClearAllSlots: onClearAllSlotsProp,
+  sortOrder: sortOrderProp,
+  onSortOrderChange: onSortOrderChangeProp,
+  onReshuffle: onReshuffleProp,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -56,6 +63,24 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const panRef = useRef({ x: 0, y: 0 });
   panRef.current = pan;
+
+  // Sorting state (default: 'random' per user request)
+  const [internalSortOrder, setInternalSortOrder] = useState<SortOrder>('random');
+  const [internalShuffleSeed, setInternalShuffleSeed] = useState<number>(0);
+  const currentSortOrder = sortOrderProp ?? internalSortOrder;
+  const handleSortOrderChange = onSortOrderChangeProp ?? setInternalSortOrder;
+  const handleReshuffle = () => {
+    setInternalShuffleSeed((s) => s + 1);
+    if (onReshuffleProp) onReshuffleProp();
+  };
+
+  const randomRanks = useMemo(() => {
+    const map = new Map<string, number>();
+    notes.forEach((n) => {
+      map.set(n.id, Math.random());
+    });
+    return map;
+  }, [notes, internalShuffleSeed]);
 
   // Hierarchical Multi-Facet Filter & Search states
   const [facetData] = useState<FacetTaxonomyData>(facetTaxonomyJson as unknown as FacetTaxonomyData);
@@ -86,7 +111,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     }
   };
 
-  const [globeFilterAxis, setGlobeFilterAxis] = useState<'category' | 'type' | 'field'>('category');
+  const [globeFilterAxis, setGlobeFilterAxis] = useState<'category' | 'type' | 'field' | 'region'>('category');
   const [expandedPrimary, setExpandedPrimary] = useState<string | null>(null);
   const [expandedSecondary, setExpandedSecondary] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -146,9 +171,16 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
 
   const isMobile = dimensions.width < 768;
 
-  // Filter notes with multi-facet stacked union matching
+  // Filter notes with multi-facet stacked union matching and sorting
   const filteredNotes = useMemo(() => {
     let result = notes;
+
+    const hasSearch = Boolean(searchQuery.trim());
+
+    // When not searching, filter out unlisted sub-item notes from globe sphere
+    if (!hasSearch) {
+      result = result.filter((n) => !n.unlisted);
+    }
 
     if (currentSlots.length > 0) {
       result = result.filter((note) => {
@@ -160,6 +192,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
           if (slot.subType && note.subType !== slot.subType) match = false;
           if (slot.field && note.field !== slot.field) match = false;
           if (slot.subField && note.subField !== slot.subField) match = false;
+          if (slot.country && (!note.countries || !note.countries.includes(slot.country))) match = false;
+          if (slot.city && (!note.cities || !note.cities.includes(slot.city))) match = false;
           if (slot.topic) {
             const hasTopic =
               note.topic === slot.topic ||
@@ -176,12 +210,26 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       result = result.filter(
         (n) =>
           n.title.toLowerCase().includes(q) ||
+          (n.aliases && n.aliases.some((a) => a.toLowerCase().includes(q))) ||
           (n.topic && n.topic.toLowerCase().includes(q)) ||
-          (n.tldr && n.tldr.toLowerCase().includes(q))
+          (n.tldr && n.tldr.toLowerCase().includes(q)) ||
+          (n.cities && n.cities.some((c) => c.toLowerCase().includes(q))) ||
+          (n.countries && n.countries.some((c) => c.toLowerCase().includes(q)))
       );
     }
+
+    // Apply Sorting: Random (default), A → Z, Z → A
+    if (currentSortOrder === 'asc') {
+      result = [...result].sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
+    } else if (currentSortOrder === 'desc') {
+      result = [...result].sort((a, b) => b.title.localeCompare(a.title, undefined, { sensitivity: 'base' }));
+    } else {
+      // Default: 'random'
+      result = [...result].sort((a, b) => (randomRanks.get(a.id) ?? 0) - (randomRanks.get(b.id) ?? 0));
+    }
+
     return result;
-  }, [notes, currentSlots, searchQuery]);
+  }, [notes, currentSlots, searchQuery, currentSortOrder, randomRanks]);
 
   // Card grid geometry: Responsive to Desktop vs Mobile (matches reference video)
   const CARD_W = isMobile ? 104 : 168;
@@ -631,11 +679,13 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         if (globeFilterAxis === 'category') return slot.subCategory === s;
         if (globeFilterAxis === 'type') return slot.subType === s;
         if (globeFilterAxis === 'field') return slot.subField === s;
+        if (globeFilterAxis === 'region') return slot.city === s;
       }
       if (p) {
         if (globeFilterAxis === 'category') return slot.category === p && !slot.subCategory && !slot.topic;
         if (globeFilterAxis === 'type') return slot.type === p && !slot.subType && !slot.topic;
         if (globeFilterAxis === 'field') return slot.field === p && !slot.subField && !slot.topic;
+        if (globeFilterAxis === 'region') return slot.country === p && !slot.city && !slot.topic;
       }
       return false;
     });
@@ -655,6 +705,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       subType: globeFilterAxis === 'type' ? s : undefined,
       field: globeFilterAxis === 'field' ? p : undefined,
       subField: globeFilterAxis === 'field' ? s : undefined,
+      country: globeFilterAxis === 'region' ? p : undefined,
+      city: globeFilterAxis === 'region' ? s : undefined,
       topic: t,
     };
 
@@ -678,6 +730,11 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         .sort((a, b) => b[1].count - a[1].count)
         .map(([name, data]) => ({ name, count: data.count }));
     }
+    if (globeFilterAxis === 'region') {
+      return Object.entries(facetData.byRegion || {})
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([name, data]) => ({ name, count: data.count }));
+    }
     return [];
   }, [globeFilterAxis, facetData]);
 
@@ -691,6 +748,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       subs = facetData.byType?.[expandedPrimary]?.subs || {};
     } else if (globeFilterAxis === 'field') {
       subs = facetData.byField?.[expandedPrimary]?.subs || {};
+    } else if (globeFilterAxis === 'region') {
+      subs = facetData.byRegion?.[expandedPrimary]?.subs || {};
     }
     return Object.entries(subs)
       .sort((a, b) => b[1].count - a[1].count)
@@ -721,6 +780,13 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         topicMap = fd.subs[expandedSecondary].topics || {};
       } else {
         topicMap = fd?.topics || {};
+      }
+    } else if (globeFilterAxis === 'region') {
+      const reg = facetData.byRegion?.[expandedPrimary];
+      if (expandedSecondary && reg?.subs?.[expandedSecondary]) {
+        topicMap = reg.subs[expandedSecondary].topics || {};
+      } else {
+        topicMap = reg?.topics || {};
       }
     }
     return Object.entries(topicMap)
@@ -822,7 +888,14 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
             </div>
             <div className="flex flex-wrap justify-end gap-1.5 w-full">
               {currentSlots.map((slot) => {
-                const badgeLetter = slot.axis === 'category' ? 'C' : slot.axis === 'field' ? 'F' : 'T';
+                const badgeLetter =
+                  slot.axis === 'category'
+                    ? 'C'
+                    : slot.axis === 'field'
+                    ? 'F'
+                    : slot.axis === 'region'
+                    ? 'R'
+                    : 'T';
                 return (
                   <motion.div
                     key={slot.id}
@@ -850,11 +923,62 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
           </div>
         )}
 
-        {/* Row 3: Axis Switcher (Category | Type | Field) */}
+        {/* Row 2.5: Note Sort Controls (Desktop Globe) */}
+        <div className="flex items-center gap-1 p-1 bg-white/90 backdrop-blur-md rounded-full border border-black/8 shadow-xs shrink-0 font-mono text-xs">
+          <button
+            onClick={() => {
+              if (currentSortOrder === 'random') {
+                handleReshuffle();
+              } else {
+                handleSortOrderChange('random');
+              }
+            }}
+            className={`px-2.5 py-1 rounded-full text-[11px] transition-all flex items-center gap-1 ${
+              currentSortOrder === 'random'
+                ? 'bg-black text-white font-semibold shadow-xs'
+                : 'text-[#555555] hover:text-black hover:bg-black/5'
+            }`}
+            title="Random sort (click again to reshuffle)"
+          >
+            <Shuffle className="w-2.5 h-2.5" />
+            <span>Random</span>
+          </button>
+          <button
+            onClick={() => handleSortOrderChange('asc')}
+            className={`px-2.5 py-1 rounded-full text-[11px] transition-all ${
+              currentSortOrder === 'asc'
+                ? 'bg-black text-white font-semibold shadow-xs'
+                : 'text-[#555555] hover:text-black hover:bg-black/5'
+            }`}
+            title="Alphabetical A to Z"
+          >
+            A → Z
+          </button>
+          <button
+            onClick={() => handleSortOrderChange('desc')}
+            className={`px-2.5 py-1 rounded-full text-[11px] transition-all ${
+              currentSortOrder === 'desc'
+                ? 'bg-black text-white font-semibold shadow-xs'
+                : 'text-[#555555] hover:text-black hover:bg-black/5'
+            }`}
+            title="Alphabetical Z to A"
+          >
+            Z → A
+          </button>
+        </div>
+
+        {/* Row 3: Axis Switcher (Category | Type | Field | Region) */}
         <div className="flex items-center gap-1 p-1 bg-white/90 backdrop-blur-md rounded-full border border-black/8 shadow-xs shrink-0">
-          {(['category', 'type', 'field'] as const).map((axis) => {
+          {(['category', 'type', 'field', 'region'] as const).map((axis) => {
             const isSelected = globeFilterAxis === axis;
-            const label = axis === 'category' ? 'Category' : axis === 'type' ? 'Type' : 'Field';
+            const label =
+              axis === 'category'
+                ? 'Category'
+                : axis === 'type'
+                ? 'Type'
+                : axis === 'field'
+                ? 'Field'
+                : 'Region';
             return (
               <button
                 key={axis}
@@ -884,12 +1008,14 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
               if (globeFilterAxis === 'category') return s.category === item.name && !s.subCategory && !s.topic;
               if (globeFilterAxis === 'type') return s.type === item.name && !s.subType && !s.topic;
               if (globeFilterAxis === 'field') return s.field === item.name && !s.subField && !s.topic;
+              if (globeFilterAxis === 'region') return s.country === item.name && !s.city && !s.topic;
               return false;
             });
             const hasSubsOrTopics = Boolean(
               (globeFilterAxis === 'category' && (Object.keys(facetData.byCategory?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byCategory?.[item.name]?.topics || {}).length > 0)) ||
               (globeFilterAxis === 'type' && (Object.keys(facetData.byType?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byType?.[item.name]?.topics || {}).length > 0)) ||
-              (globeFilterAxis === 'field' && (Object.keys(facetData.byField?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byField?.[item.name]?.topics || {}).length > 0))
+              (globeFilterAxis === 'field' && (Object.keys(facetData.byField?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byField?.[item.name]?.topics || {}).length > 0)) ||
+              (globeFilterAxis === 'region' && (Object.keys(facetData.byRegion?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byRegion?.[item.name]?.topics || {}).length > 0))
             );
 
             return (
@@ -944,6 +1070,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                               if (globeFilterAxis === 'category') return s.subCategory === sub.name && !s.topic;
                               if (globeFilterAxis === 'type') return s.subType === sub.name && !s.topic;
                               if (globeFilterAxis === 'field') return s.subField === sub.name && !s.topic;
+                              if (globeFilterAxis === 'region') return s.city === sub.name && !s.topic;
                               return false;
                             });
                             const isSubSelected = expandedSecondary === sub.name;
@@ -1267,7 +1394,14 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                   ) : (
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {currentSlots.map((slot) => {
-                        const badgeLetter = slot.axis === 'category' ? 'C' : slot.axis === 'field' ? 'F' : 'T';
+                        const badgeLetter =
+                          slot.axis === 'category'
+                            ? 'C'
+                            : slot.axis === 'field'
+                            ? 'F'
+                            : slot.axis === 'region'
+                            ? 'R'
+                            : 'T';
                         return (
                           <span
                             key={slot.id}
@@ -1291,11 +1425,64 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                   )}
                 </div>
 
-                {/* 2. Axis Switcher: Category | Type | Field */}
+                {/* 2. Sort Order Segmented Selector (Globe Mobile) */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f8f8fa] border border-black/8 font-mono text-xs">
+                  <span className="text-[11px] uppercase tracking-wider text-[#777777] font-semibold">
+                    Sort
+                  </span>
+                  <div className="flex items-center bg-white p-0.5 rounded-lg border border-black/10">
+                    <button
+                      onClick={() => {
+                        if (currentSortOrder === 'random') {
+                          handleReshuffle();
+                        } else {
+                          handleSortOrderChange('random');
+                        }
+                      }}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 ${
+                        currentSortOrder === 'random'
+                          ? 'bg-black text-white shadow-xs font-semibold'
+                          : 'text-[#666666]'
+                      }`}
+                    >
+                      <Shuffle className="w-2.5 h-2.5" />
+                      <span>Random</span>
+                    </button>
+                    <button
+                      onClick={() => handleSortOrderChange('asc')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+                        currentSortOrder === 'asc'
+                          ? 'bg-black text-white shadow-xs font-semibold'
+                          : 'text-[#666666]'
+                      }`}
+                    >
+                      A → Z
+                    </button>
+                    <button
+                      onClick={() => handleSortOrderChange('desc')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+                        currentSortOrder === 'desc'
+                          ? 'bg-black text-white shadow-xs font-semibold'
+                          : 'text-[#666666]'
+                      }`}
+                    >
+                      Z → A
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Axis Switcher: Category | Type | Field | Region */}
                 <div className="flex items-center gap-1.5 p-1 bg-[#f4f4f6] rounded-xl">
-                  {(['category', 'type', 'field'] as const).map((axis) => {
+                  {(['category', 'type', 'field', 'region'] as const).map((axis) => {
                     const isSelected = globeFilterAxis === axis;
-                    const label = axis === 'category' ? 'Category' : axis === 'type' ? 'Type' : 'Field';
+                    const label =
+                      axis === 'category'
+                        ? 'Category'
+                        : axis === 'type'
+                        ? 'Type'
+                        : axis === 'field'
+                        ? 'Field'
+                        : 'Region';
                     return (
                       <button
                         key={axis}
@@ -1316,10 +1503,10 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                   })}
                 </div>
 
-                {/* 3. Primary Items Grid */}
+                {/* 4. Primary Items Grid */}
                 <div className="flex flex-col gap-1.5">
                   <span className="text-[11px] font-mono text-[#888888] uppercase tracking-wider">
-                    Select {globeFilterAxis === 'category' ? 'Category' : globeFilterAxis === 'type' ? 'Type' : 'Field'}:
+                    Select {globeFilterAxis === 'category' ? 'Category' : globeFilterAxis === 'type' ? 'Type' : globeFilterAxis === 'field' ? 'Field' : 'Country'}:
                   </span>
                   <div className="grid grid-cols-2 gap-1.5">
                     {globePrimaryList.map((item) => {
@@ -1327,7 +1514,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                       const hasSubsOrTopics = Boolean(
                         (globeFilterAxis === 'category' && (Object.keys(facetData.byCategory?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byCategory?.[item.name]?.topics || {}).length > 0)) ||
                         (globeFilterAxis === 'type' && (Object.keys(facetData.byType?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byType?.[item.name]?.topics || {}).length > 0)) ||
-                        (globeFilterAxis === 'field' && (Object.keys(facetData.byField?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byField?.[item.name]?.topics || {}).length > 0))
+                        (globeFilterAxis === 'field' && (Object.keys(facetData.byField?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byField?.[item.name]?.topics || {}).length > 0)) ||
+                        (globeFilterAxis === 'region' && (Object.keys(facetData.byRegion?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byRegion?.[item.name]?.topics || {}).length > 0))
                       );
 
                       return (
@@ -1362,11 +1550,11 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                   </div>
                 </div>
 
-                {/* 4. Sub-Categories / Sub-Types / Sub-Fields */}
+                {/* 5. Sub-Categories / Sub-Types / Sub-Fields / Cities */}
                 {expandedPrimary && globeSecondaryList.length > 0 && (
                   <div className="flex flex-col gap-1.5 pt-2 border-t border-[#f0f0f0]">
                     <span className="text-[11px] font-mono text-[#888888] uppercase tracking-wider">
-                      Sub-items ({expandedPrimary}):
+                      {globeFilterAxis === 'region' ? 'Cities' : 'Sub-items'} ({expandedPrimary}):
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {globeSecondaryList.map((sub) => (

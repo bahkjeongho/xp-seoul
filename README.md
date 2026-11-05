@@ -33,10 +33,22 @@ All commands are run from the root of the project, from a terminal:
 | :------------------------ | :----------------------------------------------- |
 | `npm install`             | Installs dependencies                            |
 | `npm run dev`             | Starts local dev server at `localhost:4321`      |
+| `npm run update`          | Sync notes from Obsidian Vault (`./update.sh`)   |
 | `npm run build`           | Build your production site to `./dist/`          |
 | `npm run preview`         | Preview your build locally, before deploying     |
 | `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
 | `npm run astro -- --help` | Get help using the Astro CLI                     |
+
+## 🏛️ Obsidian Vault Ingestion Rules
+
+- Live Obsidian Vault: `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Hide Park`
+- Run `./update.sh` (or `npm run update`) to sync changes in ~2 seconds.
+- **Excluded Folders**: `0. Clipping Origin`, `00. Template` (Never published to web).
+- **Thoughts**: `1. Thoughts` (Dedicated view, not in main Wiki).
+- **Unlisted Folders (`unlisted: true`)**: `23. K-Pop Idol`, `24. Academic Program`, `25. Sports Team`, `26. Journal`.
+  - Excluded from general stream scrolling & globe canvas.
+  - Fully searchable via the Search bar.
+  - Fully accessible via wikilinks and backlinks from parent notes.
 
 ## 👀 Want to learn more?
 

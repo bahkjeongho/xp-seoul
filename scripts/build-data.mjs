@@ -6,7 +6,13 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
-const VAULT_CONTENT_DIR = path.resolve(ROOT_DIR, '../Hide-Park/content');
+const POSSIBLE_VAULT_PATHS = [
+  path.resolve(process.env.HOME || '/Users/parkjeongho', 'Library/Mobile Documents/iCloud~md~obsidian/Documents/Hide Park'),
+  path.resolve(process.env.HOME || '/Users/parkjeongho', 'Developer/Hide-Park/content'),
+  path.resolve(ROOT_DIR, '../Hide-Park/content'),
+];
+
+const VAULT_CONTENT_DIR = POSSIBLE_VAULT_PATHS.find((p) => fs.existsSync(p)) || POSSIBLE_VAULT_PATHS[0];
 const PUBLIC_DATA_DIR = path.resolve(ROOT_DIR, 'public/data');
 const PUBLIC_NOTES_DIR = path.resolve(ROOT_DIR, 'public/data/notes');
 const SRC_DATA_DIR = path.resolve(ROOT_DIR, 'src/data');
@@ -17,7 +23,12 @@ for (const dir of [PUBLIC_DATA_DIR, PUBLIC_NOTES_DIR, SRC_DATA_DIR]) {
 
 function cleanWikilink(str) {
   if (!str) return '';
-  return str.replace(/^\[\[/, '').replace(/\]\]$/, '').trim();
+  let s = String(str).trim().replace(/^["']|["']$/g, '').trim();
+  const m = s.match(/^\[\[([^\]]*)\]\]$/);
+  if (m) {
+    s = m[1].split('|').pop().trim();
+  }
+  return s.replace(/^\[\[/, '').replace(/\]\]$/, '').trim();
 }
 
 function parseFrontmatterValue(raw) {
@@ -66,7 +77,7 @@ function parseYamlFrontmatter(text) {
 }
 
 function extractCallout(content, type) {
-  const regex = new RegExp(`>\\s*\\[!${type}\\]([^\n]*)\n((?:>[^\n]*\n?)*)`, 'i');
+  const regex = new RegExp(`>\\s*\\[!${type}\\]([^\\n]*)\\n((?:>[^\\n]*\\n?)*)`, 'i');
   const match = content.match(regex);
   if (!match) return '';
   const lines = match[2].split('\n')
@@ -81,7 +92,13 @@ function scanDir(dir, folderType, list = []) {
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name !== '.trash') {
+      if (
+        entry.name !== '.trash' &&
+        entry.name !== '.obsidian' &&
+        entry.name !== '.smart-env' &&
+        entry.name !== '00. Template' &&
+        entry.name !== '0. Clipping Origin'
+      ) {
         scanDir(fullPath, folderType, list);
       }
     } else if (entry.isFile() && entry.name.endsWith('.md')) {
@@ -91,14 +108,27 @@ function scanDir(dir, folderType, list = []) {
   return list;
 }
 
-console.log('Scanning notes from Hide-Park/content...');
+console.log(`Scanning notes from Obsidian Vault: ${VAULT_CONTENT_DIR}...`);
+
+function findSubDir(parent, candidates) {
+  for (const cand of candidates) {
+    const p = path.join(parent, cand);
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
+const wikiDir = findSubDir(VAULT_CONTENT_DIR, ['2. Wiki', '2 Wiki']);
+const clippingDir = findSubDir(VAULT_CONTENT_DIR, ['0. Clipping', '0 Clipping']);
+const objectDir = findSubDir(VAULT_CONTENT_DIR, ['3. Object', '3 Object']);
+
 const wikiFiles = [
-  ...scanDir(path.join(VAULT_CONTENT_DIR, '2 Wiki'), 'wiki'),
-  ...scanDir(path.join(VAULT_CONTENT_DIR, '0 Clipping'), 'clipping'),
-  ...scanDir(path.join(VAULT_CONTENT_DIR, '3 Object'), 'object'),
+  ...(wikiDir ? scanDir(wikiDir, 'wiki') : []),
+  ...(clippingDir ? scanDir(clippingDir, 'clipping') : []),
+  ...(objectDir ? scanDir(objectDir, 'object') : []),
 ];
 
-console.log(`Found ${wikiFiles.length} files.`);
+console.log(`Found ${wikiFiles.length} markdown notes in vault.`);
 
 const notes = [];
 const taxonomyTree = {};
@@ -127,8 +157,15 @@ for (const file of wikiFiles) {
     const subType = subTypes[0] || '';
     const topic = topics[0] || '';
 
-    // Taxonomy Tree hierarchy
-    if (category) {
+    const isUnlisted = (
+      file.fullPath.includes('K-Pop Idol') ||
+      file.fullPath.includes('Academic Program') ||
+      file.fullPath.includes('Sports Team') ||
+      file.fullPath.includes('Journal')
+    );
+
+    // Taxonomy Tree hierarchy (Only count listed notes in category counts)
+    if (category && !isUnlisted) {
       if (!taxonomyTree[category]) taxonomyTree[category] = { count: 0, subCategories: {} };
       taxonomyTree[category].count++;
 
@@ -190,6 +227,7 @@ for (const file of wikiFiles) {
       summary,
       rawContent: content,
       allProps,
+      ...(isUnlisted ? { unlisted: true } : {}),
     };
 
     notes.push(noteObj);
@@ -207,7 +245,7 @@ notes.sort((a, b) => a.title.localeCompare(b.title, 'ko'));
 console.log(`Successfully processed ${notes.length} notes.`);
 
 // Write light index
-const lightNotes = notes.map(({ id, title, hash, folderType, aliases, category, subCategory, field, subField, type, subType, topic, topics, ig, website, tldr, info, cities, countries }) => ({
+const lightNotes = notes.map(({ id, title, hash, folderType, aliases, category, subCategory, field, subField, type, subType, topic, topics, ig, website, tldr, info, cities, countries, unlisted }) => ({
   id,
   title,
   hash,
@@ -226,7 +264,8 @@ const lightNotes = notes.map(({ id, title, hash, folderType, aliases, category, 
   tldr,
   info,
   cities,
-  countries
+  countries,
+  ...(unlisted ? { unlisted: true } : {}),
 }));
 
 fs.writeFileSync(path.join(SRC_DATA_DIR, 'notes-light.json'), JSON.stringify(lightNotes));
@@ -234,4 +273,89 @@ fs.writeFileSync(path.join(PUBLIC_DATA_DIR, 'notes-light.json'), JSON.stringify(
 fs.writeFileSync(path.join(SRC_DATA_DIR, 'taxonomy.json'), JSON.stringify(taxonomyTree, null, 2));
 fs.writeFileSync(path.join(PUBLIC_DATA_DIR, 'taxonomy.json'), JSON.stringify(taxonomyTree, null, 2));
 
+// Generate multi-facet taxonomy (Category, Type, Field, Region)
+console.log('Generating multi-facet taxonomy (Category, Type, Field, Region)...');
+const allTopicsMap = {};
+const byCategory = {};
+const byType = {};
+const byField = {};
+const byRegion = {};
+
+const recordTopic = (topicsRecord, topicName) => {
+  if (!topicName) return;
+  topicsRecord[topicName] = (topicsRecord[topicName] || 0) + 1;
+  allTopicsMap[topicName] = (allTopicsMap[topicName] || 0) + 1;
+};
+
+const populateAxis = (axisMap, primaryName, secondaryName, noteTopics) => {
+  if (!primaryName) return;
+  if (!axisMap[primaryName]) {
+    axisMap[primaryName] = { count: 0, subs: {}, topics: {} };
+  }
+  axisMap[primaryName].count++;
+
+  if (secondaryName) {
+    if (!axisMap[primaryName].subs[secondaryName]) {
+      axisMap[primaryName].subs[secondaryName] = { count: 0, topics: {} };
+    }
+    axisMap[primaryName].subs[secondaryName].count++;
+  }
+
+  for (const top of noteTopics) {
+    recordTopic(axisMap[primaryName].topics, top);
+    if (secondaryName) {
+      recordTopic(axisMap[primaryName].subs[secondaryName].topics, top);
+    }
+  }
+};
+
+for (const note of lightNotes) {
+  if (note.unlisted) continue; // Only count listed notes in filter facets
+  const noteTopics = [
+    ...(note.topic ? [note.topic] : []),
+    ...(Array.isArray(note.topics) ? note.topics : []),
+  ];
+  const uniqueTopics = [...new Set(noteTopics.filter(Boolean))];
+
+  populateAxis(byCategory, note.category, note.subCategory, uniqueTopics);
+  populateAxis(byType, note.type, note.subType, uniqueTopics);
+  populateAxis(byField, note.field, note.subField, uniqueTopics);
+
+  const countries = Array.isArray(note.countries) ? note.countries : [];
+  const cities = Array.isArray(note.cities) ? note.cities : [];
+
+  if (countries.length > 0) {
+    for (const country of countries) {
+      if (!country) continue;
+      if (cities.length > 0) {
+        for (const city of cities) {
+          populateAxis(byRegion, country, city, uniqueTopics);
+        }
+      } else {
+        populateAxis(byRegion, country, null, uniqueTopics);
+      }
+    }
+  } else if (cities.length > 0) {
+    for (const city of cities) {
+      populateAxis(byRegion, 'Other Region', city, uniqueTopics);
+    }
+  }
+}
+
+const allTopics = Object.entries(allTopicsMap)
+  .sort((a, b) => b[1] - a[1])
+  .map(([name, count]) => ({ name, count }));
+
+const facetTaxonomy = {
+  allTopics,
+  byCategory,
+  byType,
+  byField,
+  byRegion,
+};
+
+fs.writeFileSync(path.join(SRC_DATA_DIR, 'facet-taxonomy.json'), JSON.stringify(facetTaxonomy, null, 2));
+fs.writeFileSync(path.join(PUBLIC_DATA_DIR, 'facet-taxonomy.json'), JSON.stringify(facetTaxonomy, null, 2));
+
+console.log(`Facet summary: ${Object.keys(byCategory).length} categories, ${Object.keys(byType).length} types, ${Object.keys(byField).length} fields, ${Object.keys(byRegion).length} countries/regions, ${allTopics.length} topics.`);
 console.log('Finished writing all data files to src/data and public/data!');

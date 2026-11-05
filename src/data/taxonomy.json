@@ -1,20 +1,17 @@
 {
   "Design": {
-    "count": 1198,
+    "count": 1099,
     "subCategories": {
       "Fashion": {
-        "count": 378,
+        "count": 358,
         "topics": {
-          "Fashion Brand": 133,
-          "Fashion Magazine": 78,
+          "Fashion Brand": 131,
+          "Fashion Magazine": 77,
+          "Fashion Retail": 11,
           "Fashion Designer": 67,
           "Stylist": 30,
           "Fashion Critic": 3,
-          "Fashion Design Program": 1,
-          "Fashion Design School": 12,
-          "Textile Design School": 5,
           "Fashion Design Brand": 9,
-          "Fashion Retail": 10,
           "Fashion Week": 1,
           "Fashion Platform": 3,
           "Luxury Goods Company": 1,
@@ -42,48 +39,42 @@
         }
       },
       "Graphic Design": {
-        "count": 246,
+        "count": 210,
         "topics": {
           "Graphic Design Studio": 19,
           "Brand Design Agency": 43,
           "Type Designer": 4,
           "Graphic Designer": 77,
           "Brand Designer": 5,
-          "Graphic Design School": 28,
-          "Illustration School": 6,
           "Brand Design Studio": 15,
           "Brand Design Consultancy": 8,
           "Type Foundry": 10
         }
       },
       "Architecture": {
-        "count": 64,
+        "count": 57,
         "topics": {
           "Architecture Studio": 7,
           "Architecture Award": 7,
           "Interior Architecture Company": 1,
           "Architect": 18,
           "Architecture Magazine": 2,
-          "Architecture School": 6,
           "Architecture Firm": 15,
           "Architecture Office": 4,
           "Architecture Prize": 2
         }
       },
       "Product Design": {
-        "count": 33,
+        "count": 17,
         "topics": {
           "Product Designer": 3,
-          "Industrial Design School": 11,
-          "Furniture Design School": 5,
           "Furniture Designer": 3,
           "Industrial Designer": 1
         }
       },
       "Digital Design": {
-        "count": 12,
+        "count": 7,
         "topics": {
-          "Digital Design School": 5,
           "3D Artist": 2
         }
       },
@@ -92,20 +83,16 @@
         "topics": {
           "Production Designer": 2
         }
-      },
-      "Performing Arts": {
-        "count": 1,
-        "topics": {}
       }
     }
   },
   "The Arts": {
-    "count": 1066,
+    "count": 1841,
     "subCategories": {
       "Music": {
-        "count": 717,
+        "count": 1561,
         "topics": {
-          "K-Pop Idol": 458,
+          "K-Pop Group": 78,
           "Music Artist": 155,
           "Music Producer": 1,
           "Rapper": 11,
@@ -127,11 +114,10 @@
         }
       },
       "Video": {
-        "count": 56,
+        "count": 48,
         "topics": {
           "Video Director": 31,
           "D.O.P.": 1,
-          "Animation School": 7,
           "Video Editor": 2,
           "Video Production": 5,
           "Production Company": 2,
@@ -142,9 +128,8 @@
         }
       },
       "Film": {
-        "count": 34,
+        "count": 18,
         "topics": {
-          "Film School": 15,
           "Film Director": 2,
           "Filmmaker": 4,
           "Sound Director": 1,
@@ -155,12 +140,11 @@
         }
       },
       "Visual Art": {
-        "count": 78,
+        "count": 52,
         "topics": {
           "Art Week": 1,
           "Art Platform": 14,
           "Art Fair": 1,
-          "Fine Art School": 24,
           "Museum": 17,
           "Art Festival": 2,
           "Art Gallery": 10,
@@ -169,24 +153,19 @@
           "Sculptor": 2
         }
       },
+      "Photography": {
+        "count": 79,
+        "topics": {
+          "Photography Director": 11,
+          "Photographer": 64
+        }
+      },
       "Performing Arts": {
-        "count": 13,
+        "count": 8,
         "topics": {
           "Promoter": 6,
           "Venue": 1
         }
-      },
-      "Photography": {
-        "count": 93,
-        "topics": {
-          "Photography Director": 11,
-          "Photographer": 64,
-          "Photography School": 14
-        }
-      },
-      "Comics": {
-        "count": 1,
-        "topics": {}
       },
       "Critique": {
         "count": 1,
@@ -202,8 +181,12 @@
       }
     }
   },
+  "Uncategorized": {
+    "count": 490,
+    "subCategories": {}
+  },
   "Media": {
-    "count": 203,
+    "count": 140,
     "subCategories": {
       "Publishing": {
         "count": 28,
@@ -223,9 +206,9 @@
         }
       },
       "News": {
-        "count": 5,
+        "count": 4,
         "topics": {
-          "Newspaper": 4
+          "Newspaper": 3
         }
       },
       "Blog": {
@@ -235,12 +218,11 @@
     }
   },
   "Entertainment": {
-    "count": 170,
+    "count": 18,
     "subCategories": {
       "Sports": {
-        "count": 161,
+        "count": 9,
         "topics": {
-          "Sports Team": 152,
           "Sports League": 8,
           "Sports Magazine": 1
         }
@@ -252,10 +234,6 @@
         }
       }
     }
-  },
-  "Uncategorized": {
-    "count": 208,
-    "subCategories": {}
   },
   "Technology": {
     "count": 33,
@@ -307,7 +285,7 @@
     }
   },
   "Business": {
-    "count": 22,
+    "count": 21,
     "subCategories": {
       "Consulting": {
         "count": 3,
@@ -332,7 +310,7 @@
         }
       },
       "Branding": {
-        "count": 3,
+        "count": 2,
         "topics": {
           "Brand Strategist": 2
         }
@@ -348,7 +326,7 @@
     "subCategories": {}
   },
   "Object": {
-    "count": 1302,
+    "count": 77,
     "subCategories": {}
   }
 }
