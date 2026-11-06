@@ -43,12 +43,13 @@ All commands are run from the root of the project, from a terminal:
 
 - Live Obsidian Vault: `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Hide Park`
 - Run `./update.sh` (or `npm run update`) to sync changes in ~2 seconds.
-- **Excluded Folders**: `0. Clipping Origin`, `00. Template` (Never published to web).
-- **Thoughts**: `1. Thoughts` (Dedicated view, not in main Wiki).
-- **Unlisted Folders (`unlisted: true`)**: `23. K-Pop Idol`, `24. Academic Program`, `25. Sports Team`, `26. Journal`.
-  - Excluded from general stream scrolling & globe canvas.
-  - Fully searchable via the Search bar.
-  - Fully accessible via wikilinks and backlinks from parent notes.
+- **Excluded Folders**: `00. Template`, `1. System`, `10. Clipping Origin`, `E_Text` (Never published to Wiki).
+- **Dedicated Menus**: `C_Blog` (Blog), `D_Magazine` (Magazine / Curations).
+- **Unlisted Notes (`unlisted: true`)**:
+  - `A_Wiki` Sub-folders: `A1_Hub`, `A2_K-Pop Idol`, `A3_Academic Program`, `A4_Journal`, `A5_Sports Team`.
+  - `B_Object`: All sub-folders (`B1_Music`, `B2_Architecture`, `B3_Video`, `B4_Film`).
+  - Pure `Technology` or `Humanities` Category notes without creative/cultural overlap.
+  - (These notes are hidden from general Stream & Globe browsing, but fully searchable and accessible via wikilinks/backlinks).
 
 ## 👀 Want to learn more?
 

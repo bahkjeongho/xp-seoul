@@ -6,15 +6,15 @@
     },
     {
       "name": "Music Artist",
-      "count": 1010
+      "count": 1017
     },
     {
       "name": "Fashion Brand",
-      "count": 731
+      "count": 735
     },
     {
       "name": "K-Pop Group",
-      "count": 645
+      "count": 653
     },
     {
       "name": "Creative Director",
@@ -61,12 +61,12 @@
       "count": 170
     },
     {
-      "name": "Magazine",
+      "name": "Stylist",
       "count": 169
     },
     {
-      "name": "Stylist",
-      "count": 164
+      "name": "Magazine",
+      "count": 169
     },
     {
       "name": "Creative Company",
@@ -125,10 +125,6 @@
       "count": 80
     },
     {
-      "name": "Producer",
-      "count": 75
-    },
-    {
       "name": "Fashion Design Brand",
       "count": 68
     },
@@ -155,6 +151,10 @@
     {
       "name": "Photography Director",
       "count": 55
+    },
+    {
+      "name": "Music Producer",
+      "count": 54
     },
     {
       "name": "Designer",
@@ -193,6 +193,10 @@
       "count": 39
     },
     {
+      "name": "Video Production",
+      "count": 38
+    },
+    {
       "name": "Architecture Award",
       "count": 38
     },
@@ -217,20 +221,12 @@
       "count": 34
     },
     {
-      "name": "Video Production",
-      "count": 34
-    },
-    {
       "name": "Architecture Office",
       "count": 31
     },
     {
       "name": "Production House",
       "count": 29
-    },
-    {
-      "name": "Tech Magazine",
-      "count": 27
     },
     {
       "name": "Music Critic",
@@ -257,11 +253,11 @@
       "count": 22
     },
     {
-      "name": "Programmer",
-      "count": 21
+      "name": "Publisher",
+      "count": 20
     },
     {
-      "name": "Publisher",
+      "name": "DJ",
       "count": 20
     },
     {
@@ -285,10 +281,6 @@
       "count": 17
     },
     {
-      "name": "Philosopher",
-      "count": 16
-    },
-    {
       "name": "Music Platform",
       "count": 16
     },
@@ -305,23 +297,11 @@
       "count": 15
     },
     {
-      "name": "AI Company",
-      "count": 15
-    },
-    {
       "name": "Fashion Platform",
       "count": 15
     },
     {
-      "name": "Tech Product Company",
-      "count": 15
-    },
-    {
       "name": "Rock Band",
-      "count": 15
-    },
-    {
-      "name": "DJ",
       "count": 15
     },
     {
@@ -333,11 +313,19 @@
       "count": 14
     },
     {
+      "name": "Producer",
+      "count": 14
+    },
+    {
       "name": "Newspaper",
       "count": 14
     },
     {
       "name": "Film Critic",
+      "count": 12
+    },
+    {
+      "name": "Video Producer",
       "count": 12
     },
     {
@@ -377,6 +365,10 @@
       "count": 11
     },
     {
+      "name": "Instruments Company",
+      "count": 11
+    },
+    {
       "name": "3D Artist",
       "count": 10
     },
@@ -405,10 +397,6 @@
       "count": 10
     },
     {
-      "name": "Instruments Company",
-      "count": 10
-    },
-    {
       "name": "Architecture Magazine",
       "count": 9
     },
@@ -431,10 +419,6 @@
     {
       "name": "Culture Critic",
       "count": 7
-    },
-    {
-      "name": "Music Producer",
-      "count": 6
     },
     {
       "name": "Film Magazine",
@@ -465,11 +449,11 @@
       "count": 6
     },
     {
-      "name": "A&R",
-      "count": 5
+      "name": "Modular Synthesizer",
+      "count": 6
     },
     {
-      "name": "Interview",
+      "name": "A&R",
       "count": 5
     },
     {
@@ -489,6 +473,10 @@
       "count": 5
     },
     {
+      "name": "Software Company",
+      "count": 5
+    },
+    {
       "name": "PR Agency",
       "count": 5
     },
@@ -498,10 +486,6 @@
     },
     {
       "name": "Music Journalism",
-      "count": 5
-    },
-    {
-      "name": "AI Engineer",
       "count": 5
     },
     {
@@ -533,14 +517,6 @@
       "count": 5
     },
     {
-      "name": "Spacecraft Company",
-      "count": 5
-    },
-    {
-      "name": "Automobile Company",
-      "count": 5
-    },
-    {
       "name": "Animation Studio",
       "count": 5
     },
@@ -557,18 +533,6 @@
       "count": 4
     },
     {
-      "name": "Software Company",
-      "count": 4
-    },
-    {
-      "name": "Documentary Video",
-      "count": 4
-    },
-    {
-      "name": "Lecture Video",
-      "count": 4
-    },
-    {
       "name": "Growth Invention Company",
       "count": 4
     },
@@ -577,15 +541,7 @@
       "count": 4
     },
     {
-      "name": "Computer Scientist",
-      "count": 4
-    },
-    {
       "name": "Executive Producer",
-      "count": 4
-    },
-    {
-      "name": "Engineer",
       "count": 4
     },
     {
@@ -607,59 +563,191 @@
     {
       "name": "Podcast",
       "count": 3
-    },
-    {
-      "name": "Talk Video",
-      "count": 1
-    },
-    {
-      "name": "Keynote",
-      "count": 1
-    },
-    {
-      "name": "Critique",
-      "count": 1
-    },
-    {
-      "name": "Game Critique",
-      "count": 1
     }
   ],
   "byCategory": {
+    "Design": {
+      "count": 1100,
+      "subs": {
+        "Graphic Design": {
+          "count": 210,
+          "topics": {
+            "Graphic Design Studio": 19,
+            "Graphic Designer": 77,
+            "Type Designer": 4,
+            "Brand Designer": 5,
+            "Type Foundry": 10,
+            "Brand Design Agency": 43,
+            "Brand Design Studio": 15,
+            "Brand Design Consultancy": 8
+          }
+        },
+        "Fashion": {
+          "count": 360,
+          "topics": {
+            "Fashion Brand": 132,
+            "Fashion Magazine": 77,
+            "Fashion Retail": 11,
+            "Fashion Director": 1,
+            "Stylist": 31,
+            "Hair Designer": 1,
+            "Fashion Designer": 67,
+            "Fashion Critic": 3,
+            "Fashion Design Brand": 9,
+            "Fashion Week": 1,
+            "Fashion Platform": 3,
+            "Luxury Goods Company": 1
+          }
+        },
+        "Visual Communication": {
+          "count": 263,
+          "topics": {
+            "Creative Agency": 30,
+            "Creative Studio": 55,
+            "Art Director": 28,
+            "Visual Director": 4,
+            "Creative Director": 86,
+            "Creative Producer": 4,
+            "Creative Production": 13,
+            "Art Direction Award": 6,
+            "Creative Company": 13,
+            "Creative Collective": 3,
+            "Creative Group": 2,
+            "Creative Consultancy": 6,
+            "Creative Office": 1,
+            "Creative Team": 1
+          }
+        },
+        "Architecture": {
+          "count": 57,
+          "topics": {
+            "Architecture Studio": 7,
+            "Architecture Firm": 15,
+            "Architecture Award": 7,
+            "Architect": 18,
+            "Interior Architecture Company": 1,
+            "Architecture Magazine": 2,
+            "Architecture Office": 4,
+            "Architecture Prize": 2
+          }
+        },
+        "Digital Design": {
+          "count": 7,
+          "topics": {
+            "3D Artist": 2
+          }
+        },
+        "Production Design": {
+          "count": 2,
+          "topics": {
+            "Production Designer": 2
+          }
+        },
+        "Product Design": {
+          "count": 17,
+          "topics": {
+            "Furniture Designer": 3,
+            "Industrial Designer": 1,
+            "Product Designer": 3
+          }
+        }
+      },
+      "topics": {
+        "Graphic Design Studio": 19,
+        "Fashion Brand": 132,
+        "Creative Agency": 30,
+        "Design Agency": 8,
+        "Fashion Magazine": 77,
+        "Fashion Retail": 11,
+        "Design Studio": 104,
+        "Creative Studio": 55,
+        "Design Award": 4,
+        "Design Festival": 8,
+        "Architecture Studio": 7,
+        "Graphic Designer": 77,
+        "Type Designer": 4,
+        "Art Director": 28,
+        "Visual Director": 4,
+        "Fashion Director": 1,
+        "Production Designer": 2,
+        "Stylist": 31,
+        "Brand Designer": 5,
+        "Creative Director": 86,
+        "Type Foundry": 10,
+        "Creative Producer": 4,
+        "3D Artist": 2,
+        "Brand Design Agency": 43,
+        "Furniture Designer": 3,
+        "Design Magazine": 27,
+        "Creative Production": 13,
+        "Hair Designer": 1,
+        "Industrial Designer": 1,
+        "Architecture Firm": 15,
+        "Architecture Award": 7,
+        "Design Association": 6,
+        "Art Direction Award": 6,
+        "Product Designer": 3,
+        "Fashion Designer": 67,
+        "Architect": 18,
+        "Interior Architecture Company": 1,
+        "Brand Design Studio": 15,
+        "Fashion Critic": 3,
+        "Architecture Magazine": 2,
+        "Creative Company": 13,
+        "Designer": 14,
+        "Creative Collective": 3,
+        "Design Week": 5,
+        "Fashion Design Brand": 9,
+        "Brand Design Consultancy": 8,
+        "Creative Group": 2,
+        "Creative Consultancy": 6,
+        "Fashion Week": 1,
+        "Architecture Office": 4,
+        "Fashion Platform": 3,
+        "Design Biennale": 1,
+        "Creative Office": 1,
+        "Design Director": 1,
+        "Luxury Goods Company": 1,
+        "Architecture Prize": 2,
+        "Creative Team": 1
+      }
+    },
     "The Arts": {
-      "count": 1841,
+      "count": 626,
       "subs": {
         "Music": {
-          "count": 1561,
+          "count": 340,
           "topics": {
-            "K-Pop Group": 78,
-            "Music Artist": 155,
-            "Music Producer": 1,
+            "K-Pop Group": 79,
+            "Music Artist": 156,
+            "Music Producer": 9,
             "Music Critic": 5,
             "A&R": 1,
             "Music Festival": 5,
             "Band": 6,
             "Record Label": 14,
             "Singer-Songwriter": 2,
-            "Producer": 12,
             "Rapper": 11,
             "K-Pop Company": 23,
             "Music Magazine": 6,
+            "Producer": 2,
             "Music Platform": 3,
             "Music Journalism": 1,
+            "DJ": 3,
             "Rock Band": 2,
             "Music Award": 1,
-            "DJ": 2,
+            "Modular Synthesizer": 1,
             "Instruments Company": 2
           }
         },
         "Video": {
-          "count": 48,
+          "count": 54,
           "topics": {
             "Video Director": 31,
+            "Video Production": 6,
+            "Video Producer": 3,
             "D.O.P.": 1,
             "Video Editor": 2,
-            "Video Production": 5,
             "Production Company": 2,
             "Production House": 1,
             "Executive Producer": 1,
@@ -721,10 +809,11 @@
         }
       },
       "topics": {
-        "K-Pop Group": 78,
-        "Music Artist": 155,
-        "Music Producer": 1,
+        "K-Pop Group": 79,
+        "Music Artist": 156,
+        "Music Producer": 9,
         "Video Director": 31,
+        "Video Production": 6,
         "Museum": 17,
         "Film Critic": 3,
         "Photographer": 64,
@@ -735,12 +824,12 @@
         "Photography Director": 11,
         "Music Festival": 5,
         "Sculptor": 2,
+        "Video Producer": 3,
         "Film Magazine": 1,
         "Band": 6,
         "Literary Critic": 1,
         "Record Label": 14,
         "Singer-Songwriter": 2,
-        "Producer": 12,
         "Rapper": 11,
         "K-Pop Company": 23,
         "Art School": 73,
@@ -748,16 +837,17 @@
         "Video Editor": 2,
         "Art Fair": 1,
         "Art Week": 1,
-        "Video Production": 5,
         "Production Company": 2,
         "Promoter": 6,
         "Music Magazine": 6,
         "Art Festival": 2,
+        "Producer": 2,
         "Film Director": 2,
         "Music Platform": 3,
         "Curator": 1,
         "Music Journalism": 1,
         "Production House": 1,
+        "DJ": 3,
         "Filmmaker": 4,
         "Executive Producer": 1,
         "Venue": 1,
@@ -769,173 +859,9 @@
         "Music Award": 1,
         "Moving Image Critic": 1,
         "Critique Magazine": 1,
-        "DJ": 2,
+        "Modular Synthesizer": 1,
         "Instruments Company": 2,
         "Animation Studio": 1
-      }
-    },
-    "Uncategorized": {
-      "count": 490,
-      "subs": {},
-      "topics": {}
-    },
-    "Design": {
-      "count": 1099,
-      "subs": {
-        "Graphic Design": {
-          "count": 210,
-          "topics": {
-            "Graphic Design Studio": 19,
-            "Graphic Designer": 77,
-            "Type Designer": 4,
-            "Brand Designer": 5,
-            "Type Foundry": 10,
-            "Brand Design Agency": 43,
-            "Brand Design Studio": 15,
-            "Brand Design Consultancy": 8
-          }
-        },
-        "Fashion": {
-          "count": 358,
-          "topics": {
-            "Fashion Brand": 131,
-            "Fashion Magazine": 77,
-            "Fashion Retail": 11,
-            "Fashion Director": 1,
-            "Stylist": 30,
-            "Hair Designer": 1,
-            "Fashion Designer": 67,
-            "Fashion Critic": 3,
-            "Fashion Design Brand": 9,
-            "Fashion Week": 1,
-            "Fashion Platform": 3,
-            "Luxury Goods Company": 1
-          }
-        },
-        "Visual Communication": {
-          "count": 264,
-          "topics": {
-            "Creative Agency": 30,
-            "Creative Studio": 55,
-            "Art Director": 28,
-            "Visual Director": 4,
-            "Creative Director": 86,
-            "Creative Producer": 4,
-            "Creative Production": 13,
-            "Art Direction Award": 6,
-            "Creative Company": 13,
-            "Creative Collective": 3,
-            "Creative Group": 2,
-            "Creative Consultancy": 6,
-            "Creative Office": 1,
-            "Creative Team": 1
-          }
-        },
-        "Architecture": {
-          "count": 57,
-          "topics": {
-            "Architecture Studio": 7,
-            "Architecture Firm": 15,
-            "Architecture Award": 7,
-            "Architect": 18,
-            "Interior Architecture Company": 1,
-            "Architecture Magazine": 2,
-            "Architecture Office": 4,
-            "Architecture Prize": 2
-          }
-        },
-        "Digital Design": {
-          "count": 7,
-          "topics": {
-            "3D Artist": 2
-          }
-        },
-        "Production Design": {
-          "count": 2,
-          "topics": {
-            "Production Designer": 2
-          }
-        },
-        "Product Design": {
-          "count": 17,
-          "topics": {
-            "Furniture Designer": 3,
-            "Industrial Designer": 1,
-            "Product Designer": 3
-          }
-        }
-      },
-      "topics": {
-        "Graphic Design Studio": 19,
-        "Fashion Brand": 131,
-        "Creative Agency": 30,
-        "Design Agency": 8,
-        "Fashion Magazine": 77,
-        "Fashion Retail": 11,
-        "Design Studio": 104,
-        "Creative Studio": 55,
-        "Design Award": 4,
-        "Design Festival": 8,
-        "Architecture Studio": 7,
-        "Graphic Designer": 77,
-        "Type Designer": 4,
-        "Art Director": 28,
-        "Visual Director": 4,
-        "Fashion Director": 1,
-        "Production Designer": 2,
-        "Stylist": 30,
-        "Brand Designer": 5,
-        "Creative Director": 86,
-        "Type Foundry": 10,
-        "Creative Producer": 4,
-        "3D Artist": 2,
-        "Brand Design Agency": 43,
-        "Furniture Designer": 3,
-        "Design Magazine": 27,
-        "Creative Production": 13,
-        "Hair Designer": 1,
-        "Industrial Designer": 1,
-        "Architecture Firm": 15,
-        "Architecture Award": 7,
-        "Design Association": 6,
-        "Art Direction Award": 6,
-        "Product Designer": 3,
-        "Fashion Designer": 67,
-        "Architect": 18,
-        "Interior Architecture Company": 1,
-        "Brand Design Studio": 15,
-        "Fashion Critic": 3,
-        "Architecture Magazine": 2,
-        "Creative Company": 13,
-        "Designer": 14,
-        "Creative Collective": 3,
-        "Design Week": 5,
-        "Fashion Design Brand": 9,
-        "Brand Design Consultancy": 8,
-        "Creative Group": 2,
-        "Creative Consultancy": 6,
-        "Fashion Week": 1,
-        "Architecture Office": 4,
-        "Fashion Platform": 3,
-        "Design Biennale": 1,
-        "Creative Office": 1,
-        "Design Director": 1,
-        "Luxury Goods Company": 1,
-        "Architecture Prize": 2,
-        "Creative Team": 1
-      }
-    },
-    "Object": {
-      "count": 77,
-      "subs": {},
-      "topics": {
-        "Interview": 5,
-        "Talk Video": 1,
-        "Documentary Video": 4,
-        "Lecture Video": 4,
-        "Keynote": 1,
-        "Critique": 1,
-        "Game Critique": 1
       }
     },
     "Media": {
@@ -985,6 +911,11 @@
         "Radio": 1
       }
     },
+    "Uncategorized": {
+      "count": 143,
+      "subs": {},
+      "topics": {}
+    },
     "Culture": {
       "count": 4,
       "subs": {},
@@ -1018,71 +949,21 @@
       }
     },
     "Technology": {
-      "count": 33,
+      "count": 1,
       "subs": {
-        "Software": {
-          "count": 11,
-          "topics": {
-            "Programmer": 4,
-            "AI Company": 3,
-            "Software Company": 1,
-            "AI Engineer": 1
-          }
-        },
-        "Engineering": {
-          "count": 12,
-          "topics": {
-            "Engineer": 1,
-            "Spacecraft Company": 1,
-            "Automobile Company": 1
-          }
-        },
-        "Tech Product": {
-          "count": 3,
-          "topics": {
-            "Tech Product Company": 3
-          }
-        },
-        "Computer Science": {
+        "Hardware": {
           "count": 1,
           "topics": {
-            "Computer Scientist": 1
+            "Software Company": 1
           }
         }
       },
       "topics": {
-        "Programmer": 4,
-        "AI Company": 3,
-        "Software Company": 1,
-        "Tech Magazine": 6,
-        "Tech Product Company": 3,
-        "Computer Scientist": 1,
-        "AI Engineer": 1,
-        "Engineer": 1,
-        "Spacecraft Company": 1,
-        "Automobile Company": 1
-      }
-    },
-    "Humanities": {
-      "count": 6,
-      "subs": {
-        "Social Theory": {
-          "count": 1,
-          "topics": {}
-        },
-        "Philosophy": {
-          "count": 5,
-          "topics": {
-            "Philosopher": 4
-          }
-        }
-      },
-      "topics": {
-        "Philosopher": 4
+        "Software Company": 1
       }
     },
     "Business": {
-      "count": 21,
+      "count": 23,
       "subs": {
         "Consulting": {
           "count": 3,
@@ -1100,6 +981,10 @@
             "Marketing Company": 1
           }
         },
+        "Software": {
+          "count": 1,
+          "topics": {}
+        },
         "Investing": {
           "count": 3,
           "topics": {
@@ -1113,6 +998,10 @@
           }
         },
         "Advertising": {
+          "count": 1,
+          "topics": {}
+        },
+        "2. Wiki/Tech Product": {
           "count": 1,
           "topics": {}
         }
@@ -1133,40 +1022,8 @@
     }
   },
   "byType": {
-    "Record": {
-      "count": 1226,
-      "subs": {
-        "EP": {
-          "count": 293,
-          "topics": {}
-        },
-        "Studio Album": {
-          "count": 207,
-          "topics": {}
-        },
-        "Single": {
-          "count": 50,
-          "topics": {}
-        },
-        "Compilation": {
-          "count": 1,
-          "topics": {}
-        }
-      },
-      "topics": {}
-    },
-    "Text": {
-      "count": 1,
-      "subs": {
-        "List": {
-          "count": 1,
-          "topics": {}
-        }
-      },
-      "topics": {}
-    },
     "Organization": {
-      "count": 668,
+      "count": 663,
       "subs": {
         "Studio": {
           "count": 214,
@@ -1180,9 +1037,9 @@
           }
         },
         "Brand": {
-          "count": 141,
+          "count": 142,
           "topics": {
-            "Fashion Brand": 131,
+            "Fashion Brand": 132,
             "Fashion Design Brand": 9
           }
         },
@@ -1196,6 +1053,14 @@
             "PR Agency": 1,
             "Management Agency": 3,
             "Marketing Agency": 1
+          }
+        },
+        "Production": {
+          "count": 22,
+          "topics": {
+            "Video Production": 6,
+            "Creative Production": 13,
+            "Film Production": 2
           }
         },
         "Foundry": {
@@ -1214,26 +1079,22 @@
           }
         },
         "Company": {
-          "count": 91,
+          "count": 83,
           "topics": {
             "Publishing Company": 13,
             "Fashion Retail": 10,
             "K-Pop Company": 23,
             "Interior Architecture Company": 1,
-            "AI Company": 3,
             "Software Company": 1,
             "Creative Company": 13,
             "Entertainment Company": 5,
             "Production Company": 2,
             "Media Company": 4,
             "Growth Invention Company": 1,
-            "Tech Product Company": 3,
             "Luxury Goods Company": 1,
             "Hotel Company": 1,
             "Marketing Company": 1,
-            "Spacecraft Company": 1,
-            "Instruments Company": 2,
-            "Automobile Company": 1
+            "Instruments Company": 2
           }
         },
         "Collective": {
@@ -1242,14 +1103,6 @@
             "Creative Collective": 3,
             "Consultancy Collective": 1,
             "Art Collective": 3
-          }
-        },
-        "Production": {
-          "count": 20,
-          "topics": {
-            "Creative Production": 13,
-            "Video Production": 5,
-            "Film Production": 2
           }
         },
         "Firm": {
@@ -1316,11 +1169,12 @@
       },
       "topics": {
         "Graphic Design Studio": 19,
-        "Fashion Brand": 131,
+        "Fashion Brand": 132,
         "Creative Agency": 30,
         "Design Agency": 8,
         "Design Studio": 104,
         "Creative Studio": 55,
+        "Video Production": 6,
         "Architecture Studio": 7,
         "Type Foundry": 10,
         "Art Platform": 14,
@@ -1335,10 +1189,8 @@
         "K-Pop Company": 23,
         "Interior Architecture Company": 1,
         "Brand Design Studio": 15,
-        "AI Company": 3,
         "Software Company": 1,
         "Creative Company": 13,
-        "Video Production": 5,
         "Entertainment Company": 5,
         "Creative Collective": 3,
         "Fashion Design Brand": 9,
@@ -1354,7 +1206,6 @@
         "Consultancy Collective": 1,
         "Sports League": 8,
         "Fashion Platform": 3,
-        "Tech Product Company": 3,
         "PR Agency": 1,
         "Music Platform": 3,
         "Production House": 1,
@@ -1367,19 +1218,18 @@
         "Hotel Company": 1,
         "Marketing Company": 1,
         "Creative Team": 1,
-        "Spacecraft Company": 1,
         "Instruments Company": 2,
-        "Automobile Company": 1,
         "Animation Studio": 1
       }
     },
     "People": {
-      "count": 871,
+      "count": 853,
       "subs": {
         "Group": {
-          "count": 78,
+          "count": 80,
           "topics": {
-            "K-Pop Group": 78
+            "K-Pop Group": 79,
+            "Music Artist": 1
           }
         },
         "Artist": {
@@ -1390,11 +1240,13 @@
           }
         },
         "Producer": {
-          "count": 17,
+          "count": 18,
           "topics": {
-            "Music Producer": 1,
+            "Music Producer": 9,
             "Creative Producer": 4,
-            "Producer": 12
+            "Video Producer": 3,
+            "Producer": 2,
+            "DJ": 1
           }
         },
         "Director": {
@@ -1421,7 +1273,7 @@
           }
         },
         "Critic": {
-          "count": 20,
+          "count": 18,
           "topics": {
             "Culture Critic": 2,
             "Film Critic": 3,
@@ -1432,7 +1284,7 @@
           }
         },
         "Designer": {
-          "count": 180,
+          "count": 179,
           "topics": {
             "Graphic Designer": 77,
             "Type Designer": 4,
@@ -1457,9 +1309,9 @@
           "topics": {}
         },
         "Stylist": {
-          "count": 30,
+          "count": 31,
           "topics": {
-            "Stylist": 30
+            "Stylist": 31
           }
         },
         "A&R": {
@@ -1467,6 +1319,10 @@
           "topics": {
             "A&R": 1
           }
+        },
+        "D.O.P.": {
+          "count": 1,
+          "topics": {}
         },
         "Sculptor": {
           "count": 2,
@@ -1523,29 +1379,14 @@
             "Rapper": 11
           }
         },
-        "Engineer": {
-          "count": 7,
-          "topics": {
-            "Programmer": 4,
-            "Computer Scientist": 1,
-            "AI Engineer": 1,
-            "Engineer": 1
-          }
-        },
         "Architect": {
           "count": 18,
           "topics": {
             "Architect": 18
           }
         },
-        "Theorist": {
-          "count": 4,
-          "topics": {
-            "Philosopher": 4
-          }
-        },
         "CEO": {
-          "count": 12,
+          "count": 4,
           "topics": {
             "CEO": 4
           }
@@ -1556,16 +1397,16 @@
             "Editor-in-Chief": 16
           }
         },
-        "Entrepreneur": {
-          "count": 6,
-          "topics": {
-            "Entrepreneur": 3
-          }
-        },
         "Strategist": {
           "count": 2,
           "topics": {
             "Brand Strategist": 2
+          }
+        },
+        "Entrepreneur": {
+          "count": 5,
+          "topics": {
+            "Entrepreneur": 3
           }
         },
         "Executive Producer": {
@@ -1582,9 +1423,9 @@
         }
       },
       "topics": {
-        "K-Pop Group": 78,
-        "Music Artist": 155,
-        "Music Producer": 1,
+        "K-Pop Group": 79,
+        "Music Artist": 156,
+        "Music Producer": 9,
         "Video Director": 31,
         "Publisher": 4,
         "Culture Critic": 2,
@@ -1596,7 +1437,7 @@
         "Visual Director": 4,
         "Fashion Director": 1,
         "Production Designer": 2,
-        "Stylist": 30,
+        "Stylist": 31,
         "Brand Designer": 5,
         "Music Critic": 5,
         "Creative Director": 86,
@@ -1606,57 +1447,52 @@
         "3D Artist": 2,
         "Furniture Designer": 3,
         "Sculptor": 2,
+        "Video Producer": 3,
         "Band": 6,
         "Book Editor": 1,
         "Hair Designer": 1,
         "Literary Critic": 1,
         "Industrial Designer": 1,
         "Singer-Songwriter": 2,
-        "Producer": 12,
         "Rapper": 11,
         "Editor": 23,
         "Product Designer": 3,
         "Fashion Designer": 67,
-        "Programmer": 4,
         "Architect": 18,
         "D.O.P.": 1,
         "Fashion Critic": 3,
         "Video Editor": 2,
         "Designer": 14,
-        "Philosopher": 4,
         "Promoter": 6,
         "CEO": 4,
         "Editor-in-Chief": 16,
+        "Producer": 2,
         "Film Director": 2,
         "Curator": 1,
         "Music Journalism": 1,
-        "Computer Scientist": 1,
         "Brand Strategist": 2,
+        "DJ": 3,
         "Entrepreneur": 3,
         "Filmmaker": 4,
-        "AI Engineer": 1,
         "Executive Producer": 1,
         "Design Director": 1,
         "Editorial Director": 2,
-        "Engineer": 1,
         "Sound Director": 1,
         "Rock Band": 2,
-        "Moving Image Critic": 1,
-        "DJ": 2
+        "Moving Image Critic": 1
       }
     },
     "Publication": {
-      "count": 181,
+      "count": 175,
       "subs": {
         "Magazine": {
-          "count": 165,
+          "count": 159,
           "topics": {
             "Fashion Magazine": 77,
             "Magazine": 40,
             "Design Magazine": 27,
             "Film Magazine": 1,
             "Architecture Magazine": 2,
-            "Tech Magazine": 6,
             "Music Magazine": 6,
             "Critique Magazine": 1,
             "Sports Magazine": 1
@@ -1701,7 +1537,6 @@
         "Film Magazine": 1,
         "Podcast": 1,
         "Architecture Magazine": 2,
-        "Tech Magazine": 6,
         "Music Magazine": 6,
         "Newspaper": 3,
         "Video Channel": 2,
@@ -1711,10 +1546,10 @@
       }
     },
     "Event": {
-      "count": 70,
+      "count": 69,
       "subs": {
         "Award": {
-          "count": 39,
+          "count": 38,
           "topics": {
             "Design Award": 4,
             "Architecture Award": 7,
@@ -1820,16 +1655,38 @@
       "topics": {
         "Art School": 73
       }
+    },
+    "Product": {
+      "count": 5,
+      "subs": {
+        "Sampler": {
+          "count": 1,
+          "topics": {}
+        },
+        "Sequencer": {
+          "count": 3,
+          "topics": {}
+        },
+        "Modular Synthesizer": {
+          "count": 1,
+          "topics": {
+            "Modular Synthesizer": 1
+          }
+        }
+      },
+      "topics": {
+        "Modular Synthesizer": 1
+      }
     }
   },
   "byField": {
     "Popular Music": {
-      "count": 1554,
+      "count": 328,
       "subs": {
         "K-Pop": {
-          "count": 101,
+          "count": 102,
           "topics": {
-            "K-Pop Group": 78,
+            "K-Pop Group": 79,
             "K-Pop Company": 23
           }
         },
@@ -1845,29 +1702,35 @@
           "topics": {
             "Rapper": 11
           }
+        },
+        "J-Pop": {
+          "count": 1,
+          "topics": {
+            "Music Artist": 1
+          }
         }
       },
       "topics": {
-        "K-Pop Group": 78,
-        "Music Artist": 155,
-        "Music Producer": 1,
+        "K-Pop Group": 79,
+        "Music Artist": 156,
+        "Music Producer": 9,
         "Music Critic": 5,
         "A&R": 1,
         "Music Festival": 5,
         "Band": 6,
         "Record Label": 14,
         "Singer-Songwriter": 2,
-        "Producer": 12,
         "Rapper": 11,
         "K-Pop Company": 23,
         "Music Magazine": 6,
+        "Producer": 2,
         "Music Journalism": 1,
-        "Rock Band": 2,
-        "DJ": 2
+        "DJ": 3,
+        "Rock Band": 2
       }
     },
     "Creative Direction": {
-      "count": 225,
+      "count": 224,
       "subs": {
         "Creative Producing": {
           "count": 4,
@@ -1876,7 +1739,7 @@
           }
         },
         "Creative Research": {
-          "count": 2,
+          "count": 1,
           "topics": {}
         }
       },
@@ -1917,10 +1780,10 @@
       }
     },
     "Styling": {
-      "count": 34,
+      "count": 35,
       "subs": {},
       "topics": {
-        "Stylist": 30
+        "Stylist": 31
       }
     },
     "Art Direction": {
@@ -1948,18 +1811,6 @@
         "Brand Design Consultancy": 8
       }
     },
-    "Programming": {
-      "count": 6,
-      "subs": {},
-      "topics": {
-        "Programmer": 4
-      }
-    },
-    "Sociology": {
-      "count": 1,
-      "subs": {},
-      "topics": {}
-    },
     "Furniture Design": {
       "count": 12,
       "subs": {},
@@ -1971,6 +1822,13 @@
       "count": 3,
       "subs": {},
       "topics": {}
+    },
+    "Cinematography": {
+      "count": 2,
+      "subs": {},
+      "topics": {
+        "D.O.P.": 1
+      }
     },
     "Sculpture": {
       "count": 2,
@@ -2013,19 +1871,11 @@
         "Interior Architecture Company": 1
       }
     },
-    "Cinematography": {
+    "Moblie": {
       "count": 1,
       "subs": {},
       "topics": {
-        "D.O.P.": 1
-      }
-    },
-    "AI": {
-      "count": 4,
-      "subs": {},
-      "topics": {
-        "AI Company": 3,
-        "AI Engineer": 1
+        "Software Company": 1
       }
     },
     "Fashion Journalism": {
@@ -2068,6 +1918,39 @@
       "subs": {},
       "topics": {}
     },
+    "AI": {
+      "count": 1,
+      "subs": {
+        "Coding Agent": {
+          "count": 1,
+          "topics": {}
+        }
+      },
+      "topics": {}
+    },
+    "Music Instruments": {
+      "count": 6,
+      "subs": {
+        "Electronic Instruments": {
+          "count": 3,
+          "topics": {}
+        },
+        "Digital Whiteboard": {
+          "count": 1,
+          "topics": {}
+        },
+        "Music Instruments": {
+          "count": 1,
+          "topics": {
+            "Modular Synthesizer": 1
+          }
+        }
+      },
+      "topics": {
+        "Modular Synthesizer": 1,
+        "Instruments Company": 1
+      }
+    },
     "PR": {
       "count": 1,
       "subs": {},
@@ -2087,13 +1970,6 @@
       "subs": {},
       "topics": {
         "Brand Strategist": 2
-      }
-    },
-    "Space": {
-      "count": 2,
-      "subs": {},
-      "topics": {
-        "Spacecraft Company": 1
       }
     },
     "Luxury Goods": {
@@ -2122,18 +1998,28 @@
       "subs": {},
       "topics": {}
     },
-    "Music Instruments": {
-      "count": 2,
-      "subs": {},
-      "topics": {
-        "Instruments Company": 2
-      }
-    },
-    "Automotive": {
+    "Service": {
       "count": 1,
-      "subs": {},
+      "subs": {
+        "Social Media": {
+          "count": 1,
+          "topics": {}
+        }
+      },
+      "topics": {}
+    },
+    "Electronics": {
+      "count": 1,
+      "subs": {
+        "Audio": {
+          "count": 1,
+          "topics": {
+            "Instruments Company": 1
+          }
+        }
+      },
       "topics": {
-        "Automobile Company": 1
+        "Instruments Company": 1
       }
     },
     "Animation": {
@@ -2146,16 +2032,16 @@
   },
   "byRegion": {
     "South Korea": {
-      "count": 400,
+      "count": 397,
       "subs": {
         "Seoul": {
-          "count": 250,
+          "count": 248,
           "topics": {
             "Graphic Design Studio": 7,
-            "K-Pop Group": 75,
+            "K-Pop Group": 76,
             "Video Director": 3,
             "Graphic Designer": 13,
-            "Music Artist": 17,
+            "Music Artist": 16,
             "Art Platform": 3,
             "Fashion Magazine": 3,
             "Art Gallery": 2,
@@ -2193,7 +2079,7 @@
             "Radio": 1,
             "Design Award": 1,
             "Video Production": 1,
-            "Producer": 1,
+            "Music Producer": 1,
             "Music Platform": 1,
             "Art Collective": 1
           }
@@ -2361,12 +2247,12 @@
       },
       "topics": {
         "Graphic Design Studio": 9,
-        "K-Pop Group": 79,
-        "Music Producer": 1,
+        "K-Pop Group": 80,
+        "Music Producer": 4,
         "Video Director": 6,
         "Fashion Brand": 20,
         "Graphic Designer": 17,
-        "Music Artist": 39,
+        "Music Artist": 38,
         "Museum": 6,
         "Art Director": 3,
         "Photographer": 8,
@@ -2403,7 +2289,6 @@
         "Creative Consultancy": 2,
         "Creative Agency": 3,
         "Fashion Platform": 1,
-        "Producer": 3,
         "Music Platform": 3,
         "K-Pop Company": 1,
         "Designer": 1,
@@ -2483,7 +2368,7 @@
       }
     },
     "Japan": {
-      "count": 158,
+      "count": 133,
       "subs": {
         "Seoul": {
           "count": 5,
@@ -2494,16 +2379,16 @@
           }
         },
         "Tokyo": {
-          "count": 64,
+          "count": 44,
           "topics": {
             "K-Pop Group": 3,
-            "Music Artist": 4,
             "Photographer": 1,
             "Creative Studio": 1,
             "Art Direction Award": 1,
             "Fashion Brand": 7,
             "Art Week": 1,
             "Creative Agency": 2,
+            "Music Artist": 4,
             "Art School": 2,
             "Magazine": 2,
             "Design Festival": 1,
@@ -2516,12 +2401,6 @@
             "Design Studio": 1,
             "Art Gallery": 1,
             "Stylist": 1
-          }
-        },
-        "Tokushima": {
-          "count": 1,
-          "topics": {
-            "Music Artist": 1
           }
         },
         "Los Angeles": {
@@ -2547,10 +2426,6 @@
             "Music Artist": 1
           }
         },
-        "Okazaki": {
-          "count": 1,
-          "topics": {}
-        },
         "Paris": {
           "count": 8,
           "topics": {
@@ -2559,17 +2434,6 @@
             "Architecture Firm": 1,
             "Creative Agency": 1,
             "Brand Design Agency": 1
-          }
-        },
-        "Fukuoka": {
-          "count": 1,
-          "topics": {}
-        },
-        "Osaka": {
-          "count": 4,
-          "topics": {
-            "Architecture Office": 1,
-            "Designer": 1
           }
         },
         "New York": {
@@ -2625,6 +2489,12 @@
           "count": 2,
           "topics": {
             "Brand Design Agency": 2
+          }
+        },
+        "Tokushima": {
+          "count": 1,
+          "topics": {
+            "Music Artist": 1
           }
         },
         "Kyoto": {
@@ -2759,6 +2629,13 @@
             "Brand Design Agency": 1
           }
         },
+        "Osaka": {
+          "count": 2,
+          "topics": {
+            "Architecture Office": 1,
+            "Designer": 1
+          }
+        },
         "Hachioji": {
           "count": 2,
           "topics": {
@@ -2780,7 +2657,6 @@
       },
       "topics": {
         "K-Pop Group": 7,
-        "Music Artist": 7,
         "Photographer": 3,
         "Singer-Songwriter": 1,
         "Creative Studio": 3,
@@ -2788,6 +2664,7 @@
         "Fashion Brand": 10,
         "Art Week": 1,
         "Creative Agency": 5,
+        "Music Artist": 7,
         "Magazine": 3,
         "Art School": 8,
         "Architecture Magazine": 1,
@@ -2805,15 +2682,14 @@
         "Architect": 2,
         "Art Gallery": 1,
         "Designer": 1,
-        "Tech Magazine": 1,
         "Stylist": 1
       }
     },
     "USA": {
-      "count": 482,
+      "count": 471,
       "subs": {
         "New York": {
-          "count": 171,
+          "count": 166,
           "topics": {
             "Creative Agency": 10,
             "Design Studio": 11,
@@ -2856,7 +2732,6 @@
             "Entertainment Company": 1,
             "Newspaper": 1,
             "Art Direction Award": 1,
-            "Tech Magazine": 2,
             "Management Agency": 1,
             "Design Association": 1,
             "Brand Design Consultancy": 1
@@ -2875,7 +2750,7 @@
           }
         },
         "Los Angeles": {
-          "count": 44,
+          "count": 43,
           "topics": {
             "Creative Studio": 4,
             "Art School": 4,
@@ -2888,7 +2763,7 @@
             "Brand Design Studio": 1,
             "Fashion Designer": 3,
             "Fashion Brand": 1,
-            "Producer": 1,
+            "Music Artist": 1,
             "Creative Director": 3,
             "Brand Design Agency": 2,
             "Production House": 1,
@@ -2969,10 +2844,6 @@
             "Art School": 1
           }
         },
-        "Miami": {
-          "count": 1,
-          "topics": {}
-        },
         "Brussels": {
           "count": 1,
           "topics": {
@@ -3043,18 +2914,16 @@
           }
         },
         "San Francisco": {
-          "count": 15,
+          "count": 13,
           "topics": {
             "Art School": 1,
             "Communications Group": 1,
             "Architecture Office": 1,
-            "Tech Product Company": 1,
             "Architecture Firm": 1,
             "Brand Design Agency": 3,
             "Design Studio": 2,
             "Record Label": 1,
             "Music Artist": 1,
-            "Tech Magazine": 1,
             "Brand Design Consultancy": 1
           }
         },
@@ -3128,10 +2997,6 @@
             "Music Artist": 2,
             "Art School": 1
           }
-        },
-        "California": {
-          "count": 1,
-          "topics": {}
         },
         "Bakersfield": {
           "count": 1,
@@ -3491,7 +3356,7 @@
       },
       "topics": {
         "Creative Agency": 28,
-        "Music Artist": 44,
+        "Music Artist": 46,
         "Fashion Brand": 19,
         "Creative Studio": 20,
         "Design Studio": 23,
@@ -3503,7 +3368,6 @@
         "Fashion Magazine": 11,
         "Art School": 23,
         "Photographer": 8,
-        "Tech Magazine": 4,
         "Creative Company": 15,
         "Brand Design Agency": 75,
         "Fashion Design Brand": 4,
@@ -3520,10 +3384,8 @@
         "Video Director": 2,
         "Architecture Office": 2,
         "Band": 1,
-        "Producer": 4,
         "Museum": 5,
         "Art Director": 1,
-        "Tech Product Company": 1,
         "Creative Production": 3,
         "Film Director": 2,
         "Publishing Company": 1,
@@ -3533,6 +3395,7 @@
         "Music Festival": 2,
         "Marketing Agency": 2,
         "Architecture Studio": 3,
+        "Music Producer": 1,
         "Sports League": 3,
         "Rock Band": 1,
         "Art Collective": 1,
@@ -3551,6 +3414,7 @@
         "Art Direction Award": 1,
         "Management Agency": 1,
         "Brand Design Consultancy": 4,
+        "Producer": 1,
         "DJ": 1
       }
     },
@@ -4180,334 +4044,11 @@
         "Type Foundry": 1
       }
     },
-    "China": {
-      "count": 116,
-      "subs": {
-        "Shanghai": {
-          "count": 13,
-          "topics": {
-            "Architecture Firm": 2,
-            "Architecture Studio": 1,
-            "Brand Design Agency": 3,
-            "Fashion Brand": 1,
-            "K-Pop Group": 1
-          }
-        },
-        "New York": {
-          "count": 7,
-          "topics": {
-            "Design Studio": 1,
-            "Architecture Firm": 1,
-            "Brand Design Agency": 3
-          }
-        },
-        "Beijing": {
-          "count": 10,
-          "topics": {
-            "Design Studio": 1,
-            "Art School": 1,
-            "Brand Design Agency": 1,
-            "Architecture Studio": 1,
-            "Creative Studio": 1,
-            "Fashion Magazine": 1
-          }
-        },
-        "Copenhagen": {
-          "count": 1,
-          "topics": {
-            "Architecture Firm": 1
-          }
-        },
-        "London": {
-          "count": 6,
-          "topics": {
-            "Architecture Firm": 2,
-            "Architecture Studio": 1,
-            "Brand Design Agency": 3
-          }
-        },
-        "Barcelona": {
-          "count": 2,
-          "topics": {
-            "Architecture Firm": 1,
-            "Brand Design Agency": 1
-          }
-        },
-        "Los Angeles": {
-          "count": 3,
-          "topics": {
-            "Architecture Firm": 1,
-            "Brand Design Agency": 1,
-            "Architecture Studio": 1
-          }
-        },
-        "Zurich": {
-          "count": 1,
-          "topics": {
-            "Architecture Firm": 1
-          }
-        },
-        "Chongqing": {
-          "count": 2,
-          "topics": {}
-        },
-        "Berlin": {
-          "count": 3,
-          "topics": {
-            "Architecture Firm": 1,
-            "Brand Design Agency": 2
-          }
-        },
-        "Milan": {
-          "count": 3,
-          "topics": {
-            "Architecture Firm": 1,
-            "Brand Design Agency": 2
-          }
-        },
-        "Santiago de Compostela": {
-          "count": 1,
-          "topics": {
-            "Architecture Firm": 1
-          }
-        },
-        "Shenzhen": {
-          "count": 5,
-          "topics": {
-            "Creative Studio": 1
-          }
-        },
-        "Harbin": {
-          "count": 1,
-          "topics": {}
-        },
-        "Tokyo": {
-          "count": 2,
-          "topics": {
-            "Brand Design Agency": 2
-          }
-        },
-        "Seoul": {
-          "count": 3,
-          "topics": {
-            "Brand Design Agency": 2,
-            "K-Pop Group": 1
-          }
-        },
-        "Cologne": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Madrid": {
-          "count": 2,
-          "topics": {
-            "Brand Design Agency": 2
-          }
-        },
-        "São Paulo": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Mexico City": {
-          "count": 2,
-          "topics": {
-            "Brand Design Agency": 2
-          }
-        },
-        "Mumbai": {
-          "count": 2,
-          "topics": {
-            "Brand Design Agency": 2
-          }
-        },
-        "Hong Kong": {
-          "count": 2,
-          "topics": {
-            "Brand Design Agency": 2
-          }
-        },
-        "Singapore": {
-          "count": 2,
-          "topics": {
-            "Brand Design Agency": 2
-          }
-        },
-        "Delhi": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Jakarta": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Dubai": {
-          "count": 2,
-          "topics": {
-            "Brand Design Agency": 2
-          }
-        },
-        "Oslo": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Istanbul": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Hamburg": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Sydney": {
-          "count": 2,
-          "topics": {
-            "Brand Design Agency": 2
-          }
-        },
-        "Munich": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Melbourne": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Paris": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Geneva": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "San Francisco": {
-          "count": 2,
-          "topics": {
-            "Brand Design Agency": 2
-          }
-        },
-        "Chicago": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Toronto": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Columbus": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Cincinnati": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Cape Town": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Lishui": {
-          "count": 1,
-          "topics": {}
-        },
-        "Rome": {
-          "count": 1,
-          "topics": {
-            "Architecture Studio": 1
-          }
-        },
-        "Hangzhou": {
-          "count": 2,
-          "topics": {
-            "Design Studio": 2
-          }
-        },
-        "Abu Dhabi": {
-          "count": 1,
-          "topics": {}
-        },
-        "Ordos": {
-          "count": 1,
-          "topics": {}
-        },
-        "Quzhou": {
-          "count": 1,
-          "topics": {}
-        },
-        "Haikou": {
-          "count": 1,
-          "topics": {}
-        },
-        "Xi'an": {
-          "count": 1,
-          "topics": {}
-        },
-        "Xiamen": {
-          "count": 1,
-          "topics": {}
-        },
-        "Yabuli": {
-          "count": 1,
-          "topics": {}
-        },
-        "Yiwu": {
-          "count": 1,
-          "topics": {}
-        }
-      },
-      "topics": {
-        "Design Studio": 4,
-        "Art Platform": 1,
-        "Design Magazine": 2,
-        "Architecture Firm": 12,
-        "Art School": 1,
-        "Graphic Designer": 1,
-        "Architecture Studio": 5,
-        "Brand Design Agency": 52,
-        "Fashion Magazine": 3,
-        "Photographer": 1,
-        "Fashion Brand": 2,
-        "Creative Studio": 2,
-        "K-Pop Group": 2
-      }
-    },
     "UK": {
-      "count": 388,
+      "count": 385,
       "subs": {
         "London": {
-          "count": 194,
+          "count": 193,
           "topics": {
             "Creative Agency": 7,
             "Architecture Studio": 3,
@@ -4917,10 +4458,6 @@
             "Brand Design Agency": 1
           }
         },
-        "Leeds": {
-          "count": 1,
-          "topics": {}
-        },
         "Beaconsfield": {
           "count": 1,
           "topics": {
@@ -4993,7 +4530,7 @@
         "Creative Agency": 18,
         "Architecture Studio": 5,
         "Creative Studio": 15,
-        "Producer": 3,
+        "Music Producer": 2,
         "Fashion Brand": 14,
         "Design Studio": 12,
         "Fashion Designer": 21,
@@ -5020,6 +4557,7 @@
         "Art Director": 4,
         "Type Foundry": 1,
         "Fashion Platform": 1,
+        "Producer": 1,
         "Video Production": 4,
         "Creative Production": 3,
         "Photographer": 7,
@@ -5042,7 +4580,6 @@
         "Museum": 1,
         "Rock Band": 1,
         "Visual Director": 1,
-        "Tech Magazine": 1,
         "Brand Design Consultancy": 4,
         "Filmmaker": 1
       }
@@ -5159,9 +4696,292 @@
         "Design Week": 1,
         "Design Magazine": 2,
         "Designer": 1,
-        "Producer": 1,
+        "Music Producer": 1,
         "Architecture Firm": 4,
         "Brand Design Agency": 3
+      }
+    },
+    "China": {
+      "count": 96,
+      "subs": {
+        "New York": {
+          "count": 7,
+          "topics": {
+            "Design Studio": 1,
+            "Architecture Firm": 1,
+            "Brand Design Agency": 3
+          }
+        },
+        "Beijing": {
+          "count": 6,
+          "topics": {
+            "Design Studio": 1,
+            "Art School": 1,
+            "Brand Design Agency": 1,
+            "Architecture Studio": 1,
+            "Creative Studio": 1,
+            "Fashion Magazine": 1
+          }
+        },
+        "Copenhagen": {
+          "count": 1,
+          "topics": {
+            "Architecture Firm": 1
+          }
+        },
+        "London": {
+          "count": 6,
+          "topics": {
+            "Architecture Firm": 2,
+            "Architecture Studio": 1,
+            "Brand Design Agency": 3
+          }
+        },
+        "Barcelona": {
+          "count": 2,
+          "topics": {
+            "Architecture Firm": 1,
+            "Brand Design Agency": 1
+          }
+        },
+        "Shanghai": {
+          "count": 10,
+          "topics": {
+            "Architecture Firm": 2,
+            "Architecture Studio": 1,
+            "Brand Design Agency": 3,
+            "Fashion Brand": 1,
+            "K-Pop Group": 1
+          }
+        },
+        "Los Angeles": {
+          "count": 3,
+          "topics": {
+            "Architecture Firm": 1,
+            "Brand Design Agency": 1,
+            "Architecture Studio": 1
+          }
+        },
+        "Zurich": {
+          "count": 1,
+          "topics": {
+            "Architecture Firm": 1
+          }
+        },
+        "Berlin": {
+          "count": 3,
+          "topics": {
+            "Architecture Firm": 1,
+            "Brand Design Agency": 2
+          }
+        },
+        "Milan": {
+          "count": 3,
+          "topics": {
+            "Architecture Firm": 1,
+            "Brand Design Agency": 2
+          }
+        },
+        "Santiago de Compostela": {
+          "count": 1,
+          "topics": {
+            "Architecture Firm": 1
+          }
+        },
+        "Shenzhen": {
+          "count": 3,
+          "topics": {
+            "Creative Studio": 1
+          }
+        },
+        "Tokyo": {
+          "count": 2,
+          "topics": {
+            "Brand Design Agency": 2
+          }
+        },
+        "Seoul": {
+          "count": 3,
+          "topics": {
+            "Brand Design Agency": 2,
+            "K-Pop Group": 1
+          }
+        },
+        "Cologne": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Madrid": {
+          "count": 2,
+          "topics": {
+            "Brand Design Agency": 2
+          }
+        },
+        "São Paulo": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Mexico City": {
+          "count": 2,
+          "topics": {
+            "Brand Design Agency": 2
+          }
+        },
+        "Mumbai": {
+          "count": 2,
+          "topics": {
+            "Brand Design Agency": 2
+          }
+        },
+        "Hong Kong": {
+          "count": 2,
+          "topics": {
+            "Brand Design Agency": 2
+          }
+        },
+        "Singapore": {
+          "count": 2,
+          "topics": {
+            "Brand Design Agency": 2
+          }
+        },
+        "Delhi": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Jakarta": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Dubai": {
+          "count": 2,
+          "topics": {
+            "Brand Design Agency": 2
+          }
+        },
+        "Oslo": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Istanbul": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Hamburg": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Sydney": {
+          "count": 2,
+          "topics": {
+            "Brand Design Agency": 2
+          }
+        },
+        "Munich": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Melbourne": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Paris": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Geneva": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "San Francisco": {
+          "count": 2,
+          "topics": {
+            "Brand Design Agency": 2
+          }
+        },
+        "Chicago": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Toronto": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Columbus": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Cincinnati": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Cape Town": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Rome": {
+          "count": 1,
+          "topics": {
+            "Architecture Studio": 1
+          }
+        },
+        "Hangzhou": {
+          "count": 2,
+          "topics": {
+            "Design Studio": 2
+          }
+        },
+        "Abu Dhabi": {
+          "count": 1,
+          "topics": {}
+        }
+      },
+      "topics": {
+        "Design Studio": 4,
+        "Art Platform": 1,
+        "Design Magazine": 2,
+        "Architecture Firm": 12,
+        "Art School": 1,
+        "Graphic Designer": 1,
+        "Architecture Studio": 5,
+        "Brand Design Agency": 52,
+        "Fashion Magazine": 3,
+        "Photographer": 1,
+        "Fashion Brand": 2,
+        "Creative Studio": 2,
+        "K-Pop Group": 2
       }
     },
     "Denmark": {
@@ -5355,246 +5175,6 @@
       "topics": {
         "Architect": 1,
         "Creative Agency": 1
-      }
-    },
-    "Canada": {
-      "count": 60,
-      "subs": {
-        "Toronto": {
-          "count": 9,
-          "topics": {
-            "Rapper": 1,
-            "Brand Design Agency": 1,
-            "Art School": 2,
-            "Fashion Brand": 1,
-            "Creative Agency": 2,
-            "Music Artist": 1
-          }
-        },
-        "Montreal": {
-          "count": 7,
-          "topics": {
-            "Music Artist": 3,
-            "Graphic Designer": 1,
-            "Creative Agency": 2
-          }
-        },
-        "Montréal": {
-          "count": 3,
-          "topics": {
-            "Art Director": 2,
-            "Brand Design Studio": 1
-          }
-        },
-        "Shanghai": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Beijing": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Tokyo": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Hong Kong": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Singapore": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Delhi": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Jakarta": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Mumbai": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Dubai": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Oslo": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Istanbul": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Berlin": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Hamburg": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Sydney": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Munich": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Melbourne": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "London": {
-          "count": 2,
-          "topics": {
-            "Brand Design Agency": 1,
-            "Creative Agency": 1
-          }
-        },
-        "Milan": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Paris": {
-          "count": 2,
-          "topics": {
-            "Brand Design Agency": 1,
-            "Creative Agency": 1
-          }
-        },
-        "Geneva": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "San Francisco": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Los Angeles": {
-          "count": 2,
-          "topics": {
-            "Brand Design Agency": 1,
-            "Creative Agency": 1
-          }
-        },
-        "Barcelona": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Madrid": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Chicago": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Columbus": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Cincinnati": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "New York": {
-          "count": 3,
-          "topics": {
-            "Brand Design Agency": 1,
-            "Creative Agency": 2
-          }
-        },
-        "Mexico City": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Cape Town": {
-          "count": 1,
-          "topics": {
-            "Brand Design Agency": 1
-          }
-        },
-        "Vancouver": {
-          "count": 1,
-          "topics": {
-            "Creative Agency": 1
-          }
-        },
-        "Seattle": {
-          "count": 1,
-          "topics": {
-            "Creative Agency": 1
-          }
-        }
-      },
-      "topics": {
-        "Music Artist": 5,
-        "Art Director": 2,
-        "Rapper": 1,
-        "Brand Design Agency": 31,
-        "Sports League": 2,
-        "Graphic Designer": 1,
-        "Art School": 2,
-        "Fashion Brand": 1,
-        "Brand Design Studio": 1,
-        "Creative Agency": 11,
-        "Tech Product Company": 1
       }
     },
     "Austria": {
@@ -6132,10 +5712,10 @@
       }
     },
     "France": {
-      "count": 214,
+      "count": 213,
       "subs": {
         "Paris": {
-          "count": 112,
+          "count": 111,
           "topics": {
             "Fashion Brand": 24,
             "Fashion Designer": 27,
@@ -6595,8 +6175,247 @@
         "Music Artist": 1
       }
     },
+    "Canada": {
+      "count": 58,
+      "subs": {
+        "Montreal": {
+          "count": 7,
+          "topics": {
+            "Music Artist": 3,
+            "Graphic Designer": 1,
+            "Creative Agency": 2
+          }
+        },
+        "Montréal": {
+          "count": 3,
+          "topics": {
+            "Art Director": 2,
+            "Brand Design Studio": 1
+          }
+        },
+        "Toronto": {
+          "count": 8,
+          "topics": {
+            "Rapper": 1,
+            "Brand Design Agency": 1,
+            "Art School": 2,
+            "Fashion Brand": 1,
+            "Creative Agency": 2,
+            "Music Artist": 1
+          }
+        },
+        "Shanghai": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Beijing": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Tokyo": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Hong Kong": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Singapore": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Delhi": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Jakarta": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Mumbai": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Dubai": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Oslo": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Istanbul": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Berlin": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Hamburg": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Sydney": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Munich": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Melbourne": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "London": {
+          "count": 2,
+          "topics": {
+            "Brand Design Agency": 1,
+            "Creative Agency": 1
+          }
+        },
+        "Milan": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Paris": {
+          "count": 2,
+          "topics": {
+            "Brand Design Agency": 1,
+            "Creative Agency": 1
+          }
+        },
+        "Geneva": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "San Francisco": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Los Angeles": {
+          "count": 2,
+          "topics": {
+            "Brand Design Agency": 1,
+            "Creative Agency": 1
+          }
+        },
+        "Barcelona": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Madrid": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Chicago": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Columbus": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Cincinnati": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "New York": {
+          "count": 3,
+          "topics": {
+            "Brand Design Agency": 1,
+            "Creative Agency": 2
+          }
+        },
+        "Mexico City": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Cape Town": {
+          "count": 1,
+          "topics": {
+            "Brand Design Agency": 1
+          }
+        },
+        "Vancouver": {
+          "count": 1,
+          "topics": {
+            "Creative Agency": 1
+          }
+        },
+        "Seattle": {
+          "count": 1,
+          "topics": {
+            "Creative Agency": 1
+          }
+        }
+      },
+      "topics": {
+        "Music Artist": 5,
+        "Art Director": 2,
+        "Rapper": 1,
+        "Brand Design Agency": 31,
+        "Sports League": 2,
+        "Graphic Designer": 1,
+        "Art School": 2,
+        "Fashion Brand": 1,
+        "Brand Design Studio": 1,
+        "Creative Agency": 11
+      }
+    },
     "Switzerland": {
-      "count": 73,
+      "count": 72,
       "subs": {
         "Basel": {
           "count": 3,
@@ -6860,10 +6679,6 @@
           "topics": {
             "Architecture Award": 1
           }
-        },
-        "Engelberg": {
-          "count": 1,
-          "topics": {}
         }
       },
       "topics": {
@@ -7299,7 +7114,7 @@
       }
     },
     "Taiwan": {
-      "count": 6,
+      "count": 5,
       "subs": {
         "Taipei": {
           "count": 3,
@@ -7313,10 +7128,6 @@
           "topics": {
             "Photographer": 1
           }
-        },
-        "Taichung": {
-          "count": 1,
-          "topics": {}
         }
       },
       "topics": {
@@ -7871,7 +7682,7 @@
       }
     },
     "UAE": {
-      "count": 53,
+      "count": 52,
       "subs": {
         "London": {
           "count": 4,
@@ -7882,7 +7693,7 @@
           }
         },
         "Dubai": {
-          "count": 7,
+          "count": 6,
           "topics": {
             "Architecture Office": 1,
             "Art School": 1,
@@ -8536,13 +8347,6 @@
         "Brand Designer": 2
       }
     },
-    "Poland": {
-      "count": 1,
-      "subs": {},
-      "topics": {
-        "Programmer": 1
-      }
-    },
     "Indonesia": {
       "count": 31,
       "subs": {
@@ -8932,7 +8736,7 @@
       }
     },
     "South Africa": {
-      "count": 32,
+      "count": 31,
       "subs": {
         "Shanghai": {
           "count": 1,
@@ -9115,7 +8919,7 @@
           }
         },
         "Cape Town": {
-          "count": 2,
+          "count": 1,
           "topics": {
             "Brand Design Agency": 1
           }

@@ -151,8 +151,49 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
       .map(([name, count]) => ({ name, count }));
   }, [currentAxis, draftPrimary, draftSecondary, facetData]);
 
-  // Commit and create slot: only shows the most specific item picked (최대분류 or 최종 토픽)
-  const commitSlot = (options: {
+  // Helper to find if an identical slot is currently in activeFilterSlots
+  const findMatchingSlot = (options: {
+    primary?: string | null;
+    secondary?: string | null;
+    topic?: string | null;
+  }) => {
+    const p = options.primary !== undefined ? options.primary : draftPrimary;
+    const s = options.secondary !== undefined ? options.secondary : draftSecondary;
+    const t = options.topic;
+
+    return activeFilterSlots.find((slot) => {
+      if (slot.axis !== currentAxis) return false;
+      if (t) {
+        return slot.topic === t;
+      }
+      if (s) {
+        return (
+          !slot.topic &&
+          ((currentAxis === 'category' && slot.category === p && slot.subCategory === s) ||
+            (currentAxis === 'type' && slot.type === p && slot.subType === s) ||
+            (currentAxis === 'field' && slot.field === p && slot.subField === s) ||
+            (currentAxis === 'region' && slot.country === p && slot.city === s))
+        );
+      }
+      if (p) {
+        return (
+          !slot.topic &&
+          !slot.subCategory &&
+          !slot.subType &&
+          !slot.subField &&
+          !slot.city &&
+          ((currentAxis === 'category' && slot.category === p) ||
+            (currentAxis === 'type' && slot.type === p) ||
+            (currentAxis === 'field' && slot.field === p) ||
+            (currentAxis === 'region' && slot.country === p))
+        );
+      }
+      return false;
+    });
+  };
+
+  // Toggle or add filter slot with hierarchical refinement
+  const toggleOrAddSlot = (options: {
     primary?: string | null;
     secondary?: string | null;
     topic?: string | null;
@@ -163,38 +204,180 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
 
     if (!p && !s && !t) return;
 
-    // Concise label: only the deepest specific topic/sub picked
-    const label = t || s || p || '';
-
-    const newSlot: ActiveFilterSlot = {
-      id: `slot-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
-      axis: currentAxis,
-      label,
-      category: currentAxis === 'category' ? p : undefined,
-      subCategory: currentAxis === 'category' ? s : undefined,
-      type: currentAxis === 'type' ? p : undefined,
-      subType: currentAxis === 'type' ? s : undefined,
-      field: currentAxis === 'field' ? p : undefined,
-      subField: currentAxis === 'field' ? s : undefined,
-      country: currentAxis === 'region' ? p : undefined,
-      city: currentAxis === 'region' ? s : undefined,
-      topic: t,
+    const isUnderPrimary = (slot: ActiveFilterSlot) => {
+      if (slot.axis !== currentAxis) return false;
+      if (currentAxis === 'category') return slot.category === p;
+      if (currentAxis === 'type') return slot.type === p;
+      if (currentAxis === 'field') return slot.field === p;
+      if (currentAxis === 'region') return slot.country === p;
+      return false;
     };
 
-    onAddFilterSlot(newSlot);
+    const isPurePrimary = (slot: ActiveFilterSlot) => {
+      return (
+        isUnderPrimary(slot) &&
+        !slot.subCategory &&
+        !slot.subType &&
+        !slot.subField &&
+        !slot.city &&
+        !slot.topic
+      );
+    };
 
-    // Reset draft
-    setDraftPrimary(null);
-    setDraftSecondary(null);
+    const isUnderSecondary = (slot: ActiveFilterSlot) => {
+      if (!isUnderPrimary(slot)) return false;
+      if (currentAxis === 'category') return slot.subCategory === s;
+      if (currentAxis === 'type') return slot.subType === s;
+      if (currentAxis === 'field') return slot.subField === s;
+      if (currentAxis === 'region') return slot.city === s;
+      return false;
+    };
+
+    const isPureSecondary = (slot: ActiveFilterSlot) => {
+      return isUnderSecondary(slot) && !slot.topic;
+    };
+
+    // 1. TOPIC CLICKED
+    if (t) {
+      const existing = activeFilterSlots.find((slot) => isUnderSecondary(slot) && slot.topic === t);
+      if (existing) {
+        onRemoveFilterSlot(existing.id);
+        const remainingTopics = activeFilterSlots.filter(
+          (slot) => slot.id !== existing.id && isUnderSecondary(slot) && Boolean(slot.topic)
+        );
+        if (remainingTopics.length === 0 && s) {
+          // Restore pure secondary slot
+          onAddFilterSlot({
+            id: `slot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            axis: currentAxis,
+            label: s,
+            category: currentAxis === 'category' ? p : undefined,
+            subCategory: currentAxis === 'category' ? s : undefined,
+            type: currentAxis === 'type' ? p : undefined,
+            subType: currentAxis === 'type' ? s : undefined,
+            field: currentAxis === 'field' ? p : undefined,
+            subField: currentAxis === 'field' ? s : undefined,
+            country: currentAxis === 'region' ? p : undefined,
+            city: currentAxis === 'region' ? s : undefined,
+          });
+        }
+        return;
+      }
+
+      if (!canAddMore) return;
+
+      // When picking a topic, remove pure parent secondary / primary slots
+      const pureSec = activeFilterSlots.find(isPureSecondary);
+      if (pureSec) onRemoveFilterSlot(pureSec.id);
+      const purePrim = activeFilterSlots.find(isPurePrimary);
+      if (purePrim) onRemoveFilterSlot(purePrim.id);
+
+      onAddFilterSlot({
+        id: `slot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        axis: currentAxis,
+        label: `#${t}`,
+        category: currentAxis === 'category' ? p : undefined,
+        subCategory: currentAxis === 'category' ? s : undefined,
+        type: currentAxis === 'type' ? p : undefined,
+        subType: currentAxis === 'type' ? s : undefined,
+        field: currentAxis === 'field' ? p : undefined,
+        subField: currentAxis === 'field' ? s : undefined,
+        country: currentAxis === 'region' ? p : undefined,
+        city: currentAxis === 'region' ? s : undefined,
+        topic: t,
+      });
+      return;
+    }
+
+    // 2. SECONDARY (SUB) CLICKED
+    if (s) {
+      const existing = activeFilterSlots.find(isPureSecondary);
+      if (existing) {
+        onRemoveFilterSlot(existing.id);
+        const remainingUnderPrimary = activeFilterSlots.filter(
+          (slot) => slot.id !== existing.id && isUnderPrimary(slot)
+        );
+        if (remainingUnderPrimary.length === 0 && p) {
+          // No other sub or topic under primary, restore primary!
+          onAddFilterSlot({
+            id: `slot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            axis: currentAxis,
+            label: p,
+            category: currentAxis === 'category' ? p : undefined,
+            type: currentAxis === 'type' ? p : undefined,
+            field: currentAxis === 'field' ? p : undefined,
+            country: currentAxis === 'region' ? p : undefined,
+          });
+        }
+        return;
+      }
+
+      if (!canAddMore) return;
+
+      // Refinement: remove broad pure primary slot
+      const purePrim = activeFilterSlots.find(isPurePrimary);
+      if (purePrim) onRemoveFilterSlot(purePrim.id);
+
+      onAddFilterSlot({
+        id: `slot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        axis: currentAxis,
+        label: s,
+        category: currentAxis === 'category' ? p : undefined,
+        subCategory: currentAxis === 'category' ? s : undefined,
+        type: currentAxis === 'type' ? p : undefined,
+        subType: currentAxis === 'type' ? s : undefined,
+        field: currentAxis === 'field' ? p : undefined,
+        subField: currentAxis === 'field' ? s : undefined,
+        country: currentAxis === 'region' ? p : undefined,
+        city: currentAxis === 'region' ? s : undefined,
+      });
+      return;
+    }
+
+    // 3. PRIMARY CLICKED
+    if (p) {
+      const slotsUnder = activeFilterSlots.filter(isUnderPrimary);
+      if (slotsUnder.length > 0) {
+        // Toggle OFF: remove all slots under primary
+        slotsUnder.forEach((sl) => onRemoveFilterSlot(sl.id));
+        return;
+      }
+
+      if (!canAddMore) return;
+
+      onAddFilterSlot({
+        id: `slot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        axis: currentAxis,
+        label: p,
+        category: currentAxis === 'category' ? p : undefined,
+        type: currentAxis === 'type' ? p : undefined,
+        field: currentAxis === 'field' ? p : undefined,
+        country: currentAxis === 'region' ? p : undefined,
+      });
+      return;
+    }
   };
 
   return (
     <div className="w-full flex flex-col bg-white border-b border-[#eeeeee] shrink-0 select-none z-30 transition-all font-sans">
       {/* 1. TOP STACK ROW: Active Filter Slots */}
       <div className="flex items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 lg:px-8 py-2 gap-2 bg-[#f6f6f8] border-b border-[#e8e8ea]">
-        <span className="font-semibold text-black uppercase tracking-wider text-[11px] font-mono shrink-0 mr-1">
-          Filters
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0 mr-1">
+          <span className="font-semibold text-black uppercase tracking-wider text-[11px] font-mono">
+            Filters
+          </span>
+          {/* Clear Button right next to Filters title on the left */}
+          {activeFilterSlots.length > 0 && (
+            <button
+              onClick={onClearAllSlots}
+              className="p-1 rounded-full text-[#777777] hover:text-black hover:bg-black/8 transition-colors shrink-0"
+              title="Clear all active filters"
+              aria-label="Clear all filters"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
 
         {/* Active Slots list */}
         {activeFilterSlots.length === 0 ? (
@@ -237,17 +420,6 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
               </motion.div>
             );
           })
-        )}
-
-        {/* Clear All Button */}
-        {activeFilterSlots.length > 0 && (
-          <button
-            onClick={onClearAllSlots}
-            className="ml-auto px-2.5 py-1 rounded-md text-[11px] font-mono text-[#777777] hover:text-black hover:bg-[#eaeaea] transition-colors shrink-0 flex items-center gap-1 border border-dashed border-[#cccccc]"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span>Clear Stack</span>
-          </button>
         )}
       </div>
 
@@ -383,42 +555,36 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
       <div className="flex items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-4 lg:px-8 py-2.5 gap-2 bg-white">
         {primaryList.map((item) => {
           const isSelected = draftPrimary === item.name;
+          const isSlotActive = Boolean(findMatchingSlot({ primary: item.name, secondary: null, topic: null }));
+
           return (
             <button
               key={item.name}
               onClick={() => {
                 if (isSelected) {
+                  // If already selected, clicking it again toggles off!
+                  toggleOrAddSlot({ primary: item.name, secondary: null });
                   setDraftPrimary(null);
                   setDraftSecondary(null);
                 } else {
                   setDraftPrimary(item.name);
                   setDraftSecondary(null);
+                  toggleOrAddSlot({ primary: item.name, secondary: null });
                 }
               }}
               className={`px-3 py-1.5 rounded-md text-xs font-mono transition-all shrink-0 flex items-center gap-1.5 ${
-                isSelected
+                isSelected || isSlotActive
                   ? 'bg-black text-white font-semibold shadow-xs'
                   : 'bg-[#f4f4f5] text-[#333333] hover:bg-[#eaeaea]'
               }`}
             >
               <span>{item.name}</span>
-              <span className={`text-[10px] ${isSelected ? 'text-white/70' : 'text-[#888888]'}`}>
+              <span className={`text-[10px] ${isSelected || isSlotActive ? 'text-white/70' : 'text-[#888888]'}`}>
                 {item.count}
               </span>
             </button>
           );
         })}
-
-        {/* Quick Add Button if primary is selected */}
-        {draftPrimary && canAddMore && (
-          <button
-            onClick={() => commitSlot({ primary: draftPrimary })}
-            className="ml-auto px-3 py-1.5 rounded-md bg-black text-white text-xs font-mono font-semibold flex items-center gap-1.5 shrink-0 hover:bg-[#222222] shadow-xs"
-          >
-            <Plus className="w-3 h-3 stroke-[3]" />
-            <span>Add "{draftPrimary}"</span>
-          </button>
-        )}
       </div>
 
       {/* 4. SECONDARY (SUB) ROW */}
@@ -437,40 +603,35 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
               </span>
 
               {secondaryList.map((sub) => {
-                const isSubSelected = draftSecondary === sub.name;
+                const isSlotActive = Boolean(findMatchingSlot({ primary: draftPrimary, secondary: sub.name, topic: null }));
+
                 return (
                   <button
                     key={sub.name}
                     onClick={() => {
-                      if (isSubSelected) {
-                        setDraftSecondary(null);
+                      if (isSlotActive) {
+                        if (draftSecondary === sub.name) {
+                          setDraftSecondary(null);
+                        }
+                        toggleOrAddSlot({ primary: draftPrimary, secondary: sub.name });
                       } else {
                         setDraftSecondary(sub.name);
+                        toggleOrAddSlot({ primary: draftPrimary, secondary: sub.name });
                       }
                     }}
                     className={`px-2.5 py-1 rounded-md text-xs font-mono transition-all shrink-0 flex items-center gap-1.5 ${
-                      isSubSelected
+                      isSlotActive
                         ? 'bg-black text-white font-semibold shadow-xs'
                         : 'bg-white border border-[#e5e5e5] text-[#444444] hover:bg-[#f0f0f0]'
                     }`}
                   >
                     <span>{sub.name}</span>
-                    <span className={`text-[10px] ${isSubSelected ? 'text-white/70' : 'text-[#888888]'}`}>
+                    <span className={`text-[10px] ${isSlotActive ? 'text-white/70' : 'text-[#888888]'}`}>
                       {sub.count}
                     </span>
                   </button>
                 );
               })}
-
-              {draftSecondary && canAddMore && (
-                <button
-                  onClick={() => commitSlot({ primary: draftPrimary, secondary: draftSecondary })}
-                  className="ml-auto px-2.5 py-1 rounded-md bg-black text-white text-xs font-mono font-semibold flex items-center gap-1.5 shrink-0 hover:bg-[#222222] shadow-xs"
-                >
-                  <Plus className="w-3 h-3 stroke-[3]" />
-                  <span>Add "{draftSecondary}"</span>
-                </button>
-              )}
             </div>
           </motion.div>
         )}
@@ -492,23 +653,32 @@ export const MultiFacetFilterBar: React.FC<MultiFacetFilterBarProps> = ({
               </span>
 
               {contextualTopics.slice(0, 45).map((top) => {
+                const isTopicActive = Boolean(findMatchingSlot({ primary: draftPrimary, secondary: draftSecondary, topic: top.name }));
+
                 return (
                   <button
                     key={top.name}
                     onClick={() => {
-                      if (!canAddMore) return;
-                      commitSlot({
+                      toggleOrAddSlot({
                         primary: draftPrimary,
                         secondary: draftSecondary,
                         topic: top.name,
                       });
                     }}
-                    className="px-2 py-0.5 rounded text-[11px] font-mono transition-all shrink-0 flex items-center gap-1.5 bg-white border border-[#e5e5e5] text-[#444444] hover:border-black hover:text-black shadow-2xs group"
-                    title={`Click to add #${top.name} to Filters`}
+                    className={`px-2 py-0.5 rounded text-[11px] font-mono transition-all shrink-0 flex items-center gap-1.5 shadow-2xs group ${
+                      isTopicActive
+                        ? 'bg-black text-white font-semibold shadow-xs'
+                        : 'bg-white border border-[#e5e5e5] text-[#444444] hover:border-black hover:text-black'
+                    }`}
+                    title={isTopicActive ? `Click to remove #${top.name}` : `Click to add #${top.name} to Filters`}
                   >
                     <span>#{top.name}</span>
-                    <span className="text-[9.5px] text-[#888888]">{top.count}</span>
-                    <Plus className="w-2.5 h-2.5 text-[#888888] group-hover:text-black" />
+                    <span className={`text-[9.5px] ${isTopicActive ? 'text-white/75' : 'text-[#888888]'}`}>{top.count}</span>
+                    {isTopicActive ? (
+                      <X className="w-2.5 h-2.5 text-white/80 group-hover:text-red-300" />
+                    ) : (
+                      <Plus className="w-2.5 h-2.5 text-[#888888] group-hover:text-black" />
+                    )}
                   </button>
                 );
               })}

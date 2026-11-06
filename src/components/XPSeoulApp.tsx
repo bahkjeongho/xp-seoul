@@ -8,8 +8,9 @@ import { MiddleNavColumn } from './MiddleNavColumn';
 import { MobileDetailBottomSheet } from './MobileDetailBottomSheet';
 import { NoteDetailPanel } from './NoteDetailPanel';
 import { GlobeStreamCanvas } from './GlobeStreamCanvas';
-import { MenuNav } from './MenuNav';
+import { MenuNav, type AppMenu } from './MenuNav';
 import { BlogView } from './BlogView';
+import { MagazineView } from './MagazineView';
 import { AboutView } from './AboutView';
 import { AnimatePresence, motion } from 'framer-motion';
 import { History, SlidersHorizontal, Menu as MenuIcon, X, AlertCircle, Sparkles, RotateCcw, Search } from 'lucide-react';
@@ -38,8 +39,8 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Navigation & Detail State
-  const [activeMenu, setActiveMenu] = useState<'wiki' | 'blog' | 'about'>('wiki');
+  // Navigation & Detail State (Wiki, Blog, Magazine, About)
+  const [activeMenu, setActiveMenu] = useState<AppMenu>('wiki');
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
 
   // Visited History Stack (last 10 notes)
@@ -432,11 +433,12 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
               </div>
             </div>
 
-            {/* Desktop Navigation Menu (Wiki, Blog, About) */}
+            {/* Desktop Navigation Menu (Wiki, Blog, Magazine, About) */}
             <div className="hidden md:flex items-center gap-6 font-mono text-xs">
               {[
                 { id: 'wiki', label: 'Wiki' },
                 { id: 'blog', label: 'Blog' },
+                { id: 'magazine', label: 'Magazine' },
                 { id: 'about', label: 'About' },
               ].map((item) => {
                 const isActive = activeMenu === item.id;
@@ -444,7 +446,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
                   <button
                     key={item.id}
                     onClick={() => {
-                      setActiveMenu(item.id as any);
+                      setActiveMenu(item.id as AppMenu);
                       if (item.id !== 'wiki') selectNoteWithHistory(null, true);
                     }}
                     className={`transition-colors py-1 ${
@@ -560,6 +562,8 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
         )}
 
         {activeMenu === 'blog' && <BlogView />}
+
+        {activeMenu === 'magazine' && <MagazineView />}
 
         {activeMenu === 'about' && <AboutView />}
       </main>
@@ -765,12 +769,13 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
                   {[
                     { id: 'wiki', label: 'Wiki', desc: 'Curated Archive' },
                     { id: 'blog', label: 'Blog', desc: 'Thoughts & Essays' },
+                    { id: 'magazine', label: 'Magazine', desc: 'Curations & Lists' },
                     { id: 'about', label: 'About', desc: 'Site Info' },
                   ].map((item) => (
                     <button
                       key={item.id}
                       onClick={() => {
-                        setActiveMenu(item.id as any);
+                        setActiveMenu(item.id as AppMenu);
                         setIsMobileMenuOpen(false);
                         if (item.id !== 'wiki') selectNoteWithHistory(null, true);
                       }}

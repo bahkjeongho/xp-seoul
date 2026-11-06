@@ -238,13 +238,22 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
   const STEP_X = CARD_W + GAP; // 114px on mobile, 182px on desktop
   const STEP_Y = CARD_H + GAP; // 114px on mobile, 182px on desktop
 
-  // Grid columns based on notes length
+  // Grid columns based on notes length (compact when filtered notes are few)
   const GRID_COLS = useMemo(() => {
-    return Math.max(16, Math.ceil(Math.sqrt(Math.max(1, filteredNotes.length) * 1.5)));
+    const len = filteredNotes.length;
+    if (len <= 1) return 1;
+    if (len <= 4) return 2;
+    if (len <= 9) return 3;
+    if (len <= 16) return 4;
+    if (len <= 36) return 6;
+    if (len <= 64) return 8;
+    return Math.max(16, Math.ceil(Math.sqrt(len * 1.5)));
   }, [filteredNotes.length]);
 
   const GRID_ROWS = useMemo(() => {
-    return Math.max(16, Math.ceil(Math.max(1, filteredNotes.length) / GRID_COLS));
+    const len = filteredNotes.length;
+    if (len <= 1) return 1;
+    return Math.ceil(len / GRID_COLS);
   }, [filteredNotes.length, GRID_COLS]);
 
   // Smooth Momentum glide physics on release (iOS/Apple style deceleration)
@@ -281,7 +290,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
-    // 1. Touch Handlers (iOS Safari & Android)
+    // 1. Touch Handlers (iOS Safari & Android: 1-finger drag pan, 2-finger pinch zoom)
     const onTouchStart = (e: TouchEvent) => {
       if ((e.target as HTMLElement).closest('.interactive-control')) return;
       if (animationFrameRef.current) {
@@ -293,30 +302,59 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         dragRafIdRef.current = null;
       }
 
-      const touch = e.touches[0];
-      if (!touch) return;
+      if (e.touches.length === 2) {
+        // Two fingers: initialize pinch-to-zoom
+        isDraggingRef.current = false;
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        initialPinchDistRef.current = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        initialZoomRef.current = zoomScaleRef.current;
+        return;
+      }
 
-      const now = performance.now();
-      isDraggingRef.current = true;
-      totalDragDistanceRef.current = 0;
-      dragStartPosRef.current = { x: touch.clientX, y: touch.clientY };
-      dragStartPanRef.current = { ...panRef.current };
-      targetPanRef.current = { ...panRef.current };
-      touchHistoryRef.current = [{ x: touch.clientX, y: touch.clientY, time: now }];
-      velocityRef.current = { x: 0, y: 0 };
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const now = performance.now();
+        isDraggingRef.current = true;
+        totalDragDistanceRef.current = 0;
+        dragStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+        dragStartPanRef.current = { ...panRef.current };
+        targetPanRef.current = { ...panRef.current };
+        touchHistoryRef.current = [{ x: touch.clientX, y: touch.clientY, time: now }];
+        velocityRef.current = { x: 0, y: 0 };
+        initialPinchDistRef.current = null;
+      }
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (!isDraggingRef.current) return;
-
       // Essential for iOS Safari: stops native scroll & prevents touch cancellation
       if (e.cancelable) {
         e.preventDefault();
       }
 
-      const touch = e.touches[0];
-      if (!touch) return;
+      if (e.touches.length === 2 && initialPinchDistRef.current !== null) {
+        // Pinch-to-zoom centered on screen center
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        const scaleChange = currentDist / initialPinchDistRef.current;
+        const targetZoom = initialZoomRef.current * scaleChange;
+        const newZoom = Math.min(1.5, Math.max(0.5, Number(targetZoom.toFixed(3))));
+        const currentZoom = zoomScaleRef.current || 1.0;
+        if (newZoom !== currentZoom) {
+          const actualFactor = newZoom / currentZoom;
+          setZoomScale(newZoom);
+          setPan((p) => ({
+            x: p.x * actualFactor,
+            y: p.y * actualFactor,
+          }));
+        }
+        return;
+      }
 
+      if (!isDraggingRef.current || e.touches.length !== 1) return;
+
+      const touch = e.touches[0];
       const now = performance.now();
       const dx = touch.clientX - dragStartPosRef.current.x;
       const dy = touch.clientY - dragStartPosRef.current.y;
@@ -344,7 +382,10 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       }
     };
 
-    const onTouchEnd = () => {
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        initialPinchDistRef.current = null;
+      }
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
 
@@ -489,14 +530,34 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     };
   }, [startMomentum]);
 
-  // Mouse Wheel Navigation
+  // Zoom level state (0.45x to 2.2x, default 1.0)
+  const [zoomScale, setZoomScale] = useState(1.0);
+  const zoomScaleRef = useRef(1.0);
+  useEffect(() => {
+    zoomScaleRef.current = zoomScale;
+  }, [zoomScale]);
+
+  // Touch Pinch-to-zoom tracking refs
+  const initialPinchDistRef = useRef<number | null>(null);
+  const initialZoomRef = useRef<number>(1.0);
+
+  // Mouse Wheel: Zoom in / Zoom out anchored precisely to the center of the screen
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    setPan((prev) => ({
-      x: prev.x - e.deltaX * 0.9,
-      y: prev.y - e.deltaY * 0.9,
-    }));
+    if (Math.abs(e.deltaY) < 1) return;
+
+    const zoomFactor = e.deltaY < 0 ? 1.05 : 0.95;
+    setZoomScale((prev) => {
+      const next = Math.min(1.5, Math.max(0.5, Number((prev * zoomFactor).toFixed(3))));
+      if (next !== prev) {
+        const actualFactor = next / prev;
+        setPan((p) => ({
+          x: p.x * actualFactor,
+          y: p.y * actualFactor,
+        }));
+      }
+      return next;
+    });
   };
 
   // Keyboard navigation
@@ -526,9 +587,14 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
   const cx = dimensions.width / 2;
   const cy = canvasHeight / 2;
 
-  // Sphere radius and curvature (responsive for mobile vs desktop)
+  // Sphere radius and curvature (fixed base geometry so globe curvature remains stable across zooms)
   const sphereRadius = Math.max(dimensions.width, canvasHeight) * (isMobile ? 0.62 : 0.72);
   const kCurvature = isMobile ? 0.42 : 0.36;
+
+  // World grid step and gap proportional to zoomScale
+  const worldStepX = STEP_X * zoomScale;
+  const worldStepY = STEP_Y * zoomScale;
+  const worldGap = GAP * zoomScale;
 
   // Compute visible cards with 3D Spherical conformal projection
   const visibleCards = useMemo(() => {
@@ -546,15 +612,39 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       zIndex: number;
     }> = [];
 
-    const minCol = Math.floor((-pan.x - sphereRadius * 1.3) / STEP_X);
-    const maxCol = Math.ceil((-pan.x + dimensions.width + sphereRadius * 1.3) / STEP_X);
-    const minRow = Math.floor((-pan.y - sphereRadius * 1.3) / STEP_Y);
-    const maxRow = Math.ceil((-pan.y + canvasHeight + sphereRadius * 1.3) / STEP_Y);
+    const total = filteredNotes.length;
+    const isFiniteGrid = total <= 64;
+
+    const minCol = isFiniteGrid ? 0 : Math.floor((-pan.x - sphereRadius * 1.3) / worldStepX);
+    const maxCol = isFiniteGrid ? GRID_COLS - 1 : Math.ceil((-pan.x + sphereRadius * 1.3) / worldStepX);
+    const minRow = isFiniteGrid ? 0 : Math.floor((-pan.y - sphereRadius * 1.3) / worldStepY);
+    const maxRow = isFiniteGrid ? GRID_ROWS - 1 : Math.ceil((-pan.y + sphereRadius * 1.3) / worldStepY);
+
+    // Center offset when notes are few so they appear centered in the globe canvas
+    const offsetX = isFiniteGrid ? -(GRID_COLS * worldStepX - worldGap) / 2 : 0;
+    const offsetY = isFiniteGrid ? -(GRID_ROWS * worldStepY - worldGap) / 2 : 0;
 
     for (let r = minRow; r <= maxRow; r++) {
       for (let c = minCol; c <= maxCol; c++) {
-        const cardCenterX = c * STEP_X + pan.x + CARD_W / 2;
-        const cardCenterY = r * STEP_Y + pan.y + CARD_H / 2;
+        let note: NoteItem | undefined;
+        if (isFiniteGrid) {
+          const index = r * GRID_COLS + c;
+          if (index >= total) continue;
+          note = filteredNotes[index];
+        } else {
+          const wrappedCol = ((c % GRID_COLS) + GRID_COLS) % GRID_COLS;
+          const wrappedRow = ((r % GRID_ROWS) + GRID_ROWS) % GRID_ROWS;
+          const noteIndex = (wrappedRow * GRID_COLS + wrappedCol) % total;
+          note = filteredNotes[noteIndex];
+        }
+        if (!note) continue;
+
+        const cardCenterX = isFiniteGrid
+          ? cx + offsetX + c * worldStepX + pan.x + (CARD_W * zoomScale) / 2
+          : cx + c * worldStepX + pan.x;
+        const cardCenterY = isFiniteGrid
+          ? cy + offsetY + r * worldStepY + pan.y + (CARD_H * zoomScale) / 2
+          : cy + r * worldStepY + pan.y;
 
         const dx = cardCenterX - cx;
         const dy = cardCenterY - cy;
@@ -562,13 +652,6 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
 
         // Cull cards outside sphere horizon
         if (dist > sphereRadius * 1.25) continue;
-
-        const total = filteredNotes.length;
-        const wrappedCol = ((c % GRID_COLS) + GRID_COLS) % GRID_COLS;
-        const wrappedRow = ((r % GRID_ROWS) + GRID_ROWS) % GRID_ROWS;
-        const noteIndex = (wrappedRow * GRID_COLS + wrappedCol) % total;
-        const note = filteredNotes[noteIndex];
-        if (!note) continue;
 
         // Spherical curvature compression factor
         const normDist = dist / sphereRadius;
@@ -582,17 +665,17 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         const screenY = Math.round(curvedCenterY - CARD_H / 2);
 
         // Cull cards that have completely scrolled outside the visible screen buffer
-        const edgeBuffer = isMobile ? 20 : 60;
-        if (screenY + CARD_H < -edgeBuffer || screenY > canvasHeight + edgeBuffer) continue;
-        if (screenX + CARD_W < -edgeBuffer || screenX > dimensions.width + edgeBuffer) continue;
+        const edgeBuffer = isMobile ? 30 : 80;
+        if (screenY + CARD_H * zoomScale < -edgeBuffer || screenY > canvasHeight + edgeBuffer) continue;
+        if (screenX + CARD_W * zoomScale < -edgeBuffer || screenX > dimensions.width + edgeBuffer) continue;
 
         // Dynamic 3D Spherical Normal Rotation
         const rotY = Number(((dx / sphereRadius) * 40 * rFactor).toFixed(1));
         const rotX = Number((-(dy / sphereRadius) * 40 * rFactor).toFixed(1));
 
-        // Organic scale tapering matching curvature derivative so cards never collide
-        const minScale = isMobile ? 0.38 : 0.48;
-        const scale = Number(Math.max(minScale, Math.pow(rFactor, 2.8)).toFixed(2));
+        // Scale: card and gap scale in exact proportion with zoomScale so cards never collide
+        const minScale = isMobile ? 0.35 : 0.42;
+        const scale = Number((Math.max(minScale, Math.pow(rFactor, 2.8)) * zoomScale).toFixed(3));
         const opacity = Number(Math.max(0, Math.min(1, 1 - Math.pow(normDist / 1.15, 3.2))).toFixed(2));
         const zIndex = Math.round((1 - Math.min(1, normDist)) * 100);
 
@@ -620,10 +703,14 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     cx,
     cy,
     sphereRadius,
+    zoomScale,
     GRID_COLS,
     GRID_ROWS,
-    STEP_X,
-    STEP_Y,
+    CARD_W,
+    CARD_H,
+    worldStepX,
+    worldStepY,
+    worldGap,
     isMobile,
   ]);
 
@@ -663,54 +750,155 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     secondary?: string | null;
     topic?: string | null;
   }) => {
-    if (currentSlots.length >= 20) return;
     const p = options.primary ?? expandedPrimary;
     const s = options.secondary ?? null;
     const t = options.topic ?? null;
     if (!p && !s && !t) return;
 
-    const label = t || s || p || '';
-
-    // Check if slot with identical criteria already exists
-    const existing = currentSlots.find((slot) => {
+    const isUnderPrimary = (slot: ActiveFilterSlot) => {
       if (slot.axis !== globeFilterAxis) return false;
-      if (t) return slot.topic === t;
-      if (s) {
-        if (globeFilterAxis === 'category') return slot.subCategory === s;
-        if (globeFilterAxis === 'type') return slot.subType === s;
-        if (globeFilterAxis === 'field') return slot.subField === s;
-        if (globeFilterAxis === 'region') return slot.city === s;
-      }
-      if (p) {
-        if (globeFilterAxis === 'category') return slot.category === p && !slot.subCategory && !slot.topic;
-        if (globeFilterAxis === 'type') return slot.type === p && !slot.subType && !slot.topic;
-        if (globeFilterAxis === 'field') return slot.field === p && !slot.subField && !slot.topic;
-        if (globeFilterAxis === 'region') return slot.country === p && !slot.city && !slot.topic;
-      }
+      if (globeFilterAxis === 'category') return slot.category === p;
+      if (globeFilterAxis === 'type') return slot.type === p;
+      if (globeFilterAxis === 'field') return slot.field === p;
+      if (globeFilterAxis === 'region') return slot.country === p;
       return false;
-    });
+    };
 
-    if (existing) {
-      handleRemoveFilterSlot(existing.id);
+    const isPurePrimary = (slot: ActiveFilterSlot) => {
+      return (
+        isUnderPrimary(slot) &&
+        !slot.subCategory &&
+        !slot.subType &&
+        !slot.subField &&
+        !slot.city &&
+        !slot.topic
+      );
+    };
+
+    const isUnderSecondary = (slot: ActiveFilterSlot) => {
+      if (!isUnderPrimary(slot)) return false;
+      if (globeFilterAxis === 'category') return slot.subCategory === s;
+      if (globeFilterAxis === 'type') return slot.subType === s;
+      if (globeFilterAxis === 'field') return slot.subField === s;
+      if (globeFilterAxis === 'region') return slot.city === s;
+      return false;
+    };
+
+    const isPureSecondary = (slot: ActiveFilterSlot) => {
+      return isUnderSecondary(slot) && !slot.topic;
+    };
+
+    // 1. TOPIC
+    if (t) {
+      const existing = currentSlots.find((slot) => isUnderSecondary(slot) && slot.topic === t);
+      if (existing) {
+        handleRemoveFilterSlot(existing.id);
+        const remainingTopics = currentSlots.filter(
+          (slot) => slot.id !== existing.id && isUnderSecondary(slot) && Boolean(slot.topic)
+        );
+        if (remainingTopics.length === 0 && s) {
+          handleAddFilterSlot({
+            id: `globe-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+            axis: globeFilterAxis,
+            label: s,
+            category: globeFilterAxis === 'category' ? p : undefined,
+            subCategory: globeFilterAxis === 'category' ? s : undefined,
+            type: globeFilterAxis === 'type' ? p : undefined,
+            subType: globeFilterAxis === 'type' ? s : undefined,
+            field: globeFilterAxis === 'field' ? p : undefined,
+            subField: globeFilterAxis === 'field' ? s : undefined,
+            country: globeFilterAxis === 'region' ? p : undefined,
+            city: globeFilterAxis === 'region' ? s : undefined,
+          });
+        }
+        return;
+      }
+
+      if (currentSlots.length >= 20) return;
+      const pureSec = currentSlots.find(isPureSecondary);
+      if (pureSec) handleRemoveFilterSlot(pureSec.id);
+      const purePrim = currentSlots.find(isPurePrimary);
+      if (purePrim) handleRemoveFilterSlot(purePrim.id);
+
+      handleAddFilterSlot({
+        id: `globe-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+        axis: globeFilterAxis,
+        label: `#${t}`,
+        category: globeFilterAxis === 'category' ? p : undefined,
+        subCategory: globeFilterAxis === 'category' ? s : undefined,
+        type: globeFilterAxis === 'type' ? p : undefined,
+        subType: globeFilterAxis === 'type' ? s : undefined,
+        field: globeFilterAxis === 'field' ? p : undefined,
+        subField: globeFilterAxis === 'field' ? s : undefined,
+        country: globeFilterAxis === 'region' ? p : undefined,
+        city: globeFilterAxis === 'region' ? s : undefined,
+        topic: t,
+      });
       return;
     }
 
-    const newSlot: ActiveFilterSlot = {
-      id: `globe-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
-      axis: globeFilterAxis,
-      label,
-      category: globeFilterAxis === 'category' ? p : undefined,
-      subCategory: globeFilterAxis === 'category' ? s : undefined,
-      type: globeFilterAxis === 'type' ? p : undefined,
-      subType: globeFilterAxis === 'type' ? s : undefined,
-      field: globeFilterAxis === 'field' ? p : undefined,
-      subField: globeFilterAxis === 'field' ? s : undefined,
-      country: globeFilterAxis === 'region' ? p : undefined,
-      city: globeFilterAxis === 'region' ? s : undefined,
-      topic: t,
-    };
+    // 2. SECONDARY (SUB)
+    if (s) {
+      const existing = currentSlots.find(isPureSecondary);
+      if (existing) {
+        handleRemoveFilterSlot(existing.id);
+        const remainingUnderPrimary = currentSlots.filter(
+          (slot) => slot.id !== existing.id && isUnderPrimary(slot)
+        );
+        if (remainingUnderPrimary.length === 0 && p) {
+          handleAddFilterSlot({
+            id: `globe-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+            axis: globeFilterAxis,
+            label: p,
+            category: globeFilterAxis === 'category' ? p : undefined,
+            type: globeFilterAxis === 'type' ? p : undefined,
+            field: globeFilterAxis === 'field' ? p : undefined,
+            country: globeFilterAxis === 'region' ? p : undefined,
+          });
+        }
+        return;
+      }
 
-    handleAddFilterSlot(newSlot);
+      if (currentSlots.length >= 20) return;
+      const purePrim = currentSlots.find(isPurePrimary);
+      if (purePrim) handleRemoveFilterSlot(purePrim.id);
+
+      handleAddFilterSlot({
+        id: `globe-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+        axis: globeFilterAxis,
+        label: s,
+        category: globeFilterAxis === 'category' ? p : undefined,
+        subCategory: globeFilterAxis === 'category' ? s : undefined,
+        type: globeFilterAxis === 'type' ? p : undefined,
+        subType: globeFilterAxis === 'type' ? s : undefined,
+        field: globeFilterAxis === 'field' ? p : undefined,
+        subField: globeFilterAxis === 'field' ? s : undefined,
+        country: globeFilterAxis === 'region' ? p : undefined,
+        city: globeFilterAxis === 'region' ? s : undefined,
+      });
+      return;
+    }
+
+    // 3. PRIMARY
+    if (p) {
+      const slotsUnder = currentSlots.filter(isUnderPrimary);
+      if (slotsUnder.length > 0) {
+        slotsUnder.forEach((sl) => handleRemoveFilterSlot(sl.id));
+        return;
+      }
+
+      if (currentSlots.length >= 20) return;
+      handleAddFilterSlot({
+        id: `globe-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+        axis: globeFilterAxis,
+        label: p,
+        category: globeFilterAxis === 'category' ? p : undefined,
+        type: globeFilterAxis === 'type' ? p : undefined,
+        field: globeFilterAxis === 'field' ? p : undefined,
+        country: globeFilterAxis === 'region' ? p : undefined,
+      });
+      return;
+    }
   };
 
   // Primary list based on current globeFilterAxis
@@ -1023,16 +1211,13 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                 {/* Primary Pill Button */}
                 <button
                   onClick={() => {
-                    if (hasSubsOrTopics) {
-                      if (isExpanded) {
-                        setExpandedPrimary(null);
-                        setExpandedSecondary(null);
-                      } else {
-                        setExpandedPrimary(item.name);
-                        setExpandedSecondary(null);
-                      }
+                    commitGlobeSlot({ primary: item.name });
+                    if (isExpanded) {
+                      setExpandedPrimary(null);
+                      setExpandedSecondary(null);
                     } else {
-                      commitGlobeSlot({ primary: item.name });
+                      setExpandedPrimary(item.name);
+                      setExpandedSecondary(null);
                     }
                   }}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all shadow-xs border flex items-center justify-end gap-1.5 ${
@@ -1169,6 +1354,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                   height: `${CARD_H}px`,
                   left: 0,
                   top: 0,
+                  transformOrigin: 'center center',
                   transform: `translate3d(${item.screenX}px, ${item.screenY}px, 0px) rotateX(${item.rotX}deg) rotateY(${item.rotY}deg) scale(${item.scale})`,
                   opacity: item.opacity,
                   zIndex: item.zIndex,

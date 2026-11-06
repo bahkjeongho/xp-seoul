@@ -1,8 +1,8 @@
-import React from 'react';
+export type AppMenu = 'wiki' | 'blog' | 'magazine' | 'about';
 
 interface MenuNavProps {
-  activeMenu: 'wiki' | 'blog' | 'about';
-  onSelectMenu: (menu: 'wiki' | 'blog' | 'about') => void;
+  activeMenu: AppMenu;
+  onSelectMenu: (menu: AppMenu) => void;
   isCompact?: boolean;
 }
 
@@ -27,13 +27,14 @@ export const MenuNav: React.FC<MenuNavProps> = ({ activeMenu, onSelectMenu, isCo
           {[
             { id: 'wiki', label: 'Wiki', short: 'W', desc: 'Archive' },
             { id: 'blog', label: 'Blog', short: 'B', desc: 'Essays' },
+            { id: 'magazine', label: 'Magazine', short: 'M', desc: 'Curations' },
             { id: 'about', label: 'About', short: 'A', desc: 'Info' },
           ].map((item) => {
             const isActive = activeMenu === item.id;
             return (
               <button
                 key={item.id}
-                onClick={() => onSelectMenu(item.id as any)}
+                onClick={() => onSelectMenu(item.id as AppMenu)}
                 title={item.label}
                 className={`group flex flex-col transition-all ${
                   isCompact ? 'items-center p-2' : 'text-left'

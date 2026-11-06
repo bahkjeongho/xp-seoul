@@ -30,31 +30,31 @@ The live Obsidian Vault is located at:
 
 Run `./update.sh` (or `npm run update`) to sync all vault changes into `siren` in ~2 seconds.
 
-### Folder Rules
+### Folder Rules (Updated for Reorganized Vault)
 
-1. **`0. Clipping Origin` (Strictly Excluded)**:
-   - Contains raw clipping archives from web magazines/blogs for personal archiving.
-   - **MUST NEVER be ingested or published to the web** due to copyright/licensing issues.
-   - Filtered out during vault scan in `scripts/build-data.mjs`.
+1. **`00. Template` & `1. System` & `10. Clipping Origin` (Strictly Excluded / Private)**:
+   - `00. Template`: Internal Obsidian templates and snippets.
+   - `1. System`: Classification and system prompt documentation (`Categorizing.md`, `Wiki System.md`).
+   - `10. Clipping Origin`: Raw clipping archives from web magazines/blogs for personal archiving (copyright protected).
+   - **MUST NEVER be ingested or published to the web**. Filtered out during vault scan in `scripts/build-data.mjs`.
 
-2. **`00. Template` (Strictly Excluded)**:
-   - Contains internal Obsidian templates, snippets, and insert codes.
-   - **MUST NEVER be published to the web**.
-   - Filtered out during vault scan in `scripts/build-data.mjs`.
+2. **`E_Text` (Curated Texts / Excluded from Wiki)**:
+   - External translated texts and reading lists.
+   - Kept out of the default Wiki archive; reserved for manual sharing via Blog/Magazine later.
 
-3. **`1. Thoughts` (Dedicated Menu Folder)**:
-   - Reserved for the upcoming 'Thoughts' view / blog menu.
-   - Notes in this folder **MUST NOT appear in the default Wiki archive / Stream / Globe**.
-   - Will be ingested separately for the Thoughts view.
+3. **`C_Blog` & `D_Magazine` (Dedicated Views)**:
+   - `C_Blog`: Personal essays and thoughts (serves the 'Blog' menu).
+   - `D_Magazine`: Curated collections, top 10 lists, toolkits, and editorial features (serves the 'Magazine' menu).
 
-4. **`2. Wiki` Sub-folders with `unlisted: true` (Hidden from stream, searchable & linkable)**:
-   - The following folders contain high-volume sub-entity notes that clutter general scrolling:
-     - `23. K-Pop Idol` (or `24. K-Pop Idol` / `*K-Pop Idol*`): Individual idol group members
-     - `24. Academic Program` (`*Academic Program*`): Specific school/degree programs
-     - `25. Sports Team` (`*Sports Team*`): Specific clubs/teams
-     - `26. Journal` (`*Journal*`): Journal articles, periodicals, and magazine issues
-   - **Display Rule**:
-     - **Hidden from default Stream scrolling & Globe 3D dragging** (when search query is empty).
-     - **Full Searchability**: When user searches via the Search bar, these notes ARE matched and displayed.
-     - **Full Wikilink / Backlink resolution**: Parent documents (e.g., K-Pop Group notes linking to members under `People`, university notes linking to academic programs, publisher notes linking to journals) can link to them via `[[wikilink]]`, and clicking opens their full note modal/bottom sheet.
-     - Implemented via `unlisted: true` flag in `scripts/build-data.mjs`, `XPSeoulApp.tsx`, and `GlobeStreamCanvas.tsx`.
+4. **`A_Wiki` & `B_Object` (`unlisted: true` Rules)**:
+   - **Default Listed (Public Stream & Globe)**:
+     - Root markdown files in `A_Wiki/` that have creative/cultural categories (`The Arts`, `Design`, `Media`, `Culture`, `Entertainment`, `Business`).
+   - **Unlisted (`unlisted: true`) (Hidden from general Stream & Globe, searchable via Search Bar & accessible via [[wikilinks]]/backlinks)**:
+     - Sub-folders under `A_Wiki/`:
+       - `A1_Hub` (Hub notes)
+       - `A2_K-Pop Idol` (Individual idol members)
+       - `A3_Academic Program` (Academic degree programs)
+       - `A4_Journal` (Journals & periodicals)
+       - `A5_Sports Team` (Clubs & sports teams)
+     - All notes under `B_Object/` (B1_Music, B2_Architecture, B3_Video, B4_Film objects/works).
+     - Any note in `A_Wiki/` whose `Category` is **purely `Technology` or `Humanities`** without any creative/cultural overlap. (Notes with mixed categories like OP-1 with `The Arts` + `Technology` remain Listed).

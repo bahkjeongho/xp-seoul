@@ -92,12 +92,16 @@ function scanDir(dir, folderType, list = []) {
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
+      // Exclude system/private folders
       if (
         entry.name !== '.trash' &&
         entry.name !== '.obsidian' &&
         entry.name !== '.smart-env' &&
         entry.name !== '00. Template' &&
-        entry.name !== '0. Clipping Origin'
+        entry.name !== '1. System' &&
+        entry.name !== '10. Clipping Origin' &&
+        entry.name !== '0. Clipping Origin' &&
+        entry.name !== 'E_Text'
       ) {
         scanDir(fullPath, folderType, list);
       }
@@ -118,14 +122,15 @@ function findSubDir(parent, candidates) {
   return null;
 }
 
-const wikiDir = findSubDir(VAULT_CONTENT_DIR, ['2. Wiki', '2 Wiki']);
-const clippingDir = findSubDir(VAULT_CONTENT_DIR, ['0. Clipping', '0 Clipping']);
-const objectDir = findSubDir(VAULT_CONTENT_DIR, ['3. Object', '3 Object']);
+// Support both new reorganized folders (A_Wiki, B_Object) and legacy fallbacks
+const wikiDir = findSubDir(VAULT_CONTENT_DIR, ['A_Wiki', '2. Wiki', '2 Wiki']);
+const objectDir = findSubDir(VAULT_CONTENT_DIR, ['B_Object', '3. Object', '3 Object']);
+const legacyClippingDir = findSubDir(VAULT_CONTENT_DIR, ['0. Clipping', '0 Clipping']);
 
 const wikiFiles = [
   ...(wikiDir ? scanDir(wikiDir, 'wiki') : []),
-  ...(clippingDir ? scanDir(clippingDir, 'clipping') : []),
   ...(objectDir ? scanDir(objectDir, 'object') : []),
+  ...(legacyClippingDir ? scanDir(legacyClippingDir, 'clipping') : []),
 ];
 
 console.log(`Found ${wikiFiles.length} markdown notes in vault.`);
@@ -157,12 +162,30 @@ for (const file of wikiFiles) {
     const subType = subTypes[0] || '';
     const topic = topics[0] || '';
 
-    const isUnlisted = (
+    // Unlisted Rule 1: Subfolders in A_Wiki (A1_Hub, A2_K-Pop Idol, A3_Academic Program, A4_Journal, A5_Sports Team)
+    // or any note under B_Object
+    const isFolderUnlisted = (
+      file.folderType === 'object' ||
+      file.fullPath.includes('/B_Object/') ||
+      file.fullPath.includes('/A1_Hub/') ||
+      file.fullPath.includes('/A2_K-Pop Idol/') ||
+      file.fullPath.includes('/A3_Academic Program/') ||
+      file.fullPath.includes('/A4_Journal/') ||
+      file.fullPath.includes('/A5_Sports Team/') ||
       file.fullPath.includes('K-Pop Idol') ||
       file.fullPath.includes('Academic Program') ||
       file.fullPath.includes('Sports Team') ||
       file.fullPath.includes('Journal')
     );
+
+    // Unlisted Rule 2: Pure Technology or Humanities category without creative/cultural overlap
+    // (If note only has Technology/Humanities, and lacks The Arts, Design, Media, Culture, Entertainment, Business)
+    const isPureNonCreativeCategory = (
+      categories.length > 0 &&
+      categories.every((c) => c === 'Technology' || c === 'Humanities')
+    );
+
+    const isUnlisted = isFolderUnlisted || isPureNonCreativeCategory;
 
     // Taxonomy Tree hierarchy (Only count listed notes in category counts)
     if (category && !isUnlisted) {

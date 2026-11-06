@@ -1,15 +1,15 @@
 {
   "Design": {
-    "count": 1099,
+    "count": 1100,
     "subCategories": {
       "Fashion": {
-        "count": 358,
+        "count": 360,
         "topics": {
-          "Fashion Brand": 131,
+          "Fashion Brand": 132,
           "Fashion Magazine": 77,
           "Fashion Retail": 11,
           "Fashion Designer": 67,
-          "Stylist": 30,
+          "Stylist": 31,
           "Fashion Critic": 3,
           "Fashion Design Brand": 9,
           "Fashion Week": 1,
@@ -20,7 +20,7 @@
         }
       },
       "Visual Communication": {
-        "count": 264,
+        "count": 263,
         "topics": {
           "Creative Agency": 30,
           "Creative Studio": 55,
@@ -87,22 +87,22 @@
     }
   },
   "The Arts": {
-    "count": 1841,
+    "count": 626,
     "subCategories": {
       "Music": {
-        "count": 1561,
+        "count": 340,
         "topics": {
-          "K-Pop Group": 78,
-          "Music Artist": 155,
-          "Music Producer": 1,
+          "K-Pop Group": 79,
+          "Music Artist": 156,
+          "Music Producer": 9,
           "Rapper": 11,
-          "Producer": 12,
           "Record Label": 14,
           "K-Pop Company": 23,
           "Music Critic": 5,
           "Music Magazine": 6,
           "Music Festival": 5,
           "Band": 6,
+          "Producer": 2,
           "Music Platform": 3,
           "Music Journalism": 1,
           "Music Award": 1,
@@ -110,21 +110,23 @@
           "DJ": 2,
           "Instruments Company": 2,
           "Singer-Songwriter": 2,
+          "Modular Synthesizer": 1,
           "A&R": 1
         }
       },
       "Video": {
-        "count": 48,
+        "count": 54,
         "topics": {
           "Video Director": 31,
+          "Video Production": 6,
           "D.O.P.": 1,
           "Video Editor": 2,
-          "Video Production": 5,
           "Production Company": 2,
           "Executive Producer": 1,
           "Video Channel": 2,
           "Animation Studio": 1,
-          "Production House": 1
+          "Production House": 1,
+          "Video Producer": 3
         }
       },
       "Film": {
@@ -181,10 +183,6 @@
       }
     }
   },
-  "Uncategorized": {
-    "count": 490,
-    "subCategories": {}
-  },
   "Media": {
     "count": 140,
     "subCategories": {
@@ -235,57 +233,23 @@
       }
     }
   },
-  "Technology": {
-    "count": 33,
-    "subCategories": {
-      "Software": {
-        "count": 11,
-        "topics": {
-          "Programmer": 4,
-          "AI Company": 3,
-          "Software Company": 1,
-          "AI Engineer": 1
-        }
-      },
-      "Engineering": {
-        "count": 12,
-        "topics": {
-          "Engineer": 1,
-          "Spacecraft Company": 1,
-          "Automobile Company": 1
-        }
-      },
-      "Tech Product": {
-        "count": 3,
-        "topics": {
-          "Tech Product Company": 3
-        }
-      },
-      "Computer Science": {
-        "count": 1,
-        "topics": {
-          "Computer Scientist": 1
-        }
-      }
-    }
+  "Uncategorized": {
+    "count": 143,
+    "subCategories": {}
   },
-  "Humanities": {
-    "count": 6,
+  "Technology": {
+    "count": 1,
     "subCategories": {
-      "Philosophy": {
-        "count": 5,
-        "topics": {
-          "Philosopher": 4
-        }
-      },
-      "Social Theory": {
+      "Hardware": {
         "count": 1,
-        "topics": {}
+        "topics": {
+          "Software Company": 1
+        }
       }
     }
   },
   "Business": {
-    "count": 21,
+    "count": 23,
     "subCategories": {
       "Consulting": {
         "count": 3,
@@ -303,6 +267,10 @@
           "Marketing Company": 1
         }
       },
+      "Software": {
+        "count": 1,
+        "topics": {}
+      },
       "Investing": {
         "count": 3,
         "topics": {
@@ -318,15 +286,15 @@
       "Advertising": {
         "count": 1,
         "topics": {}
+      },
+      "2. Wiki/Tech Product": {
+        "count": 1,
+        "topics": {}
       }
     }
   },
   "Culture": {
     "count": 4,
-    "subCategories": {}
-  },
-  "Object": {
-    "count": 77,
     "subCategories": {}
   }
 }
