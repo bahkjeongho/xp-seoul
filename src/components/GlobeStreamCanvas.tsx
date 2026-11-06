@@ -327,6 +327,9 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     };
 
     const onTouchMove = (e: TouchEvent) => {
+      if ((e.target as HTMLElement).closest('.interactive-control')) return;
+      if (!isDraggingRef.current && initialPinchDistRef.current === null) return;
+
       // Essential for iOS Safari: stops native scroll & prevents touch cancellation
       if (e.cancelable) {
         e.preventDefault();
@@ -1511,8 +1514,10 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex flex-col justify-end"
+            className="interactive-control fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex flex-col justify-end"
             onClick={() => setIsMobileFilterOpen(false)}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
           >
             <motion.div
               initial={{ y: '100%' }}
@@ -1520,7 +1525,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-h-[82vh] h-[580px] bg-white rounded-t-[28px] shadow-2xl border-t border-black/10 flex flex-col overflow-hidden pb-8 font-sans"
+              className="interactive-control w-full max-h-[85vh] h-[600px] bg-white rounded-t-[28px] shadow-2xl border-t border-black/10 flex flex-col overflow-hidden pb-8 font-sans"
             >
               {/* Top Drag Handle */}
               <div className="w-full pt-3 pb-1 flex justify-center cursor-pointer" onClick={() => setIsMobileFilterOpen(false)}>
@@ -1555,7 +1560,10 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
               </div>
 
               {/* Sheet Content */}
-              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 pb-6">
+              <div
+                className="flex-1 overflow-y-auto overscroll-contain p-4 flex flex-col gap-3 pb-8"
+                style={{ touchAction: 'pan-y' }}
+              >
                 {/* 1. Active Stack Row */}
                 <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-[#f8f8fa] border border-black/8">
                   <div className="flex items-center justify-between">
@@ -1696,38 +1704,39 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                   </span>
                   <div className="grid grid-cols-2 gap-1.5">
                     {globePrimaryList.map((item) => {
-                      const isSelected = expandedPrimary === item.name;
-                      const hasSubsOrTopics = Boolean(
-                        (globeFilterAxis === 'category' && (Object.keys(facetData.byCategory?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byCategory?.[item.name]?.topics || {}).length > 0)) ||
-                        (globeFilterAxis === 'type' && (Object.keys(facetData.byType?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byType?.[item.name]?.topics || {}).length > 0)) ||
-                        (globeFilterAxis === 'field' && (Object.keys(facetData.byField?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byField?.[item.name]?.topics || {}).length > 0)) ||
-                        (globeFilterAxis === 'region' && (Object.keys(facetData.byRegion?.[item.name]?.subs || {}).length > 0 || Object.keys(facetData.byRegion?.[item.name]?.topics || {}).length > 0))
-                      );
+                      const isExpanded = expandedPrimary === item.name;
+                      const isPrimaryInSlots = currentSlots.some((s) => {
+                        if (s.axis !== globeFilterAxis) return false;
+                        if (globeFilterAxis === 'category') return s.category === item.name && !s.subCategory && !s.topic;
+                        if (globeFilterAxis === 'type') return s.type === item.name && !s.subType && !s.topic;
+                        if (globeFilterAxis === 'field') return s.field === item.name && !s.subField && !s.topic;
+                        if (globeFilterAxis === 'region') return s.country === item.name && !s.city && !s.topic;
+                        return false;
+                      });
 
                       return (
                         <button
                           key={item.name}
                           onClick={() => {
-                            if (hasSubsOrTopics) {
-                              if (isSelected) {
-                                setExpandedPrimary(null);
-                                setExpandedSecondary(null);
-                              } else {
-                                setExpandedPrimary(item.name);
-                                setExpandedSecondary(null);
-                              }
+                            commitGlobeSlot({ primary: item.name });
+                            if (isExpanded) {
+                              setExpandedPrimary(null);
+                              setExpandedSecondary(null);
                             } else {
-                              commitGlobeSlot({ primary: item.name });
+                              setExpandedPrimary(item.name);
+                              setExpandedSecondary(null);
                             }
                           }}
                           className={`py-2 px-3 rounded-xl text-xs font-medium transition-all text-left flex items-center justify-between border ${
-                            isSelected
+                            isPrimaryInSlots
                               ? 'bg-black text-white border-black font-semibold shadow-xs'
+                              : isExpanded
+                              ? 'bg-[#222222] text-white border-[#222222]'
                               : 'bg-white text-[#333333] border-black/8 hover:bg-[#f8f8f9]'
                           }`}
                         >
                           <span className="truncate">{item.name}</span>
-                          <span className={`text-[10px] font-mono ml-1 ${isSelected ? 'text-white/80' : 'text-[#888888]'}`}>
+                          <span className={`text-[10px] font-mono ml-1 ${isPrimaryInSlots || isExpanded ? 'text-white/80' : 'text-[#888888]'}`}>
                             {item.count}
                           </span>
                         </button>
@@ -1743,39 +1752,61 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                       {globeFilterAxis === 'region' ? 'Cities' : 'Sub-items'} ({expandedPrimary}):
                     </span>
                     <div className="flex flex-wrap gap-1.5">
-                      {globeSecondaryList.map((sub) => (
-                        <button
-                          key={sub.name}
-                          onClick={() => commitGlobeSlot({ primary: expandedPrimary, secondary: sub.name })}
-                          className="py-1.5 px-3 rounded-lg text-xs font-medium bg-[#f6f6f8] text-[#333333] hover:bg-black hover:text-white transition-colors border border-black/5 flex items-center gap-1"
-                        >
-                          <span>{sub.name}</span>
-                          <span className="text-[10px] text-[#888888]">({sub.count})</span>
-                          <Plus className="w-3 h-3 ml-0.5" />
-                        </button>
-                      ))}
+                      {globeSecondaryList.map((sub) => {
+                        const isSubInSlots = currentSlots.some((s) => {
+                          if (s.axis !== globeFilterAxis) return false;
+                          if (globeFilterAxis === 'category') return s.subCategory === sub.name && !s.topic;
+                          if (globeFilterAxis === 'type') return s.subType === sub.name && !s.topic;
+                          if (globeFilterAxis === 'field') return s.subField === sub.name && !s.topic;
+                          if (globeFilterAxis === 'region') return s.city === sub.name && !s.topic;
+                          return false;
+                        });
+
+                        return (
+                          <button
+                            key={sub.name}
+                            onClick={() => commitGlobeSlot({ primary: expandedPrimary, secondary: sub.name })}
+                            className={`py-1.5 px-3 rounded-lg text-xs font-medium transition-colors border flex items-center gap-1 ${
+                              isSubInSlots
+                                ? 'bg-black text-white border-black font-semibold shadow-xs'
+                                : 'bg-[#f6f6f8] text-[#333333] border-black/5 hover:bg-black hover:text-white'
+                            }`}
+                          >
+                            <span>{sub.name}</span>
+                            <span className={`text-[10px] ${isSubInSlots ? 'text-white/80' : 'text-[#888888]'}`}>({sub.count})</span>
+                            {isSubInSlots ? <X className="w-3 h-3 ml-0.5" /> : <Plus className="w-3 h-3 ml-0.5" />}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
 
-                {/* 5. Topics */}
+                {/* 6. Topics */}
                 {expandedPrimary && globeTopicsList.length > 0 && (
                   <div className="flex flex-col gap-1.5 pt-2 border-t border-[#f0f0f0]">
                     <span className="text-[11px] font-mono text-[#888888] uppercase tracking-wider">
                       Related Topics:
                     </span>
                     <div className="flex flex-wrap gap-1.5">
-                      {globeTopicsList.slice(0, 20).map((top) => (
-                        <button
-                          key={top.name}
-                          onClick={() => commitGlobeSlot({ primary: expandedPrimary, secondary: expandedSecondary, topic: top.name })}
-                          className="py-1 px-2.5 rounded-full text-[11px] font-mono bg-white border border-black/15 text-[#333333] hover:border-black hover:bg-black hover:text-white transition-all flex items-center gap-1"
-                        >
-                          <span>#{top.name}</span>
-                          <span className="text-[9px] text-[#888888]">({top.count})</span>
-                          <Plus className="w-2.5 h-2.5" />
-                        </button>
-                      ))}
+                      {globeTopicsList.slice(0, 30).map((top) => {
+                        const isTopInSlots = currentSlots.some((s) => s.axis === globeFilterAxis && s.topic === top.name);
+                        return (
+                          <button
+                            key={top.name}
+                            onClick={() => commitGlobeSlot({ primary: expandedPrimary, secondary: expandedSecondary, topic: top.name })}
+                            className={`py-1 px-2.5 rounded-full text-[11px] font-mono transition-all flex items-center gap-1 border ${
+                              isTopInSlots
+                                ? 'bg-black text-white border-black font-bold shadow-xs'
+                                : 'bg-white border-black/15 text-[#333333] hover:border-black hover:bg-black hover:text-white'
+                            }`}
+                          >
+                            <span>#{top.name}</span>
+                            <span className={`text-[9px] ${isTopInSlots ? 'text-white/80' : 'text-[#888888]'}`}>({top.count})</span>
+                            {isTopInSlots ? <X className="w-2.5 h-2.5" /> : <Plus className="w-2.5 h-2.5" />}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
