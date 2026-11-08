@@ -57,4 +57,29 @@ Run `./update.sh` (or `npm run update`) to sync all vault changes into `siren` i
        - `A4_Journal` (Journals & periodicals)
        - `A5_Sports Team` (Clubs & sports teams)
      - All notes under `B_Object/` (B1_Music, B2_Architecture, B3_Video, B4_Film objects/works).
-     - Any note in `A_Wiki/` whose `Category` is **purely `Technology` or `Humanities`** without any creative/cultural overlap. (Notes with mixed categories like OP-1 with `The Arts` + `Technology` remain Listed).
+     - Pure `Technology` or `Humanities` Category notes without creative/cultural overlap. (Notes with mixed categories like OP-1 with `The Arts` + `Technology` remain Listed).
+
+---
+
+## 🎨 UI/UX Interaction & Filtering Architecture (CRITICAL)
+
+### 1. Filter System & Toggle Rules (`DesktopStreamFilterBar`, `MobileDetailBottomSheet`, `GlobeStreamCanvas`)
+- **Direct Selection & Hierarchical Stacking**:
+  - Clicking any filter item (Category / Sub / Topic) applies immediately without requiring an extra "+ Add" button.
+  - Selecting a child item (e.g., Sub `Fashion` under Category `Design`) automatically refines/replaces the parent-level slot to avoid redundant filter collisions.
+  - Clicking the same item toggles it **OFF** and removes it from the active filter slots.
+  - Active filter items display with a dark active badge and an `X` icon to visually confirm toggle status.
+  - Active filter slots support multi-selection (OR within the same axis, AND across different axes/slots).
+  - Quick Reset button is fixed at the start (leftmost) of the filter bar for easy access when many filters are active.
+
+### 2. 3D Globe Mode Interactions (`GlobeStreamCanvas`)
+- **Drag vs. Zoom Separation**:
+  - Dragging (click & drag on Desktop, single-finger drag on Mobile) strictly rotates and repositions the globe.
+  - Scrolling (mouse wheel vertical scroll on Desktop, two-finger pinch on Mobile) controls camera zoom in/out. Horizontal wheel scrolling is ignored.
+  - **Zoom Center (Anchor Point)**: Locked to the center of the viewport `(0.5, 0.5)` so zooming does not drift towards the top-left or header.
+  - **Zoom Level & Scale Limits**: Baseline zoom is bounded between `50%` (max zoom out) and `150%` (max zoom in) with dynamically balanced card gaps to prevent card overlap on zoom-in.
+  - **Filtered Note Count Rule**: When filtering yields a small number of notes (even 1 note), the globe displays **only the matched notes without duplicating/repeating cards** across empty slots.
+
+### 3. Mobile Touch & Sheet Scroll Safety
+- In mobile viewports, the canvas's global `touchmove` listener ignores touches originating inside interactive overlays (`.interactive-control`, bottom sheets, modals).
+- Bottom sheets use `touchAction: 'pan-y'`, `overscroll-contain`, and stop touch event propagation so that Category, Sub-items, and Topics remain fully scrollable on touch devices.
