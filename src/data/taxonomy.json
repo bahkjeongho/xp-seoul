@@ -21,13 +21,13 @@
         }
       },
       "Visual Communication": {
-        "count": 265,
+        "count": 264,
         "topics": {
           "Creative Agency": 30,
           "Creative Studio": 56,
           "Art Direction Award": 6,
           "Creative Director": 86,
-          "Creative Company": 13,
+          "Creative Company": 12,
           "Creative Collective": 3,
           "Creative Group": 2,
           "Art Director": 28,
@@ -40,11 +40,11 @@
         }
       },
       "Design": {
-        "count": 471,
+        "count": 472,
         "topics": {
           "Graphic Design Studio": 19,
           "Design Agency": 8,
-          "Design Studio": 131,
+          "Design Studio": 132,
           "Design Award": 6,
           "Design Festival": 8,
           "Design Magazine": 36,
@@ -52,7 +52,7 @@
           "Brand Design Agency": 43,
           "Product Designer": 3,
           "Type Designer": 4,
-          "Graphic Designer": 77,
+          "Graphic Designer": 76,
           "Brand Designer": 5,
           "Designer": 14,
           "Brand Design Studio": 15,
@@ -62,6 +62,7 @@
           "Type Foundry": 12,
           "Type Platform": 3,
           "Production Designer": 2,
+          "Creative Company": 1,
           "Lifestyle Retail": 1,
           "Design Biennale": 1,
           "Design Director": 1,
@@ -253,7 +254,7 @@
     }
   },
   "Uncategorized": {
-    "count": 180,
+    "count": 182,
     "subCategories": {
       "Graphic Design": {
         "count": 1,
