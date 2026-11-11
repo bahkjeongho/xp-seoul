@@ -1,16 +1,17 @@
 {
-  "Design": {
-    "count": 1100,
+  "Creative": {
+    "count": 1367,
     "subCategories": {
       "Fashion": {
-        "count": 360,
+        "count": 439,
         "topics": {
-          "Fashion Brand": 132,
-          "Fashion Magazine": 77,
-          "Fashion Retail": 11,
+          "Fashion Brand": 173,
+          "Fashion Magazine": 92,
+          "Fashion Retail": 31,
           "Fashion Designer": 67,
           "Stylist": 31,
-          "Fashion Critic": 3,
+          "Fashion Critic": 4,
+          "Fragrance Brand": 2,
           "Fashion Design Brand": 9,
           "Fashion Week": 1,
           "Fashion Platform": 3,
@@ -20,10 +21,10 @@
         }
       },
       "Visual Communication": {
-        "count": 263,
+        "count": 265,
         "topics": {
           "Creative Agency": 30,
-          "Creative Studio": 55,
+          "Creative Studio": 56,
           "Art Direction Award": 6,
           "Creative Director": 86,
           "Creative Company": 13,
@@ -38,80 +39,37 @@
           "Creative Team": 1
         }
       },
-      "Graphic Design": {
-        "count": 210,
+      "Design": {
+        "count": 471,
         "topics": {
           "Graphic Design Studio": 19,
+          "Design Agency": 8,
+          "Design Studio": 131,
+          "Design Award": 6,
+          "Design Festival": 8,
+          "Design Magazine": 36,
+          "Design Association": 6,
           "Brand Design Agency": 43,
+          "Product Designer": 3,
           "Type Designer": 4,
           "Graphic Designer": 77,
           "Brand Designer": 5,
+          "Designer": 14,
           "Brand Design Studio": 15,
+          "Design Platform": 4,
+          "Design Week": 5,
           "Brand Design Consultancy": 8,
-          "Type Foundry": 10
-        }
-      },
-      "Architecture": {
-        "count": 57,
-        "topics": {
-          "Architecture Studio": 7,
-          "Architecture Award": 7,
-          "Interior Architecture Company": 1,
-          "Architect": 18,
-          "Architecture Magazine": 2,
-          "Architecture Firm": 15,
-          "Architecture Office": 4,
-          "Architecture Prize": 2
-        }
-      },
-      "Product Design": {
-        "count": 17,
-        "topics": {
-          "Product Designer": 3,
+          "Type Foundry": 12,
+          "Type Platform": 3,
+          "Production Designer": 2,
+          "Lifestyle Retail": 1,
+          "Design Biennale": 1,
+          "Design Director": 1,
+          "3D Artist": 2,
+          "Web Design Agency": 1,
+          "Conceptual Designer": 1,
           "Furniture Designer": 3,
           "Industrial Designer": 1
-        }
-      },
-      "Digital Design": {
-        "count": 7,
-        "topics": {
-          "3D Artist": 2
-        }
-      },
-      "Production Design": {
-        "count": 2,
-        "topics": {
-          "Production Designer": 2
-        }
-      }
-    }
-  },
-  "The Arts": {
-    "count": 626,
-    "subCategories": {
-      "Music": {
-        "count": 340,
-        "topics": {
-          "K-Pop Group": 79,
-          "Music Artist": 156,
-          "Music Producer": 9,
-          "Rapper": 11,
-          "Record Label": 14,
-          "K-Pop Company": 23,
-          "Music Critic": 5,
-          "Music Magazine": 6,
-          "Music Festival": 5,
-          "Band": 6,
-          "Producer": 2,
-          "Music Platform": 3,
-          "Music Journalism": 1,
-          "Music Award": 1,
-          "Rock Band": 2,
-          "DJ": 2,
-          "Instruments Company": 2,
-          "Singer-Songwriter": 2,
-          "Modular Synthesizer": 1,
-          "A&R": 1
         }
       },
       "Video": {
@@ -129,30 +87,17 @@
           "Video Producer": 3
         }
       },
-      "Film": {
-        "count": 18,
+      "Architecture": {
+        "count": 58,
         "topics": {
-          "Film Director": 2,
-          "Filmmaker": 4,
-          "Sound Director": 1,
-          "Film Production": 2,
-          "Moving Image Critic": 1,
-          "Film Critic": 3,
-          "Film Magazine": 1
-        }
-      },
-      "Visual Art": {
-        "count": 52,
-        "topics": {
-          "Art Week": 1,
-          "Art Platform": 14,
-          "Art Fair": 1,
-          "Museum": 17,
-          "Art Festival": 2,
-          "Art Gallery": 10,
-          "Curator": 1,
-          "Art Collective": 3,
-          "Sculptor": 2
+          "Architecture Firm": 16,
+          "Architecture Studio": 7,
+          "Architecture Award": 7,
+          "Interior Architecture Company": 1,
+          "Architect": 18,
+          "Architecture Magazine": 2,
+          "Architecture Office": 4,
+          "Architecture Prize": 2
         }
       },
       "Photography": {
@@ -161,63 +106,34 @@
           "Photography Director": 11,
           "Photographer": 64
         }
-      },
-      "Performing Arts": {
-        "count": 8,
-        "topics": {
-          "Promoter": 6,
-          "Venue": 1
-        }
-      },
-      "Critique": {
-        "count": 1,
-        "topics": {
-          "Critique Magazine": 1
-        }
-      },
-      "Literature": {
-        "count": 1,
-        "topics": {
-          "Literary Critic": 1
-        }
-      }
-    }
-  },
-  "Media": {
-    "count": 140,
-    "subCategories": {
-      "Publishing": {
-        "count": 28,
-        "topics": {
-          "Publisher": 4,
-          "Publishing Company": 13,
-          "Book": 8,
-          "Book Editor": 1
-        }
-      },
-      "Editing": {
-        "count": 41,
-        "topics": {
-          "Editor": 23,
-          "Editor-in-Chief": 16,
-          "Editorial Director": 2
-        }
-      },
-      "News": {
-        "count": 4,
-        "topics": {
-          "Newspaper": 3
-        }
-      },
-      "Blog": {
-        "count": 2,
-        "topics": {}
       }
     }
   },
   "Entertainment": {
-    "count": 18,
+    "count": 367,
     "subCategories": {
+      "Popular Music": {
+        "count": 348,
+        "topics": {
+          "K-Pop Group": 79,
+          "Music Artist": 154,
+          "Music Producer": 9,
+          "Rapper": 11,
+          "Record Label": 14,
+          "K-Pop Company": 23,
+          "Music Critic": 6,
+          "Music Platform": 5,
+          "Music Magazine": 20,
+          "Music Festival": 5,
+          "Band": 6,
+          "Producer": 2,
+          "Music Journalism": 1,
+          "Rock Band": 2,
+          "DJ": 2,
+          "Singer-Songwriter": 2,
+          "A&R": 1
+        }
+      },
       "Sports": {
         "count": 9,
         "topics": {
@@ -230,20 +146,156 @@
         "topics": {
           "Management Agency": 3
         }
+      },
+      "Game": {
+        "count": 1,
+        "topics": {
+          "Game Magazine": 1
+        }
+      }
+    }
+  },
+  "Media": {
+    "count": 148,
+    "subCategories": {
+      "Publishing": {
+        "count": 35,
+        "topics": {
+          "Publisher": 4,
+          "Publishing Company": 19,
+          "Book": 8,
+          "Book Editor": 1,
+          "Book Store": 1
+        }
+      },
+      "Editing": {
+        "count": 41,
+        "topics": {
+          "Editor": 23,
+          "Editor-in-Chief": 16,
+          "Editorial Director": 2
+        }
+      },
+      "News": {
+        "count": 5,
+        "topics": {
+          "Newspaper": 3
+        }
+      },
+      "Blog": {
+        "count": 2,
+        "topics": {}
+      }
+    }
+  },
+  "The Arts": {
+    "count": 186,
+    "subCategories": {
+      "Film": {
+        "count": 27,
+        "topics": {
+          "Film Director": 2,
+          "Film Platform": 4,
+          "Filmmaker": 4,
+          "Film Critic": 4,
+          "Film Magazine": 4,
+          "Sound Director": 1,
+          "Film Production": 2,
+          "Moving Image Critic": 1
+        }
+      },
+      "Visual Art": {
+        "count": 62,
+        "topics": {
+          "Art Week": 1,
+          "Art Platform": 14,
+          "Art Fair": 1,
+          "Museum": 22,
+          "Art Festival": 2,
+          "Art Gallery": 10,
+          "Curator": 1,
+          "Visual Artist": 1,
+          "Art Collective": 3,
+          "Visual Art Magazine": 4,
+          "Sculptor": 2
+        }
+      },
+      "Performing Arts": {
+        "count": 8,
+        "topics": {
+          "Promoter": 6,
+          "Venue": 1
+        }
+      },
+      "Music": {
+        "count": 12,
+        "topics": {
+          "Music Platform": 3,
+          "Music Award": 1,
+          "Instruments Company": 2,
+          "Modular Synthesizer": 1
+        }
+      },
+      "Critique": {
+        "count": 1,
+        "topics": {
+          "Critique Magazine": 1
+        }
+      },
+      "Literature": {
+        "count": 3,
+        "topics": {
+          "Writer": 1,
+          "Literary Critic": 1,
+          "Literature Magazine": 1
+        }
       }
     }
   },
   "Uncategorized": {
-    "count": 143,
-    "subCategories": {}
+    "count": 180,
+    "subCategories": {
+      "Graphic Design": {
+        "count": 1,
+        "topics": {
+          "Design Studio": 1
+        }
+      }
+    }
   },
   "Technology": {
-    "count": 1,
+    "count": 8,
     "subCategories": {
+      "Service": {
+        "count": 2,
+        "topics": {
+          "Music Streaming Service": 1,
+          "OTT Service": 1
+        }
+      },
       "Hardware": {
         "count": 1,
         "topics": {
           "Software Company": 1
+        }
+      },
+      "Software": {
+        "count": 1,
+        "topics": {
+          "Software Engineer": 1
+        }
+      },
+      "Computer Science": {
+        "count": 2,
+        "topics": {
+          "Computer Scientist": 1,
+          "Programmer": 1
+        }
+      },
+      "Data": {
+        "count": 1,
+        "topics": {
+          "Music DB Platform": 1
         }
       }
     }
@@ -290,11 +342,21 @@
       "2. Wiki/Tech Product": {
         "count": 1,
         "topics": {}
+      },
+      "AI": {
+        "count": 1,
+        "topics": {
+          "CEO": 1
+        }
       }
     }
   },
+  "Science": {
+    "count": 1,
+    "subCategories": {}
+  },
   "Culture": {
-    "count": 4,
+    "count": 6,
     "subCategories": {}
   }
 }

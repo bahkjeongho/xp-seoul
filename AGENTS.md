@@ -48,7 +48,7 @@ Run `./update.sh` (or `npm run update`) to sync all vault changes into `siren` i
 
 4. **`A_Wiki` & `B_Object` (`unlisted: true` Rules)**:
    - **Default Listed (Public Stream & Globe)**:
-     - Root markdown files in `A_Wiki/` that have creative/cultural categories (`The Arts`, `Design`, `Media`, `Culture`, `Entertainment`, `Business`).
+     - Root markdown files in `A_Wiki/` that have creative/cultural categories (`Creative`, `The Arts`, `Design`, `Media`, `Culture`, `Entertainment`, `Business`).
    - **Unlisted (`unlisted: true`) (Hidden from general Stream & Globe, searchable via Search Bar & accessible via [[wikilinks]]/backlinks)**:
      - Sub-folders under `A_Wiki/`:
        - `A1_Hub` (Hub notes)
@@ -57,7 +57,7 @@ Run `./update.sh` (or `npm run update`) to sync all vault changes into `siren` i
        - `A4_Journal` (Journals & periodicals)
        - `A5_Sports Team` (Clubs & sports teams)
      - All notes under `B_Object/` (B1_Music, B2_Architecture, B3_Video, B4_Film objects/works).
-     - Pure `Technology` or `Humanities` Category notes without creative/cultural overlap. (Notes with mixed categories like OP-1 with `The Arts` + `Technology` remain Listed).
+     - Pure `Technology` or `Humanities` Category notes without creative/cultural overlap. (Notes with mixed categories like OP-1 with `Creative` / `The Arts` + `Technology` remain Listed).
 
 ---
 

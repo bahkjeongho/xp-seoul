@@ -179,7 +179,7 @@ for (const file of wikiFiles) {
     );
 
     // Unlisted Rule 2: Pure Technology or Humanities category without creative/cultural overlap
-    // (If note only has Technology/Humanities, and lacks The Arts, Design, Media, Culture, Entertainment, Business)
+    // (If note only has Technology/Humanities, and lacks Creative, The Arts, Design, Media, Culture, Entertainment, Business)
     const isPureNonCreativeCategory = (
       categories.length > 0 &&
       categories.every((c) => c === 'Technology' || c === 'Humanities')
