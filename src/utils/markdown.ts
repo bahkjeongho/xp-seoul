@@ -1,9 +1,22 @@
 import { marked } from 'marked';
 
-// Configure marked with GFM and line breaks
-marked.setOptions({
+// Configure marked with GFM, line breaks, and enhanced external link renderer
+const renderer = new marked.Renderer();
+renderer.link = function ({ href, title, tokens }) {
+  const text = this.parser.parseInline(tokens);
+  const isExternal = /^https?:\/\//i.test(href || '');
+  const titleAttr = title ? ` title="${title}"` : '';
+  
+  if (isExternal) {
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="external-link inline-flex items-center gap-1 font-mono text-[13px] text-[#0066cc] hover:text-black border-b border-dashed border-[#0066cc]/50 hover:border-black transition-all px-1 py-0.5 rounded hover:bg-[#0066cc]/5"${titleAttr}><span>${text}</span><svg class="w-3 h-3 inline-block shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>`;
+  }
+  return `<a href="${href}" class="standard-link"${titleAttr}>${text}</a>`;
+};
+
+marked.use({
   gfm: true,
   breaks: true,
+  renderer,
 });
 
 export interface CalloutBlock {

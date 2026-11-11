@@ -14,7 +14,7 @@
     },
     {
       "name": "Design Studio",
-      "count": 770
+      "count": 772
     },
     {
       "name": "K-Pop Group",
@@ -6530,7 +6530,7 @@
       }
     },
     "Canada": {
-      "count": 58,
+      "count": 59,
       "subs": {
         "Montreal": {
           "count": 7,
@@ -6541,9 +6541,10 @@
           }
         },
         "Montréal": {
-          "count": 3,
+          "count": 4,
           "topics": {
             "Art Director": 2,
+            "Design Studio": 1,
             "Brand Design Studio": 1
           }
         },
@@ -6760,6 +6761,7 @@
         "Art Director": 2,
         "Rapper": 1,
         "Brand Design Agency": 31,
+        "Design Studio": 1,
         "Sports League": 2,
         "Graphic Designer": 1,
         "Art School": 2,
