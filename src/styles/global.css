@@ -169,26 +169,30 @@ html, body {
   margin-bottom: 1.5rem;
 }
 
-/* External Link styling in markdown body */
+/* External Link button styling in markdown body */
 .prose-obsidian a.external-link {
-  color: #0055ff;
+  color: #0066cc;
   font-family: 'Geist Mono', ui-monospace, monospace;
-  font-size: 0.825rem;
+  font-size: 0.775rem;
   font-weight: 500;
-  text-decoration: underline;
-  text-decoration-style: dashed;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 3px;
-  padding: 0.1rem 0.35rem;
-  border-radius: 4px;
-  background-color: rgba(0, 85, 255, 0.04);
+  text-decoration: none !important;
+  border-bottom: none !important;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  background-color: #f0f6ff;
+  border: 1px solid rgba(0, 102, 204, 0.2);
   transition: all 0.15s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  vertical-align: middle;
+  line-height: 1.25;
 }
 
 .prose-obsidian a.external-link:hover {
-  color: #000000;
-  background-color: rgba(0, 0, 0, 0.06);
-  text-decoration-style: solid;
-  text-decoration-color: #000000;
+  color: #ffffff;
+  background-color: #000000;
+  border-color: #000000;
+  text-decoration: none !important;
 }
 

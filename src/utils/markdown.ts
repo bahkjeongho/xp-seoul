@@ -8,7 +8,7 @@ renderer.link = function ({ href, title, tokens }) {
   const titleAttr = title ? ` title="${title}"` : '';
   
   if (isExternal) {
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="external-link inline-flex items-center gap-1 font-mono text-[13px] text-[#0066cc] hover:text-black border-b border-dashed border-[#0066cc]/50 hover:border-black transition-all px-1 py-0.5 rounded hover:bg-[#0066cc]/5"${titleAttr}><span>${text}</span><svg class="w-3 h-3 inline-block shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>`;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="external-link inline-flex items-center gap-1 font-mono text-[12px] text-[#0066cc] bg-[#f0f6ff] hover:bg-black hover:text-white transition-all px-2 py-0.5 rounded-md border border-[#0066cc]/20 hover:border-black font-medium leading-normal cursor-pointer select-none no-underline"${titleAttr}><span>${text}</span><svg class="w-3 h-3 inline-block shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>`;
   }
   return `<a href="${href}" class="standard-link"${titleAttr}>${text}</a>`;
 };
@@ -144,7 +144,7 @@ function processWikilinksAndImages(markdownText: string, knownTitles?: Set<strin
       return `<a href="#wikilink" data-wikilink="${cleanTarget}" class="wikilink font-medium text-black underline underline-offset-4 decoration-black/30 hover:decoration-black hover:bg-black/5 px-1 py-0.5 rounded transition-colors inline-block cursor-pointer">${cleanDisplay}</a>`;
     } else {
       // Unresolved note in vault
-      return `<span data-unresolved-wikilink="${cleanTarget}" title="아직 작성되지 않은 노트입니다" class="wikilink-unresolved font-normal text-[#888888] underline underline-offset-4 decoration-dashed decoration-[#aaaaaa] hover:text-[#444444] px-1 py-0.5 rounded transition-colors inline-block cursor-pointer">${cleanDisplay}</span>`;
+      return `<span data-unresolved-wikilink="${cleanTarget}" title="아직 작성되지 않은 노트입니다" class="wikilink-unresolved font-normal text-[#888888] underline underline-offset-4 decoration-solid decoration-[#cccccc] hover:text-[#444444] hover:decoration-[#888888] px-1 py-0.5 rounded transition-colors inline-block cursor-pointer">${cleanDisplay}</span>`;
     }
   });
 
