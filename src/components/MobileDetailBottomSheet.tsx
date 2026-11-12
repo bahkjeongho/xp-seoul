@@ -313,7 +313,7 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-end">
+      <div className="fixed inset-0 z-[90] flex items-end">
         {/* Backdrop Overlay */}
         <motion.div
           initial={{ opacity: 0 }}

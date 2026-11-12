@@ -316,7 +316,7 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
   return (
     <div
       ref={containerRef}
-      className="h-full w-full relative overflow-hidden flex flex-col items-center justify-center select-none touch-none bg-[#fbfbfb]"
+      className="h-full w-full relative overflow-hidden flex flex-col items-center justify-center select-none touch-none bg-[#fbfbfb] isolate z-0"
       style={{ touchAction: 'none' }}
     >
       {/* Target Focus Ring (Equalized concentric frame: 10px uniform gap on all 4 sides) */}
@@ -380,7 +380,7 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
                 top: '50%',
                 transform: `translate3d(-50%, calc(-50% + ${yOffset}px), 0px) scale(${scale})`,
                 opacity,
-                zIndex: Math.round((10 - absDist) * 10),
+                zIndex: Math.max(1, Math.round((10 - absDist) * 2)),
                 willChange: 'transform, opacity',
               }}
               className={`flex items-center justify-between rounded-xl select-none cursor-pointer pointer-events-auto transition-colors duration-150 ${

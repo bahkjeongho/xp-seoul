@@ -554,10 +554,10 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
       )}
 
       {/* --- MAIN CONTENT CANVAS --- */}
-      <main className="flex-1 h-full flex overflow-hidden relative">
+      <main className="flex-1 h-full flex overflow-hidden relative isolate z-0">
         {activeMenu === 'wiki' && !isDetailOpen && (
           // Full-screen wide lens stream on main page without cramped sidebars!
-          <div className="flex-1 h-full relative overflow-hidden flex items-center justify-center">
+          <div className="flex-1 h-full relative overflow-hidden flex items-center justify-center isolate z-0">
             <MiddleNavColumn
               notes={filteredNotes}
               selectedNote={null}
@@ -637,7 +637,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 60, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-            className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] pointer-events-auto bg-white/85 backdrop-blur-xl text-black rounded-full px-4 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.14)] flex items-center gap-3 border border-black/10 select-none font-sans"
+            className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[80] pointer-events-auto bg-white/85 backdrop-blur-xl text-black rounded-full px-4 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.14)] flex items-center gap-3 border border-black/10 select-none font-sans"
           >
             {/* 1. Left: Filter Button (Text only, Geist sans) */}
             <button
@@ -659,7 +659,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
               className="w-7 h-7 rounded-full bg-black/5 hover:bg-black/10 active:scale-90 flex items-center justify-center text-black transition-all"
               aria-label="Close Note"
             >
-              <X className="w-3.5 h-3.5 stroke-[2.2]" />
+              <X className="w-3.5 h-3.5 stroke-[2.2] cursor-pointer" />
             </button>
 
             {/* 3. Right: History Button (Text only, Geist sans) */}
@@ -677,7 +677,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
       </AnimatePresence>
 
       {/* --- MOBILE MAIN STREAM FLOATING CONTROLLER BAR (검색 | 필터) & CONNECTED SEARCH BAR --- */}
-      {isMobile && activeMenu === 'wiki' && !isDetailOpen && (
+      {isMobile && activeMenu === 'wiki' && !isDetailOpen && !isMobileSheetOpen && (
         <AnimatePresence mode="wait">
           {isMobileSearchOpen ? (
             <motion.div
@@ -686,7 +686,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 20, opacity: 0, scale: 0.95 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="md:hidden fixed bottom-6 inset-x-4 max-w-sm mx-auto z-[60] pointer-events-auto bg-white/95 backdrop-blur-xl rounded-full px-3.5 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.16)] flex items-center gap-2 border border-black/10 select-none font-sans"
+              className="md:hidden fixed bottom-6 inset-x-4 max-w-sm mx-auto z-[80] pointer-events-auto bg-white/95 backdrop-blur-xl rounded-full px-3.5 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.16)] flex items-center gap-2 border border-black/10 select-none font-sans"
             >
               <Search className="w-4 h-4 text-[#888888] shrink-0 ml-1" />
               <input
@@ -719,7 +719,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 20, opacity: 0, scale: 0.95 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] pointer-events-auto bg-white/85 backdrop-blur-xl rounded-full px-3.5 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.16)] flex items-center gap-2 border border-black/10 select-none font-sans whitespace-nowrap"
+              className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[80] pointer-events-auto bg-white/85 backdrop-blur-xl rounded-full px-3.5 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.16)] flex items-center gap-2 border border-black/10 select-none font-sans whitespace-nowrap"
             >
               {/* Search Button */}
               <button
