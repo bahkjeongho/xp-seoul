@@ -980,35 +980,53 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       .map(([name, data]) => ({ name, count: data.count }));
   }, [globeFilterAxis, expandedPrimary, facetData]);
 
-  // Topics for current axis + expandedPrimary + optional expandedSecondary
+  // Active secondary/sub-item selected under expandedPrimary (reactive to active slots)
+  const activeSecondaryName = useMemo(() => {
+    if (!expandedPrimary) return null;
+    const slot = currentSlots.find((s) => {
+      if (s.axis !== globeFilterAxis) return false;
+      if (globeFilterAxis === 'category') return s.category === expandedPrimary && Boolean(s.subCategory);
+      if (globeFilterAxis === 'type') return s.type === expandedPrimary && Boolean(s.subType);
+      if (globeFilterAxis === 'field') return s.field === expandedPrimary && Boolean(s.subField);
+      if (globeFilterAxis === 'region') return s.country === expandedPrimary && Boolean(s.city);
+      return false;
+    });
+    if (slot) {
+      return slot.subCategory || slot.subType || slot.subField || slot.city || null;
+    }
+    return expandedSecondary;
+  }, [currentSlots, globeFilterAxis, expandedPrimary, expandedSecondary]);
+
+  // Topics for current axis + expandedPrimary + activeSecondaryName (reactive to selected sub-item)
   const globeTopicsList = useMemo(() => {
     if (!expandedPrimary) return [];
+    const targetSub = activeSecondaryName;
     let topicMap: Record<string, number> = {};
     if (globeFilterAxis === 'category') {
       const cat = facetData.byCategory?.[expandedPrimary];
-      if (expandedSecondary && cat?.subs?.[expandedSecondary]) {
-        topicMap = cat.subs[expandedSecondary].topics || {};
+      if (targetSub && cat?.subs?.[targetSub]?.topics) {
+        topicMap = cat.subs[targetSub].topics;
       } else {
         topicMap = cat?.topics || {};
       }
     } else if (globeFilterAxis === 'type') {
       const tp = facetData.byType?.[expandedPrimary];
-      if (expandedSecondary && tp?.subs?.[expandedSecondary]) {
-        topicMap = tp.subs[expandedSecondary].topics || {};
+      if (targetSub && tp?.subs?.[targetSub]?.topics) {
+        topicMap = tp.subs[targetSub].topics;
       } else {
         topicMap = tp?.topics || {};
       }
     } else if (globeFilterAxis === 'field') {
       const fd = facetData.byField?.[expandedPrimary];
-      if (expandedSecondary && fd?.subs?.[expandedSecondary]) {
-        topicMap = fd.subs[expandedSecondary].topics || {};
+      if (targetSub && fd?.subs?.[targetSub]?.topics) {
+        topicMap = fd.subs[targetSub].topics;
       } else {
         topicMap = fd?.topics || {};
       }
     } else if (globeFilterAxis === 'region') {
       const reg = facetData.byRegion?.[expandedPrimary];
-      if (expandedSecondary && reg?.subs?.[expandedSecondary]) {
-        topicMap = reg.subs[expandedSecondary].topics || {};
+      if (targetSub && reg?.subs?.[targetSub]?.topics) {
+        topicMap = reg.subs[targetSub].topics;
       } else {
         topicMap = reg?.topics || {};
       }
@@ -1016,7 +1034,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     return Object.entries(topicMap)
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
-  }, [globeFilterAxis, expandedPrimary, expandedSecondary, facetData]);
+  }, [globeFilterAxis, expandedPrimary, activeSecondaryName, facetData]);
 
   const hasActiveFilter = Boolean(currentSlots.length > 0 || searchQuery);
 
@@ -1328,7 +1346,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                             return (
                               <button
                                 key={top.name}
-                                onClick={() => commitGlobeSlot({ primary: item.name, secondary: expandedSecondary, topic: top.name })}
+                                onClick={() => commitGlobeSlot({ primary: item.name, secondary: activeSecondaryName, topic: top.name })}
                                 className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono transition-all border ${
                                   isTopInSlots
                                     ? 'bg-black text-white border-black font-bold'
@@ -1798,7 +1816,10 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                         return (
                           <button
                             key={sub.name}
-                            onClick={() => commitGlobeSlot({ primary: expandedPrimary, secondary: sub.name })}
+                            onClick={() => {
+                              commitGlobeSlot({ primary: expandedPrimary, secondary: sub.name });
+                              setExpandedSecondary((prev) => (prev === sub.name ? null : sub.name));
+                            }}
                             className={`py-1.5 px-3 rounded-lg text-xs font-medium transition-colors border flex items-center gap-1 ${
                               isSubInSlots
                                 ? 'bg-black text-white border-black font-semibold shadow-xs'
@@ -1827,7 +1848,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                         return (
                           <button
                             key={top.name}
-                            onClick={() => commitGlobeSlot({ primary: expandedPrimary, secondary: expandedSecondary, topic: top.name })}
+                            onClick={() => commitGlobeSlot({ primary: expandedPrimary, secondary: activeSecondaryName, topic: top.name })}
                             className={`py-1 px-2.5 rounded-full text-[11px] font-mono transition-all flex items-center gap-1 border ${
                               isTopInSlots
                                 ? 'bg-black text-white border-black font-bold shadow-xs'
