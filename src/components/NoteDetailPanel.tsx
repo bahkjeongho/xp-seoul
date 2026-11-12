@@ -188,6 +188,36 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
     return arr.map(t => String(t).replace(/^\[\[/, '').replace(/\]\]$/, '').replace(/^#/, '').trim()).filter(Boolean);
   }, [fullNote.allProps]);
 
+  // Pair matching cities and countries cleanly: "New York, USA / Beijing, China"
+  const locationText = useMemo(() => {
+    const cities = fullNote.cities || [];
+    const countries = fullNote.countries || [];
+
+    if (cities.length === 0 && countries.length === 0) return '';
+    if (cities.length === 0) return countries.join(', ');
+    if (countries.length === 0) return cities.join(', ');
+
+    if (cities.length === countries.length) {
+      return cities.map((city, idx) => `${city}, ${countries[idx]}`).join(' / ');
+    }
+
+    if (countries.length === 1) {
+      return `${cities.join(', ')}, ${countries[0]}`;
+    }
+
+    const minLen = Math.min(cities.length, countries.length);
+    const pairs: string[] = [];
+    for (let i = 0; i < minLen; i++) {
+      pairs.push(`${cities[i]}, ${countries[i]}`);
+    }
+    const extraCities = cities.slice(minLen);
+    const extraCountries = countries.slice(minLen);
+    if (extraCities.length > 0) pairs.push(extraCities.join(', '));
+    if (extraCountries.length > 0) pairs.push(extraCountries.join(', '));
+
+    return pairs.join(' / ');
+  }, [fullNote.cities, fullNote.countries]);
+
   // Lenis smooth scrolling for Note Detail reading container with scroll restoration
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   useLenisScroll(scrollContainerRef, [fullNote.id], fullNote.id);
@@ -296,19 +326,18 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
                 ))}
               </div>
 
-              {/* Right: Location Button (City, Country) */}
-              {(fullNote.cities?.length > 0 || fullNote.countries?.length > 0) && (
+              {/* Right: Location Button (City, Country paired) */}
+              {locationText && (
                 <button
                   onClick={() => {
                     const targetLoc = fullNote.cities?.[0] || fullNote.countries?.[0];
                     if (targetLoc) onNavigateWikilink(targetLoc);
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f6f6f7] hover:bg-black hover:text-white rounded-md text-xs font-mono text-[#333333] transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f6f6f7] hover:bg-black hover:text-white rounded-md text-xs font-mono text-[#333333] transition-colors cursor-pointer"
+                  title="Location"
                 >
-                  <MapPin className="w-3.5 h-3.5 text-[#888888]" />
-                  <span>
-                    {[...(fullNote.cities || []), ...(fullNote.countries || [])].join(', ')}
-                  </span>
+                  <MapPin className="w-3.5 h-3.5 text-[#888888] shrink-0" />
+                  <span>{locationText}</span>
                 </button>
               )}
             </div>

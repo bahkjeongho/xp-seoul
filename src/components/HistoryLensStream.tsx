@@ -18,9 +18,13 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
   mode = 'top',
   hideHeader = false,
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState<number>(0);
   const scrollTimeoutRef = useRef<any>(null);
   const touchStartY = useRef<number | null>(null);
+  const touchLastY = useRef<number>(0);
+  const accumulatedDeltaRef = useRef<number>(0);
+  const totalDragDistRef = useRef<number>(0);
 
   const isCenterMode = mode === 'center';
 
@@ -29,7 +33,7 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
     if (activeIndex >= historyNotes.length) {
       setActiveIndex(Math.max(0, historyNotes.length - 1));
     }
-  }, [historyNotes.length]);
+  }, [historyNotes.length, activeIndex]);
 
   // When selected note changes externally, if it is at index 0 (newly pushed), snap to 0
   useEffect(() => {
@@ -40,7 +44,7 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
 
   // Smooth wheel navigation for History Lens
   const handleWheel = useCallback(
-    (e: React.WheelEvent) => {
+    (e: WheelEvent) => {
       e.stopPropagation();
       e.preventDefault();
       clearTimeout(scrollTimeoutRef.current);
@@ -57,25 +61,55 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
     [historyNotes.length]
   );
 
-  // Touch gesture support for mobile swiping
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
+  // Native non-passive touch listeners for mobile swipe support
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartY.current === null) return;
-    const currentY = e.touches[0].clientY;
-    const deltaY = touchStartY.current - currentY;
-    if (Math.abs(deltaY) > 24) {
-      const step = deltaY > 0 ? 1 : -1;
-      setActiveIndex((prev) => Math.max(0, Math.min(historyNotes.length - 1, prev + step)));
-      touchStartY.current = currentY;
-    }
-  };
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartY.current = e.touches[0].clientY;
+      touchLastY.current = e.touches[0].clientY;
+      accumulatedDeltaRef.current = 0;
+      totalDragDistRef.current = 0;
+    };
 
-  const handleTouchEnd = () => {
-    touchStartY.current = null;
-  };
+    const onTouchMove = (e: TouchEvent) => {
+      if (touchStartY.current === null) return;
+      if (e.cancelable) e.preventDefault();
+
+      const currentY = e.touches[0].clientY;
+      const dy = touchLastY.current - currentY;
+      totalDragDistRef.current += Math.abs(dy);
+      accumulatedDeltaRef.current += dy;
+      touchLastY.current = currentY;
+
+      // Step threshold (24px)
+      if (Math.abs(accumulatedDeltaRef.current) >= 24) {
+        const step = accumulatedDeltaRef.current > 0 ? 1 : -1;
+        setActiveIndex((prev) => Math.max(0, Math.min(historyNotes.length - 1, prev + step)));
+        accumulatedDeltaRef.current = 0;
+      }
+    };
+
+    const onTouchEnd = () => {
+      touchStartY.current = null;
+      accumulatedDeltaRef.current = 0;
+    };
+
+    container.addEventListener('touchstart', onTouchStart, { passive: true });
+    container.addEventListener('touchmove', onTouchMove, { passive: false });
+    container.addEventListener('touchend', onTouchEnd, { passive: true });
+    container.addEventListener('touchcancel', onTouchEnd, { passive: true });
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener('touchstart', onTouchStart);
+      container.removeEventListener('touchmove', onTouchMove);
+      container.removeEventListener('touchend', onTouchEnd);
+      container.removeEventListener('touchcancel', onTouchEnd);
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, [historyNotes.length, handleWheel]);
 
   const handleStepUp = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -109,13 +143,11 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
 
   return (
     <div
-      onWheel={handleWheel}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      className={`w-full h-full flex flex-col overflow-hidden relative select-none ${
+      ref={containerRef}
+      className={`w-full h-full flex flex-col overflow-hidden relative select-none touch-none ${
         isCenterMode ? 'bg-[#fbfbfb]' : ''
       }`}
+      style={{ touchAction: 'none' }}
     >
       {/* Top Header / Status Bar */}
       {isCenterMode ? (
@@ -138,7 +170,7 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
           </span>
           <div className="flex items-center gap-1.5">
             <span className="font-mono text-[9px] text-[#888888]">
-              {activeIndex + 1} / {historyNotes.length}
+              {activeIndex + 1}/{historyNotes.length}
             </span>
             <div className="flex items-center gap-0.5 ml-1">
               <button
@@ -207,7 +239,7 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
               } else {
                 const beyond = distance - 4;
                 scale = Math.max(0.68, 0.88 - beyond * 0.05);
-                opacity = Math.max(0.08, 0.62 - beyond * 0.17); // 5th: 0.45, 6th: 0.28, 7th: 0.11
+                opacity = Math.max(0.08, 0.62 - beyond * 0.17);
               }
               yOffset = distance * 42;
               zIndex = 20 - distance;
@@ -223,7 +255,13 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
           return (
             <motion.div
               key={note.id}
-              onClick={() => {
+              onClick={(e) => {
+                // If user was swiping/dragging, ignore click!
+                if (totalDragDistRef.current > 6) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  return;
+                }
                 setActiveIndex(actualIndex);
                 onSelectNote(note);
               }}

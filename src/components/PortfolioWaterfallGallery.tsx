@@ -263,9 +263,9 @@ export const PortfolioWaterfallGallery: React.FC<PortfolioWaterfallGalleryProps>
           </div>
         </div>
 
-        {/* Mobile Only: 3 Separate Lines (Line 1: Title | Line 2: by OOO | Line 3: Tags) with proper padding */}
-        <div className="sm:hidden flex flex-col gap-1.5 pt-2.5 pb-2.5 px-3">
-          {/* Line 1: Title */}
+        {/* Mobile Only: 3 Separate Lines (Line 1: Title | Line 2: by OOO | Line 3: Tags) with refined typography & hierarchy */}
+        <div className="sm:hidden flex flex-col pt-2.5 pb-3 px-3">
+          {/* Line 1: Title (Bold, tight line-height) */}
           <div className="min-w-0">
             {item.wikilinkTarget ? (
               <button
@@ -274,20 +274,20 @@ export const PortfolioWaterfallGallery: React.FC<PortfolioWaterfallGalleryProps>
                   e.stopPropagation();
                   onNavigateWikilink(item.wikilinkTarget!);
                 }}
-                className="font-sans font-bold text-[12.5px] text-black hover:underline text-left line-clamp-1 tracking-tight cursor-pointer block"
+                className="font-sans font-bold text-[13px] text-black hover:underline text-left line-clamp-1 tracking-tight cursor-pointer block leading-snug"
               >
                 {item.title}
               </button>
             ) : (
-              <span className="font-sans font-bold text-[12.5px] text-black line-clamp-1 tracking-tight block">
+              <span className="font-sans font-bold text-[13px] text-black line-clamp-1 tracking-tight block leading-snug">
                 {item.title}
               </span>
             )}
           </div>
 
-          {/* Line 2: by OOO / Trailing segments (same font size as title for easy touch) */}
+          {/* Line 2: by OOO / Trailing segments (Tightly connected to Title: mt-0.5) */}
           {item.trailingSegments && item.trailingSegments.length > 0 && (
-            <div className="flex items-center gap-1 font-mono text-[12px] text-[#444444] truncate">
+            <div className="flex items-center gap-1 font-mono text-[11.5px] text-[#555555] truncate mt-0.5 leading-tight">
               {item.trailingSegments.map((seg, sIdx) => {
                 if (seg.wikilink) {
                   return (
@@ -313,9 +313,9 @@ export const PortfolioWaterfallGallery: React.FC<PortfolioWaterfallGalleryProps>
             </div>
           )}
 
-          {/* Line 3: Tags strictly 1-line with active touch feedback */}
+          {/* Line 3: Tags strictly 1-line with clear separation: mt-2.5 */}
           {item.tags.length > 0 && (
-            <div className="flex items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-nowrap gap-1 pt-0.5">
+            <div className="flex items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-nowrap gap-1 mt-2.5 pt-0.5">
               {item.tags.map((tag, idx) => (
                 <button
                   key={idx}
@@ -324,7 +324,7 @@ export const PortfolioWaterfallGallery: React.FC<PortfolioWaterfallGalleryProps>
                     e.stopPropagation();
                     onSelectHashtag?.(tag);
                   }}
-                  className="font-mono text-[10px] text-[#444444] bg-[#f2f2f4] active:bg-black active:text-white px-2 py-0.5 rounded-md transition-colors duration-100 cursor-pointer select-none shrink-0 whitespace-nowrap leading-none border border-black/5"
+                  className="font-mono text-[9.5px] uppercase tracking-wider text-[#444444] bg-[#f2f2f4] active:bg-black active:text-white px-2 py-0.5 rounded-md transition-colors duration-100 cursor-pointer select-none shrink-0 whitespace-nowrap leading-none border border-black/5"
                 >
                   #{tag.replace(/^#/, '')}
                 </button>

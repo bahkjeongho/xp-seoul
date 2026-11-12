@@ -128,6 +128,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
 
   // Drag interaction state with momentum & rAF batching
   const isDraggingRef = useRef(false);
+  const isMouseDraggingRef = useRef(false);
   const dragStartPosRef = useRef({ x: 0, y: 0 });
   const dragStartPanRef = useRef({ x: 0, y: 0 });
   const targetPanRef = useRef({ x: 0, y: 0 });
@@ -256,11 +257,10 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     return Math.ceil(len / GRID_COLS);
   }, [filteredNotes.length, GRID_COLS]);
 
-  // Smooth Momentum glide physics on release (iOS/Apple style deceleration)
+  // Smooth Momentum glide physics on release (silky smooth deceleration)
   const startMomentum = useCallback(() => {
-    // 0.952 gives a long, silky, natural deceleration on mobile touch and desktop
-    const friction = 0.952;
-    const minVelocity = 0.12;
+    const friction = 0.945;
+    const minVelocity = 0.08;
 
     const step = () => {
       velocityRef.current.x *= friction;
@@ -430,7 +430,25 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       }
     };
 
-    // 2. Mouse Handlers (Desktop)
+    // 2. Mouse Handlers (Desktop with continuous LERP smoothing)
+    const runMouseDragLoop = () => {
+      if (!isMouseDraggingRef.current) return;
+
+      const current = panRef.current;
+      const target = targetPanRef.current;
+      const dx = target.x - current.x;
+      const dy = target.y - current.y;
+
+      // Silky smooth lerp damping: 0.32 gives instant response without stiffness or jitter
+      if (Math.abs(dx) > 0.05 || Math.abs(dy) > 0.05) {
+        const nextX = current.x + dx * 0.32;
+        const nextY = current.y + dy * 0.32;
+        setPan({ x: nextX, y: nextY });
+      }
+
+      dragRafIdRef.current = requestAnimationFrame(runMouseDragLoop);
+    };
+
     const onMouseDown = (e: MouseEvent) => {
       if ((e.target as HTMLElement).closest('.interactive-control, input, button, a')) return;
       if (e.button !== 0) return; // Only primary mouse button
@@ -448,6 +466,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
 
       const now = performance.now();
       isDraggingRef.current = true;
+      isMouseDraggingRef.current = true;
       totalDragDistanceRef.current = 0;
       dragStartPosRef.current = { x: e.clientX, y: e.clientY };
       dragStartPanRef.current = { ...panRef.current };
@@ -456,10 +475,12 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       velocityRef.current = { x: 0, y: 0 };
       document.body.style.userSelect = 'none';
       document.body.style.cursor = 'grabbing';
+
+      dragRafIdRef.current = requestAnimationFrame(runMouseDragLoop);
     };
 
     const onMouseMove = (e: MouseEvent) => {
-      if (!isDraggingRef.current) return;
+      if (!isMouseDraggingRef.current) return;
 
       const now = performance.now();
       const dx = e.clientX - dragStartPosRef.current.x;
@@ -475,17 +496,11 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         x: dragStartPanRef.current.x + dx,
         y: dragStartPanRef.current.y + dy,
       };
-
-      if (dragRafIdRef.current === null) {
-        dragRafIdRef.current = requestAnimationFrame(() => {
-          dragRafIdRef.current = null;
-          setPan(targetPanRef.current);
-        });
-      }
     };
 
     const onMouseUp = () => {
-      if (!isDraggingRef.current) return;
+      if (!isMouseDraggingRef.current) return;
+      isMouseDraggingRef.current = false;
       isDraggingRef.current = false;
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
@@ -494,23 +509,33 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         cancelAnimationFrame(dragRafIdRef.current);
         dragRafIdRef.current = null;
       }
-      setPan(targetPanRef.current);
 
       const now = performance.now();
-      const recent = mouseHistoryRef.current.filter((p) => now - p.time <= 120);
+      const recent = mouseHistoryRef.current.filter((p) => now - p.time <= 100);
       if (recent.length >= 2) {
         const first = recent[0];
         const last = recent[recent.length - 1];
-        const dt = Math.max(12, last.time - first.time);
-        const vx = ((last.x - first.x) / dt) * 16;
-        const vy = ((last.y - first.y) / dt) * 16;
-        const speed = Math.hypot(vx, vy);
-        const maxSpeed = 42;
-        const scale = speed > maxSpeed ? maxSpeed / speed : 1;
-        velocityRef.current = {
-          x: vx * scale,
-          y: vy * scale,
-        };
+        const dt = Math.max(16, last.time - first.time);
+        const timeSinceLastMove = now - last.time;
+
+        if (timeSinceLastMove < 75) {
+          const vx = ((last.x - first.x) / dt) * 16;
+          const vy = ((last.y - first.y) / dt) * 16;
+          const speed = Math.hypot(vx, vy);
+          const maxSpeed = 38;
+          const scale = speed > maxSpeed ? maxSpeed / speed : 1;
+
+          // Residual drag difference smoothly adds to momentum
+          const residualVx = (targetPanRef.current.x - panRef.current.x) * 0.18;
+          const residualVy = (targetPanRef.current.y - panRef.current.y) * 0.18;
+
+          velocityRef.current = {
+            x: vx * scale * 0.88 + residualVx,
+            y: vy * scale * 0.88 + residualVy,
+          };
+        } else {
+          velocityRef.current = { x: 0, y: 0 };
+        }
       } else {
         velocityRef.current = { x: 0, y: 0 };
       }
