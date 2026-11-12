@@ -383,7 +383,7 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
                 zIndex: Math.max(1, Math.round((10 - absDist) * 2)),
                 willChange: 'transform, opacity',
               }}
-              className={`flex items-center justify-between rounded-xl select-none cursor-pointer pointer-events-auto transition-colors duration-150 ${
+              className={`flex items-center justify-between rounded-xl select-none cursor-pointer pointer-events-auto transition-colors duration-150 overflow-hidden ${
                 isCenter
                   ? 'bg-white shadow-[0_14px_36px_rgba(0,0,0,0.08)] border border-black/10 ring-1 ring-black/5'
                   : 'bg-white/80 border border-black/5 hover:bg-white hover:opacity-90'
@@ -395,11 +395,11 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
             >
               {/* Left Side: Title & Topic */}
               <div className="flex flex-col justify-center gap-1.5 flex-1 min-w-0 pr-3">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <h3
                     className={`font-semibold tracking-[-0.03em] truncate text-black font-sans ${
                       isCompact
-                        ? 'text-sm'
+                        ? 'text-[13px] leading-snug'
                         : isCenter
                         ? 'text-xl lg:text-2xl font-bold'
                         : 'text-base lg:text-lg'
@@ -408,16 +408,16 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
                     {note.title}
                   </h3>
                   {note.folderType === 'object' && (
-                    <span className="px-1.5 py-0.5 rounded text-[8px] font-mono uppercase bg-[#eeeeee] text-[#555555]">
+                    <span className="px-1.5 py-0.5 rounded text-[8px] font-mono uppercase bg-[#eeeeee] text-[#555555] shrink-0">
                       Obj
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 overflow-hidden flex-nowrap min-w-0">
                   {note.topic && (
                     <span
-                      className={`font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded ${
+                      className={`font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded shrink-0 whitespace-nowrap ${
                         isCenter ? 'bg-black text-white font-medium' : 'bg-[#f0f0f2] text-[#444444]'
                       }`}
                     >
@@ -425,20 +425,15 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
                     </span>
                   )}
                   {note.category && (
-                    <span className="font-mono text-[9px] uppercase tracking-wider text-[#888888]">
+                    <span className="font-mono text-[9px] uppercase tracking-wider text-[#888888] truncate shrink-0">
                       {note.category}
-                    </span>
-                  )}
-                  {note.cities && note.cities.length > 0 && (
-                    <span className="font-mono text-[9px] text-[#999999] hidden sm:inline">
-                      · {note.cities.join(', ')}
                     </span>
                   )}
                 </div>
               </div>
 
               {/* Right Side: tl;dr / Summary snippet */}
-              <div className="hidden sm:flex flex-col items-end text-right justify-center max-w-[32%] shrink-0">
+              <div className="hidden sm:flex flex-col items-end text-right justify-center max-w-[34%] shrink-0">
                 <p className="text-[11px] text-[#666666] line-clamp-2 font-sans leading-tight">
                   {note.tldr || note.info || note.summary || 'Click to view details'}
                 </p>
