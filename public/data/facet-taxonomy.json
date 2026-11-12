@@ -6,7 +6,7 @@
     },
     {
       "name": "Fashion Brand",
-      "count": 899
+      "count": 903
     },
     {
       "name": "Music Artist",
@@ -22,11 +22,11 @@
     },
     {
       "name": "Creative Director",
-      "count": 542
+      "count": 547
     },
     {
       "name": "Fashion Designer",
-      "count": 530
+      "count": 535
     },
     {
       "name": "Graphic Designer",
@@ -675,7 +675,7 @@
   ],
   "byCategory": {
     "Creative": {
-      "count": 1368,
+      "count": 1371,
       "subs": {
         "Design": {
           "count": 472,
@@ -712,16 +712,17 @@
           }
         },
         "Fashion": {
-          "count": 439,
+          "count": 442,
           "topics": {
-            "Fashion Brand": 173,
+            "Fashion Brand": 174,
             "Fashion Magazine": 92,
             "Fashion Retail": 31,
             "Fashion Director": 1,
             "Stylist": 31,
             "Fashion Critic": 4,
             "Hair Designer": 1,
-            "Fashion Designer": 67,
+            "Creative Director": 1,
+            "Fashion Designer": 68,
             "Fashion Design Brand": 9,
             "Fragrance Brand": 2,
             "Fashion Week": 1,
@@ -787,7 +788,7 @@
       },
       "topics": {
         "Graphic Design Studio": 19,
-        "Fashion Brand": 173,
+        "Fashion Brand": 174,
         "Creative Agency": 30,
         "Design Agency": 8,
         "Fashion Magazine": 92,
@@ -809,7 +810,7 @@
         "Production Designer": 2,
         "Stylist": 31,
         "Brand Designer": 5,
-        "Creative Director": 86,
+        "Creative Director": 87,
         "Type Foundry": 12,
         "Conceptual Designer": 1,
         "Creative Producer": 4,
@@ -827,7 +828,7 @@
         "Design Association": 6,
         "Art Direction Award": 6,
         "Product Designer": 3,
-        "Fashion Designer": 67,
+        "Fashion Designer": 68,
         "Architect": 18,
         "Interior Architecture Company": 1,
         "Brand Design Studio": 15,
@@ -984,7 +985,7 @@
       }
     },
     "Uncategorized": {
-      "count": 181,
+      "count": 180,
       "subs": {
         "Graphic Design": {
           "count": 1,
@@ -1245,7 +1246,7 @@
   },
   "byType": {
     "Organization": {
-      "count": 785,
+      "count": 786,
       "subs": {
         "Studio": {
           "count": 245,
@@ -1261,9 +1262,9 @@
           }
         },
         "Brand": {
-          "count": 185,
+          "count": 186,
           "topics": {
-            "Fashion Brand": 173,
+            "Fashion Brand": 174,
             "Fashion Design Brand": 9,
             "Fragrance Brand": 2
           }
@@ -1401,7 +1402,7 @@
       },
       "topics": {
         "Graphic Design Studio": 19,
-        "Fashion Brand": 173,
+        "Fashion Brand": 174,
         "Creative Agency": 30,
         "Design Agency": 8,
         "Design Studio": 130,
@@ -1463,7 +1464,7 @@
       }
     },
     "People": {
-      "count": 865,
+      "count": 867,
       "subs": {
         "Group": {
           "count": 80,
@@ -1491,13 +1492,13 @@
           }
         },
         "Director": {
-          "count": 180,
+          "count": 181,
           "topics": {
             "Video Director": 32,
             "Art Director": 28,
             "Visual Director": 4,
             "Fashion Director": 1,
-            "Creative Director": 86,
+            "Creative Director": 87,
             "Photography Director": 11,
             "D.O.P.": 1,
             "Film Director": 2,
@@ -1526,7 +1527,7 @@
           }
         },
         "Designer": {
-          "count": 180,
+          "count": 181,
           "topics": {
             "Graphic Designer": 76,
             "Type Designer": 4,
@@ -1537,7 +1538,7 @@
             "Hair Designer": 1,
             "Industrial Designer": 1,
             "Product Designer": 3,
-            "Fashion Designer": 67,
+            "Fashion Designer": 68,
             "Designer": 14,
             "Design Studio": 1
           }
@@ -1704,7 +1705,7 @@
         "Stylist": 31,
         "Brand Designer": 5,
         "Music Critic": 6,
-        "Creative Director": 86,
+        "Creative Director": 87,
         "Design Studio": 2,
         "Conceptual Designer": 1,
         "Creative Producer": 4,
@@ -1724,7 +1725,7 @@
         "Rapper": 11,
         "Editor": 23,
         "Product Designer": 3,
-        "Fashion Designer": 67,
+        "Fashion Designer": 68,
         "Architect": 18,
         "D.O.P.": 1,
         "Video Editor": 2,
@@ -2179,19 +2180,20 @@
         "Hair Designer": 1
       }
     },
+    "Fashion Design": {
+      "count": 78,
+      "subs": {},
+      "topics": {
+        "Creative Director": 1,
+        "Fashion Designer": 68,
+        "Fashion Design Brand": 9
+      }
+    },
     "Hip-Hop": {
       "count": 11,
       "subs": {},
       "topics": {
         "Rapper": 11
-      }
-    },
-    "Fashion Design": {
-      "count": 76,
-      "subs": {},
-      "topics": {
-        "Fashion Designer": 67,
-        "Fashion Design Brand": 9
       }
     },
     "Interior Architecture": {

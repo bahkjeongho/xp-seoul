@@ -1,14 +1,14 @@
 {
   "Creative": {
-    "count": 1368,
+    "count": 1371,
     "subCategories": {
       "Fashion": {
-        "count": 439,
+        "count": 442,
         "topics": {
-          "Fashion Brand": 173,
+          "Fashion Brand": 174,
           "Fashion Magazine": 92,
           "Fashion Retail": 31,
-          "Fashion Designer": 67,
+          "Fashion Designer": 68,
           "Stylist": 31,
           "Fashion Critic": 4,
           "Fragrance Brand": 2,
@@ -17,7 +17,8 @@
           "Fashion Platform": 3,
           "Luxury Goods Company": 1,
           "Fashion Director": 1,
-          "Hair Designer": 1
+          "Hair Designer": 1,
+          "Creative Director": 1
         }
       },
       "Visual Communication": {
@@ -254,7 +255,7 @@
     }
   },
   "Uncategorized": {
-    "count": 181,
+    "count": 180,
     "subCategories": {
       "Graphic Design": {
         "count": 1,
