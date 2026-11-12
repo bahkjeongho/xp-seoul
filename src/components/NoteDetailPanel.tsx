@@ -365,11 +365,12 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
                 />
               )}
 
-              {/* 3-Column Waterfall Portfolio Gallery */}
+              {/* Waterfall Portfolio Gallery (Desktop 3-col / Mobile 2-col) */}
               <PortfolioWaterfallGallery
                 items={portfolioData.items}
                 onNavigateWikilink={onNavigateWikilink}
                 onSelectHashtag={onSelectHashtag}
+                isMobile={isMobile}
               />
 
               {/* After Portfolio Content (People, Interview, etc.) */}
