@@ -18,11 +18,14 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const cardStep = isCompact ? 72 : 112;
 
-  // continuous scroll position (in pixels)
+  // Continuous scroll position (in pixels)
   // scrollPos = activeIndex * cardStep when centered
   const [scrollPos, setScrollPos] = useState<number>(0);
   const scrollPosRef = useRef<number>(0);
   scrollPosRef.current = scrollPos;
+
+  // Target scroll position for buttery smooth wheel lerp and snapping
+  const targetPosRef = useRef<number>(0);
 
   // Track active center note index
   const activeIndex = Math.max(
@@ -36,6 +39,7 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
       const idx = notes.findIndex((n) => n.id === selectedNote.id);
       if (idx !== -1) {
         const targetPos = idx * cardStep;
+        targetPosRef.current = targetPos;
         scrollPosRef.current = targetPos;
         setScrollPos(targetPos);
       }
@@ -46,6 +50,7 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
   useEffect(() => {
     const maxPos = Math.max(0, (notes.length - 1) * cardStep);
     if (scrollPosRef.current > maxPos) {
+      targetPosRef.current = maxPos;
       scrollPosRef.current = maxPos;
       setScrollPos(maxPos);
     }
@@ -55,6 +60,7 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
   const animFrameRef = useRef<number | null>(null);
   const velocityRef = useRef<number>(0);
   const isDraggingRef = useRef<boolean>(false);
+  const totalDragDistRef = useRef<number>(0);
 
   // Smooth Snap Animation to Nearest Card
   const snapToNearest = useCallback(() => {
@@ -63,11 +69,13 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
     const maxPos = Math.max(0, (notes.length - 1) * cardStep);
     const targetIdx = Math.max(0, Math.min(notes.length - 1, Math.round(scrollPosRef.current / cardStep)));
     const targetPos = targetIdx * cardStep;
+    targetPosRef.current = targetPos;
 
     const animateSnap = () => {
       const diff = targetPos - scrollPosRef.current;
-      if (Math.abs(diff) < 0.5) {
+      if (Math.abs(diff) < 0.4) {
         scrollPosRef.current = targetPos;
+        targetPosRef.current = targetPos;
         setScrollPos(targetPos);
         animFrameRef.current = null;
         return;
@@ -87,7 +95,7 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
 
       // Clamp initial velocity
-      const maxVel = 45;
+      const maxVel = 48;
       velocityRef.current = Math.sign(initialVelocity) * Math.min(maxVel, Math.abs(initialVelocity));
 
       const friction = 0.94;
@@ -99,17 +107,18 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
 
         // Over-scroll boundary resistance
         if (scrollPosRef.current < 0) {
-          velocityRef.current *= 0.7;
+          velocityRef.current *= 0.68;
           scrollPosRef.current += velocityRef.current;
-          if (scrollPosRef.current < -80) scrollPosRef.current = -80;
+          if (scrollPosRef.current < -70) scrollPosRef.current = -70;
         } else if (scrollPosRef.current > maxPos) {
-          velocityRef.current *= 0.7;
+          velocityRef.current *= 0.68;
           scrollPosRef.current += velocityRef.current;
-          if (scrollPosRef.current > maxPos + 80) scrollPosRef.current = maxPos + 80;
+          if (scrollPosRef.current > maxPos + 70) scrollPosRef.current = maxPos + 70;
         } else {
           scrollPosRef.current += velocityRef.current;
         }
 
+        targetPosRef.current = scrollPosRef.current;
         setScrollPos(scrollPosRef.current);
 
         if (Math.abs(velocityRef.current) > minVel) {
@@ -124,25 +133,49 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
     [notes.length, cardStep, snapToNearest]
   );
 
-  // Wheel / Trackpad listener with momentum and natural damping
+  // Buttery-smooth continuous LERP loop for desktop mouse wheel & trackpad
+  const startLerp = useCallback(() => {
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+
+    const tick = () => {
+      const diff = targetPosRef.current - scrollPosRef.current;
+      if (Math.abs(diff) < 0.3) {
+        scrollPosRef.current = targetPosRef.current;
+        setScrollPos(targetPosRef.current);
+        animFrameRef.current = null;
+        return;
+      }
+      // Silky smooth dampening factor for 60/120Hz displays
+      scrollPosRef.current += diff * 0.14;
+      setScrollPos(scrollPosRef.current);
+      animFrameRef.current = requestAnimationFrame(tick);
+    };
+
+    animFrameRef.current = requestAnimationFrame(tick);
+  }, []);
+
+  // Desktop Wheel handler with continuous lerp
   const wheelTimeoutRef = useRef<any>(null);
-  const handleWheel = useCallback(
-    (e: React.WheelEvent) => {
+  const handleWheelNative = useCallback(
+    (e: WheelEvent) => {
       e.preventDefault();
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
 
       const maxPos = Math.max(0, (notes.length - 1) * cardStep);
-      // Natural 1:1 scroll feel with bounds protection
-      const nextPos = scrollPosRef.current + e.deltaY * 0.85;
-      scrollPosRef.current = Math.max(-50, Math.min(maxPos + 50, nextPos));
-      setScrollPos(scrollPosRef.current);
+      // Fluid accumulation onto targetPos
+      const nextTarget = targetPosRef.current + e.deltaY * 0.72;
+      targetPosRef.current = Math.max(-40, Math.min(maxPos + 40, nextTarget));
+      startLerp();
 
       clearTimeout(wheelTimeoutRef.current);
       wheelTimeoutRef.current = setTimeout(() => {
-        snapToNearest();
-      }, 120);
+        // Snap smoothly to nearest card on wheel settle
+        const nearestIdx = Math.max(0, Math.min(notes.length - 1, Math.round(targetPosRef.current / cardStep)));
+        targetPosRef.current = nearestIdx * cardStep;
+        startLerp();
+      }, 90);
     },
-    [cardStep, notes.length, snapToNearest]
+    [cardStep, notes.length, startLerp]
   );
 
   // Mobile Touch Gestures: Real-time 1:1 tracking and physics-based flick momentum
@@ -151,67 +184,93 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
   const touchStartPos = useRef<number>(0);
   const touchHistory = useRef<Array<{ y: number; time: number }>>([]);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    isDraggingRef.current = true;
+  // Bind native non-passive touch listeners to container for guaranteed 1:1 touch response
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-    const y = e.touches[0].clientY;
-    touchStartY.current = y;
-    touchLastY.current = y;
-    touchStartPos.current = scrollPosRef.current;
+    const onTouchStart = (e: TouchEvent) => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      isDraggingRef.current = true;
+      totalDragDistRef.current = 0;
 
-    const now = performance.now();
-    touchHistory.current = [{ y, time: now }];
-  };
+      const y = e.touches[0].clientY;
+      touchStartY.current = y;
+      touchLastY.current = y;
+      touchStartPos.current = scrollPosRef.current;
+      targetPosRef.current = scrollPosRef.current;
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDraggingRef.current) return;
-    const y = e.touches[0].clientY;
-    const now = performance.now();
-    const dy = touchStartY.current - y;
+      const now = performance.now();
+      touchHistory.current = [{ y, time: now }];
+    };
 
-    touchHistory.current.push({ y, time: now });
-    while (touchHistory.current.length > 3 && now - touchHistory.current[0].time > 100) {
-      touchHistory.current.shift();
-    }
+    const onTouchMove = (e: TouchEvent) => {
+      if (!isDraggingRef.current) return;
+      if (e.cancelable) e.preventDefault();
 
-    const maxPos = Math.max(0, (notes.length - 1) * cardStep);
-    let target = touchStartPos.current + dy;
+      const y = e.touches[0].clientY;
+      const now = performance.now();
+      const dy = touchStartY.current - y;
+      totalDragDistRef.current += Math.abs(y - touchLastY.current);
+      touchLastY.current = y;
 
-    // Rubber-band resistance on pull beyond ends
-    if (target < 0) {
-      target = target * 0.35;
-    } else if (target > maxPos) {
-      target = maxPos + (target - maxPos) * 0.35;
-    }
-
-    scrollPosRef.current = target;
-    setScrollPos(target);
-    touchLastY.current = y;
-  };
-
-  const handleTouchEnd = () => {
-    if (!isDraggingRef.current) return;
-    isDraggingRef.current = false;
-
-    const now = performance.now();
-    const recent = touchHistory.current.filter((p) => now - p.time <= 100);
-
-    if (recent.length >= 2) {
-      const first = recent[0];
-      const last = recent[recent.length - 1];
-      const dt = Math.max(12, last.time - first.time);
-      // Velocity in px/frame (~16ms)
-      const vy = ((first.y - last.y) / dt) * 16;
-
-      if (Math.abs(vy) > 1.5) {
-        startMomentum(vy * 1.3);
-        return;
+      touchHistory.current.push({ y, time: now });
+      while (touchHistory.current.length > 4 && now - touchHistory.current[0].time > 120) {
+        touchHistory.current.shift();
       }
-    }
 
-    snapToNearest();
-  };
+      const maxPos = Math.max(0, (notes.length - 1) * cardStep);
+      let target = touchStartPos.current + dy;
+
+      // Rubber-band resistance on pull beyond ends
+      if (target < 0) {
+        target = target * 0.35;
+      } else if (target > maxPos) {
+        target = maxPos + (target - maxPos) * 0.35;
+      }
+
+      targetPosRef.current = target;
+      scrollPosRef.current = target;
+      setScrollPos(target);
+    };
+
+    const onTouchEnd = () => {
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+
+      const now = performance.now();
+      const recent = touchHistory.current.filter((p) => now - p.time <= 120);
+
+      if (recent.length >= 2) {
+        const first = recent[0];
+        const last = recent[recent.length - 1];
+        const dt = Math.max(14, last.time - first.time);
+        // Velocity in px/frame (~16ms)
+        const vy = ((first.y - last.y) / dt) * 16;
+
+        if (Math.abs(vy) > 1.2) {
+          startMomentum(vy * 1.35);
+          return;
+        }
+      }
+
+      snapToNearest();
+    };
+
+    container.addEventListener('touchstart', onTouchStart, { passive: true });
+    container.addEventListener('touchmove', onTouchMove, { passive: false });
+    container.addEventListener('touchend', onTouchEnd, { passive: true });
+    container.addEventListener('touchcancel', onTouchEnd, { passive: true });
+    container.addEventListener('wheel', handleWheelNative, { passive: false });
+
+    return () => {
+      container.removeEventListener('touchstart', onTouchStart);
+      container.removeEventListener('touchmove', onTouchMove);
+      container.removeEventListener('touchend', onTouchEnd);
+      container.removeEventListener('touchcancel', onTouchEnd);
+      container.removeEventListener('wheel', handleWheelNative);
+    };
+  }, [notes.length, cardStep, handleWheelNative, startMomentum, snapToNearest]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -221,13 +280,13 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         const nextIdx = Math.min(notes.length - 1, activeIndex + 1);
-        scrollPosRef.current = nextIdx * cardStep;
-        setScrollPos(scrollPosRef.current);
+        targetPosRef.current = nextIdx * cardStep;
+        startLerp();
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         const prevIdx = Math.max(0, activeIndex - 1);
-        scrollPosRef.current = prevIdx * cardStep;
-        setScrollPos(scrollPosRef.current);
+        targetPosRef.current = prevIdx * cardStep;
+        startLerp();
       } else if (e.key === 'Enter') {
         const current = notes[activeIndex];
         if (current) onSelectNote(current);
@@ -236,7 +295,7 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [notes, activeIndex, cardStep, onSelectNote]);
+  }, [notes, activeIndex, cardStep, onSelectNote, startLerp]);
 
   // Window radius for virtual rendering
   const windowRadius = 6;
@@ -257,11 +316,6 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
   return (
     <div
       ref={containerRef}
-      onWheel={handleWheel}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
       className="h-full w-full relative overflow-hidden flex flex-col items-center justify-center select-none touch-none bg-[#fbfbfb]"
       style={{ touchAction: 'none' }}
     >
@@ -307,8 +361,15 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
           return (
             <div
               key={note.id}
-              onClick={() => {
+              onClick={(e) => {
+                // If user dragged to scroll (> 6px), do NOT trigger click navigation!
+                if (totalDragDistRef.current > 6) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  return;
+                }
                 const targetPos = actualIndex * cardStep;
+                targetPosRef.current = targetPos;
                 scrollPosRef.current = targetPos;
                 setScrollPos(targetPos);
                 onSelectNote(note);

@@ -58,6 +58,11 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
 
   // Load complete note data from public/data/notes/<hash>.json
   useEffect(() => {
+    setFullNote(note);
+    if (!note.hash) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     fetch(`/data/notes/${note.hash}.json`)
       .then((res) => {
@@ -72,7 +77,7 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
         setFullNote(note);
         setIsLoading(false);
       });
-  }, [note.hash]);
+  }, [note.id, note.hash]);
 
   // Check if note contains a Portfolio section for Waterfall Gallery rendering
   const portfolioData = useMemo(() => {
@@ -194,9 +199,7 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
       exit={{ opacity: 0, x: isMobile ? 0 : 30 }}
       transition={{ type: 'spring', damping: 28, stiffness: 280 }}
       onClick={handleContainerClick}
-      className={`h-full bg-white flex flex-col overflow-hidden z-30 select-text ${
-        isMobile ? 'fixed inset-0 w-full' : 'flex-1'
-      }`}
+      className="flex-1 w-full h-full bg-white flex flex-col overflow-hidden z-30 select-text relative"
     >
       {/* Top Header Bar */}
       <div className="flex items-center justify-between px-6 lg:px-12 py-3.5 border-b border-[#eeeeee] bg-white/95 backdrop-blur sticky top-0 z-20">
@@ -215,11 +218,10 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
         </button>
       </div>
 
-      {/* Main Scrollable Canvas with Lenis integration */}
+      {/* Main Scrollable Canvas */}
       <div
         ref={scrollContainerRef}
         className={`flex-1 overflow-y-auto px-6 lg:px-12 py-8 flex flex-col items-center ${isMobile ? 'pb-28' : ''}`}
-        style={{ scrollBehavior: 'smooth' }}
       >
         <div className="w-full max-w-[1080px] flex flex-col gap-6">
 
@@ -355,7 +357,12 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
           </div>
 
           {/* (4) Full Markdown Body & Portfolio Waterfall Section */}
-          {portfolioData ? (
+          {isLoading && !fullNote.rawContent ? (
+            <div className="w-full py-20 flex flex-col items-center justify-center text-[#888888] gap-3">
+              <div className="w-6 h-6 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+              <span className="text-xs font-mono tracking-wider uppercase text-[#999999]">Loading note content...</span>
+            </div>
+          ) : portfolioData ? (
             <div className="w-full pt-2">
               {/* Before Portfolio Content (tl;dr, Info, Summary, iframes) */}
               {beforePortfolioHtml && (

@@ -595,8 +595,9 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
             </div>
 
             {/* Note Detail Panel (Full on Mobile, 1080px Canvas on Desktop) */}
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
               <NoteDetailPanel
+                key={selectedNote.id}
                 note={selectedNote}
                 knownTitles={knownTitles}
                 onClose={() => selectNoteWithHistory(null, true)}

@@ -33,6 +33,17 @@ export function useLenisScroll(
     };
     el.addEventListener('scroll', handleScroll, { passive: true });
 
+    // On mobile / touch screens, native momentum scrolling is superior and prevents touch lockups
+    const isMobileDevice = typeof window !== 'undefined' && (window.innerWidth < 768 || 'ontouchstart' in window);
+    if (isMobileDevice) {
+      return () => {
+        if (noteKey && el) {
+          noteScrollPositions.set(noteKey, el.scrollTop);
+        }
+        el.removeEventListener('scroll', handleScroll);
+      };
+    }
+
     import('lenis').then(({ default: Lenis }) => {
       if (!containerRef.current) return;
 
