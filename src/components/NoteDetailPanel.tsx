@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { X, ExternalLink, Globe, MapPin, Music, Radio, Link as LinkIcon } from 'lucide-react';
 import { renderFullNoteHtml } from '../utils/markdown';
 import { getAllExternalLinks, type ExternalLinkItem } from '../utils/links';
+import { extractPortfolioSection } from '../utils/portfolio';
+import { PortfolioWaterfallGallery } from './PortfolioWaterfallGallery';
 import { useLenisScroll } from '../hooks/useLenisScroll';
 
 interface NoteDetailPanelProps {
@@ -72,10 +74,26 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
       });
   }, [note.hash]);
 
-  // Render markdown with full video embed & wikilink resolution
+  // Check if note contains a Portfolio section for Waterfall Gallery rendering
+  const portfolioData = useMemo(() => {
+    return extractPortfolioSection(fullNote.rawContent || '');
+  }, [fullNote.rawContent]);
+
+  const beforePortfolioHtml = useMemo(() => {
+    if (!portfolioData) return '';
+    return renderFullNoteHtml(portfolioData.beforeMarkdown, knownTitles);
+  }, [portfolioData, knownTitles]);
+
+  const afterPortfolioHtml = useMemo(() => {
+    if (!portfolioData) return '';
+    return renderFullNoteHtml(portfolioData.afterMarkdown, knownTitles);
+  }, [portfolioData, knownTitles]);
+
+  // Standard fallback markdown if no portfolio section
   const htmlContent = useMemo(() => {
+    if (portfolioData) return '';
     return renderFullNoteHtml(fullNote.rawContent || '', knownTitles);
-  }, [fullNote.rawContent, knownTitles]);
+  }, [portfolioData, fullNote.rawContent, knownTitles]);
 
   // External Links (IG, Website, URL, Wikis)
   const externalLinks = useMemo(() => {
@@ -336,11 +354,38 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
             )}
           </div>
 
-          {/* (4) Full Markdown Body (Callouts, Headings, Iframes, Video Players) */}
-          <div
-            className="prose-obsidian w-full pt-2"
-            dangerouslySetInnerHTML={{ __html: htmlContent }}
-          />
+          {/* (4) Full Markdown Body & Portfolio Waterfall Section */}
+          {portfolioData ? (
+            <div className="w-full pt-2">
+              {/* Before Portfolio Content (tl;dr, Info, Summary, iframes) */}
+              {beforePortfolioHtml && (
+                <div
+                  className="prose-obsidian w-full"
+                  dangerouslySetInnerHTML={{ __html: beforePortfolioHtml }}
+                />
+              )}
+
+              {/* 3-Column Waterfall Portfolio Gallery */}
+              <PortfolioWaterfallGallery
+                items={portfolioData.items}
+                onNavigateWikilink={onNavigateWikilink}
+                onSelectHashtag={onSelectHashtag}
+              />
+
+              {/* After Portfolio Content (People, Interview, etc.) */}
+              {afterPortfolioHtml && (
+                <div
+                  className="prose-obsidian w-full"
+                  dangerouslySetInnerHTML={{ __html: afterPortfolioHtml }}
+                />
+              )}
+            </div>
+          ) : (
+            <div
+              className="prose-obsidian w-full pt-2"
+              dangerouslySetInnerHTML={{ __html: htmlContent }}
+            />
+          )}
         </div>
       </div>
 
