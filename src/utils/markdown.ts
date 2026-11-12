@@ -148,6 +148,15 @@ function processWikilinksAndImages(markdownText: string, knownTitles?: Set<strin
     }
   });
 
+  // 4. Transform Obsidian Inline Hashtags (#Tag or #Tag-Name) into clickable filter buttons
+  // Match #Tag that is preceded by start of line or whitespace, and not part of hex color (#fff) or HTML header (# Heading)
+  text = text.replace(/(^|\s)#([a-zA-Z가-힣0-9_-]+)/g, (match, prefix, tag) => {
+    // Skip if it looks like markdown header (# Heading)
+    if (/^\s*#+\s*$/.test(match)) return match;
+    const cleanTag = tag.trim();
+    return `${prefix}<button type="button" data-hashtag="${cleanTag}" class="hashtag-pill inline-flex items-center gap-0.5 font-mono text-[11px] font-medium text-[#444444] bg-[#f5f5f7] hover:bg-black hover:text-white px-2 py-0.5 rounded-md border border-black/10 hover:border-black transition-all cursor-pointer select-none align-baseline leading-normal"><span>#</span><span>${cleanTag}</span></button>`;
+  });
+
   return text;
 }
 

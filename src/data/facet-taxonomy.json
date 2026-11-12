@@ -613,6 +613,10 @@
       "count": 4
     },
     {
+      "name": "Game Developer",
+      "count": 4
+    },
+    {
       "name": "Music Award",
       "count": 4
     },
@@ -756,6 +760,7 @@
             "Production House": 1,
             "Executive Producer": 1,
             "Video Channel": 2,
+            "Game Developer": 1,
             "Animation Studio": 1
           }
         },
@@ -852,6 +857,7 @@
         "Video Channel": 2,
         "Design Director": 1,
         "Luxury Goods Company": 1,
+        "Game Developer": 1,
         "Web Design Agency": 1,
         "Architecture Prize": 2,
         "Creative Team": 1,
@@ -1497,6 +1503,7 @@
             "Filmmaker": 4,
             "Design Director": 1,
             "Editorial Director": 2,
+            "Game Developer": 1,
             "Sound Director": 1
           }
         },
@@ -1736,6 +1743,7 @@
         "Executive Producer": 1,
         "Design Director": 1,
         "Editorial Director": 2,
+        "Game Developer": 1,
         "Sound Director": 1,
         "Rock Band": 2,
         "Moving Image Critic": 1

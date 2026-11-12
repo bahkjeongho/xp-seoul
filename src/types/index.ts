@@ -12,6 +12,7 @@ export interface NoteItem {
   subType: string;
   topic: string;
   topics: string[];
+  tags?: string[];
   ig: string;
   website: string;
   genres?: string[];

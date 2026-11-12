@@ -8,6 +8,7 @@ interface HistoryLensStreamProps {
   selectedNote: NoteItem | null;
   onSelectNote: (note: NoteItem) => void;
   mode?: 'top' | 'center';
+  hideHeader?: boolean;
 }
 
 export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
@@ -15,6 +16,7 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
   selectedNote,
   onSelectNote,
   mode = 'top',
+  hideHeader = false,
 }) => {
   const [activeIndex, setActiveIndex] = useState<number>(0);
   const scrollTimeoutRef = useRef<any>(null);
@@ -127,7 +129,7 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
           </span>
           <span className="text-[9px] text-[#aaaaaa]">Swipe or tap to jump</span>
         </div>
-      ) : (
+      ) : !hideHeader ? (
         // Desktop Top Mode Header Bar
         <div className="px-4 py-2 border-b border-[#eeeeee] flex items-center justify-between shrink-0 bg-white/80 backdrop-blur-sm z-30">
           <span className="font-mono text-[10px] uppercase tracking-wider text-[#888888] font-bold flex items-center gap-1.5">
@@ -158,7 +160,7 @@ export const HistoryLensStream: React.FC<HistoryLensStreamProps> = ({
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Center Target Frame in Mobile Center Mode */}
       {isCenterMode && (

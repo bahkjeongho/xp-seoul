@@ -11,6 +11,7 @@ interface NoteDetailPanelProps {
   knownTitles?: Set<string>;
   onClose: () => void;
   onNavigateWikilink: (target: string) => void;
+  onSelectHashtag?: (tag: string) => void;
   onShowUnresolvedToast?: (target: string) => void;
   isMobile?: boolean;
 }
@@ -46,6 +47,7 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
   knownTitles,
   onClose,
   onNavigateWikilink,
+  onSelectHashtag,
   onShowUnresolvedToast,
   isMobile = false,
 }) => {
@@ -84,8 +86,18 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
     });
   }, [fullNote]);
 
-  // Handle click delegation on wikilinks
+  // Handle click delegation on wikilinks & hashtags
   const handleContainerClick = (e: React.MouseEvent) => {
+    const hashtagEl = (e.target as HTMLElement).closest('[data-hashtag]') as HTMLElement | null;
+    if (hashtagEl) {
+      e.preventDefault();
+      const tag = hashtagEl.getAttribute('data-hashtag');
+      if (tag && onSelectHashtag) {
+        onSelectHashtag(tag);
+      }
+      return;
+    }
+
     const unresolvedEl = (e.target as HTMLElement).closest('[data-unresolved-wikilink]') as HTMLElement | null;
     if (unresolvedEl) {
       e.preventDefault();

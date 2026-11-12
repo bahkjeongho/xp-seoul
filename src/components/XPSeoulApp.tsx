@@ -46,6 +46,17 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
   // Visited History Stack (last 10 notes)
   const [historyNotes, setHistoryNotes] = useState<NoteItem[]>([]);
 
+  // Backlinks (Linked Mentions) Index
+  const [backlinks, setBacklinks] = useState<Record<string, { sourceId: string; context: string }[]> | null>(null);
+
+  // Load backlinks index on client
+  useEffect(() => {
+    fetch('/data/backlinks.json')
+      .then((r) => r.json())
+      .then((data) => setBacklinks(data))
+      .catch((err) => console.error('Failed to load backlinks:', err));
+  }, []);
+
   // Toast notification for unresolved notes
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -266,6 +277,26 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
     showUnresolvedToast(target);
   };
 
+  // Hashtag click handler: filters both MiddleNavColumn Filter Stream and main stream
+  const handleSelectHashtag = useCallback((tag: string) => {
+    if (!tag) return;
+    const cleanTag = tag.replace(/^#/, '').trim();
+    if (!cleanTag) return;
+
+    // 1. Set selectedTopic so MiddleNavColumn shows Filter Stream (#Tag)
+    setSelectedTopic(cleanTag);
+
+    // 2. Set activeFilterSlots for main stream top filter bar
+    setActiveFilterSlots([
+      {
+        id: `tag-${cleanTag.toLowerCase()}`,
+        axis: 'topic',
+        topic: cleanTag,
+        label: `#${cleanTag}`,
+      },
+    ]);
+  }, []);
+
   // High performance filtering with Stacked (Union / OR) Multi-Facet Filters & Sorting
   const filteredNotes = useMemo(() => {
     let result = notes;
@@ -292,13 +323,34 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
           if (slot.country && (!note.countries || !note.countries.includes(slot.country))) match = false;
           if (slot.city && (!note.cities || !note.cities.includes(slot.city))) match = false;
           if (slot.topic) {
+            const tNorm = slot.topic.replace(/^#/, '').toLowerCase();
+            const tNoHyphen = tNorm.replace(/-/g, ' ');
             const hasTopic =
-              note.topic === slot.topic ||
-              (note.topics && note.topics.includes(slot.topic));
+              (note.topic && (note.topic.toLowerCase() === tNorm || note.topic.toLowerCase() === tNoHyphen)) ||
+              (note.topics && note.topics.some((t) => t.toLowerCase() === tNorm || t.toLowerCase() === tNoHyphen)) ||
+              (note.tags && note.tags.some((t) => t.toLowerCase() === tNorm || t.toLowerCase() === tNoHyphen));
             if (!hasTopic) match = false;
           }
           return match;
         });
+      });
+    }
+
+    // Filter by hierarchical / Filter Stream category & subCategory & topic/tag
+    if (selectedCategory) {
+      result = result.filter((n) => n.category === selectedCategory);
+    }
+    if (selectedSubCategory) {
+      result = result.filter((n) => n.subCategory === selectedSubCategory);
+    }
+    if (selectedTopic) {
+      const tNorm = selectedTopic.replace(/^#/, '').toLowerCase();
+      const tNoHyphen = tNorm.replace(/-/g, ' ');
+      result = result.filter((n) => {
+        if (n.topic && (n.topic.toLowerCase() === tNorm || n.topic.toLowerCase() === tNoHyphen)) return true;
+        if (n.topics && n.topics.some((t) => t.toLowerCase() === tNorm || t.toLowerCase() === tNoHyphen)) return true;
+        if (n.tags && n.tags.some((t) => t.toLowerCase() === tNorm || t.toLowerCase() === tNoHyphen)) return true;
+        return false;
       });
     }
 
@@ -310,6 +362,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
           (n.aliases && n.aliases.some((a) => a.toLowerCase().includes(q))) ||
           (n.topic && n.topic.toLowerCase().includes(q)) ||
           (n.tldr && n.tldr.toLowerCase().includes(q)) ||
+          (n.tags && n.tags.some((t) => t.toLowerCase().includes(q))) ||
           (n.cities && n.cities.some((c) => c.toLowerCase().includes(q))) ||
           (n.countries && n.countries.some((c) => c.toLowerCase().includes(q)))
         );
@@ -327,7 +380,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
     }
 
     return result;
-  }, [notes, activeFilterSlots, searchQuery, sortOrder, randomRanks]);
+  }, [notes, activeFilterSlots, selectedCategory, selectedSubCategory, selectedTopic, searchQuery, sortOrder, randomRanks]);
 
   // Keyboard shortcut: ESC to close detail panel
   useEffect(() => {
@@ -522,8 +575,10 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
             <div className="hidden md:flex h-full shrink-0">
               <MiddleNavColumn
                 notes={filteredNotes}
+                allNotes={notes}
                 selectedNote={selectedNote}
                 historyNotes={historyNotes}
+                backlinks={backlinks}
                 onSelectNote={(note) => selectNoteWithHistory(note, true)}
                 isCompact={true}
                 onGoHome={() => selectNoteWithHistory(null, true)}
@@ -546,6 +601,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
                 knownTitles={knownTitles}
                 onClose={() => selectNoteWithHistory(null, true)}
                 onNavigateWikilink={handleNavigateWikilink}
+                onSelectHashtag={handleSelectHashtag}
                 onShowUnresolvedToast={showUnresolvedToast}
                 isMobile={isMobile}
               />

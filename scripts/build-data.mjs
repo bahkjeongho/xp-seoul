@@ -219,6 +219,13 @@ for (const file of wikiFiles) {
     const cities = parseFrontmatterValue(data['Cities']);
     const countries = parseFrontmatterValue(data['Countries']);
 
+    // Extract tags from frontmatter and inline hashtags
+    const frontmatterTags = parseFrontmatterValue(data['tags'] || data['Tags'] || data['tag']);
+    const inlineTags = Array.from(content.matchAll(/(?:^|\s)#([a-zA-Z가-힣0-9_-]+)/g))
+      .map(m => m[1].trim())
+      .filter(t => !/^[0-9]+$/.test(t));
+    const tags = Array.from(new Set([...frontmatterTags, ...inlineTags]));
+
     // Capture ALL frontmatter attributes dynamically so nothing is hidden
     const allProps = {};
     for (const [k, v] of Object.entries(data)) {
@@ -239,6 +246,7 @@ for (const file of wikiFiles) {
       subType,
       topic,
       topics,
+      tags,
       ig,
       website,
       genres,
@@ -268,7 +276,7 @@ notes.sort((a, b) => a.title.localeCompare(b.title, 'ko'));
 console.log(`Successfully processed ${notes.length} notes.`);
 
 // Write light index
-const lightNotes = notes.map(({ id, title, hash, folderType, aliases, category, subCategory, field, subField, type, subType, topic, topics, ig, website, tldr, info, cities, countries, unlisted }) => ({
+const lightNotes = notes.map(({ id, title, hash, folderType, aliases, category, subCategory, field, subField, type, subType, topic, topics, tags, ig, website, tldr, info, cities, countries, unlisted }) => ({
   id,
   title,
   hash,
@@ -282,6 +290,7 @@ const lightNotes = notes.map(({ id, title, hash, folderType, aliases, category, 
   subType,
   topic,
   topics,
+  tags: tags || [],
   ig,
   website,
   tldr,
@@ -405,6 +414,41 @@ if (blogDir && fs.existsSync(blogDir)) {
 fs.writeFileSync(path.join(SRC_DATA_DIR, 'blog-posts.json'), JSON.stringify(blogPosts, null, 2));
 fs.writeFileSync(path.join(PUBLIC_DATA_DIR, 'blog-posts.json'), JSON.stringify(blogPosts, null, 2));
 console.log(`Parsed ${blogPosts.length} blog posts from C_Blog.`);
+
+// Extract Linked Mentions (Backlinks Index) across all notes
+console.log('Generating Linked Mentions (Backlinks Index)...');
+const backlinksMap = {};
+for (const note of notes) {
+  const sourceId = note.id;
+  const rawContent = note.rawContent || '';
+  const lines = rawContent.split('\n');
+  for (let line of lines) {
+    line = line.trim();
+    if (!line) continue;
+    const matches = line.matchAll(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g);
+    for (const match of matches) {
+      const rawTarget = match[1].trim();
+      const target = rawTarget.split('#')[0].trim();
+      if (!target) continue;
+      const targetKey = target.toLowerCase();
+      // Skip self backlink
+      if (targetKey === sourceId.toLowerCase()) continue;
+      if (!backlinksMap[targetKey]) {
+        backlinksMap[targetKey] = [];
+      }
+      const existing = backlinksMap[targetKey].find(b => b.sourceId === sourceId && b.context === line);
+      if (!existing) {
+        backlinksMap[targetKey].push({
+          sourceId,
+          context: line.slice(0, 200),
+        });
+      }
+    }
+  }
+}
+fs.writeFileSync(path.join(SRC_DATA_DIR, 'backlinks.json'), JSON.stringify(backlinksMap));
+fs.writeFileSync(path.join(PUBLIC_DATA_DIR, 'backlinks.json'), JSON.stringify(backlinksMap));
+console.log(`Generated backlinks for ${Object.keys(backlinksMap).length} target keys.`);
 
 console.log(`Facet summary: ${Object.keys(byCategory).length} categories, ${Object.keys(byType).length} types, ${Object.keys(byField).length} fields, ${Object.keys(byRegion).length} countries/regions, ${allTopics.length} topics.`);
 console.log('Finished writing all data files to src/data and public/data!');
