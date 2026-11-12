@@ -1943,7 +1943,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 60, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-            className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[110] bg-white/85 backdrop-blur-xl text-black rounded-full px-4 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.12)] flex items-center gap-3 border border-black/10 select-none font-sans"
+            style={{ zIndex: 9999 }}
+            className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto bg-white/95 backdrop-blur-xl text-black rounded-full px-4 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.16)] flex items-center gap-3 border border-black/10 select-none font-sans"
           >
             {/* 1. Left: Filter Button */}
             <button
