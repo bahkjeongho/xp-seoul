@@ -1,6 +1,6 @@
 {
   "Creative": {
-    "count": 1367,
+    "count": 1368,
     "subCategories": {
       "Fashion": {
         "count": 439,
@@ -74,9 +74,9 @@
         }
       },
       "Video": {
-        "count": 54,
+        "count": 55,
         "topics": {
-          "Video Director": 31,
+          "Video Director": 32,
           "Video Production": 6,
           "D.O.P.": 1,
           "Video Editor": 2,
@@ -254,7 +254,7 @@
     }
   },
   "Uncategorized": {
-    "count": 182,
+    "count": 181,
     "subCategories": {
       "Graphic Design": {
         "count": 1,

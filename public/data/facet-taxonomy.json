@@ -82,7 +82,7 @@
     },
     {
       "name": "Video Director",
-      "count": 143
+      "count": 154
     },
     {
       "name": "Graphic Design Studio",
@@ -671,7 +671,7 @@
   ],
   "byCategory": {
     "Creative": {
-      "count": 1367,
+      "count": 1368,
       "subs": {
         "Design": {
           "count": 472,
@@ -745,9 +745,9 @@
           }
         },
         "Video": {
-          "count": 54,
+          "count": 55,
           "topics": {
-            "Video Director": 31,
+            "Video Director": 32,
             "Video Production": 6,
             "Video Producer": 3,
             "D.O.P.": 1,
@@ -789,7 +789,7 @@
         "Fashion Retail": 31,
         "Design Studio": 132,
         "Creative Studio": 57,
-        "Video Director": 31,
+        "Video Director": 32,
         "Design Award": 6,
         "Design Festival": 8,
         "Architecture Firm": 16,
@@ -978,7 +978,7 @@
       }
     },
     "Uncategorized": {
-      "count": 182,
+      "count": 181,
       "subs": {
         "Graphic Design": {
           "count": 1,
@@ -988,7 +988,7 @@
         }
       },
       "topics": {
-        "Video Director": 6,
+        "Video Director": 5,
         "D.O.P.": 2,
         "Performance Director": 1,
         "Creative Studio": 3,
@@ -1456,7 +1456,7 @@
       }
     },
     "People": {
-      "count": 861,
+      "count": 862,
       "subs": {
         "Group": {
           "count": 80,
@@ -1484,9 +1484,9 @@
           }
         },
         "Director": {
-          "count": 179,
+          "count": 180,
           "topics": {
-            "Video Director": 31,
+            "Video Director": 32,
             "Art Director": 28,
             "Visual Director": 4,
             "Fashion Director": 1,
@@ -1680,7 +1680,7 @@
         "K-Pop Group": 79,
         "Music Artist": 154,
         "Music Producer": 9,
-        "Video Director": 31,
+        "Video Director": 32,
         "Publisher": 4,
         "Culture Critic": 2,
         "Graphic Designer": 76,
@@ -2047,6 +2047,20 @@
       "subs": {},
       "topics": {
         "Fashion Retail": 31
+      }
+    },
+    "Promotional Video": {
+      "count": 4,
+      "subs": {
+        "Music Video": {
+          "count": 4,
+          "topics": {
+            "Video Director": 4
+          }
+        }
+      },
+      "topics": {
+        "Video Director": 4
       }
     },
     "Digital Design": {

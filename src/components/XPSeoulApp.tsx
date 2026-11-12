@@ -164,6 +164,10 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
   // Browser Back/Forward (popstate) listener
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
+      // If popstate is handled by blog or other sub-view, don't reset wiki note
+      if (e.state && 'blogPostId' in e.state) {
+        return;
+      }
       const noteId = e.state?.noteId;
       if (noteId) {
         const found = notes.find((n) => n.id === noteId);

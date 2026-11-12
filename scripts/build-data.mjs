@@ -380,5 +380,31 @@ const facetTaxonomy = {
 fs.writeFileSync(path.join(SRC_DATA_DIR, 'facet-taxonomy.json'), JSON.stringify(facetTaxonomy, null, 2));
 fs.writeFileSync(path.join(PUBLIC_DATA_DIR, 'facet-taxonomy.json'), JSON.stringify(facetTaxonomy, null, 2));
 
+// Parse C_Blog from Obsidian vault directly without any artificial mock data
+const blogDir = findSubDir(VAULT_CONTENT_DIR, ['C_Blog']);
+const blogPosts = [];
+if (blogDir && fs.existsSync(blogDir)) {
+  const blogFiles = fs.readdirSync(blogDir).filter(f => f.endsWith('.md'));
+  for (const f of blogFiles) {
+    const full = path.join(blogDir, f);
+    const raw = fs.readFileSync(full, 'utf-8');
+    const stat = fs.statSync(full);
+    const { data, content } = parseYamlFrontmatter(raw);
+    const title = f.replace(/\.md$/, '');
+    const date = data.date || data.Date || stat.mtime.toISOString().slice(0, 10).replace(/-/g, '.');
+    const tags = parseFrontmatterValue(data.tag || data.tags || data.Tag || data.Tags);
+    blogPosts.push({
+      id: title,
+      title,
+      date,
+      tags,
+      content: content.trim(),
+    });
+  }
+}
+fs.writeFileSync(path.join(SRC_DATA_DIR, 'blog-posts.json'), JSON.stringify(blogPosts, null, 2));
+fs.writeFileSync(path.join(PUBLIC_DATA_DIR, 'blog-posts.json'), JSON.stringify(blogPosts, null, 2));
+console.log(`Parsed ${blogPosts.length} blog posts from C_Blog.`);
+
 console.log(`Facet summary: ${Object.keys(byCategory).length} categories, ${Object.keys(byType).length} types, ${Object.keys(byField).length} fields, ${Object.keys(byRegion).length} countries/regions, ${allTopics.length} topics.`);
 console.log('Finished writing all data files to src/data and public/data!');
