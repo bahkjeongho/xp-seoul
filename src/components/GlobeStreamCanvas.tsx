@@ -432,7 +432,11 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
 
     // 2. Mouse Handlers (Desktop)
     const onMouseDown = (e: MouseEvent) => {
-      if ((e.target as HTMLElement).closest('.interactive-control')) return;
+      if ((e.target as HTMLElement).closest('.interactive-control, input, button, a')) return;
+      if (e.button !== 0) return; // Only primary mouse button
+
+      e.preventDefault();
+
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
@@ -450,6 +454,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       targetPanRef.current = { ...panRef.current };
       mouseHistoryRef.current = [{ x: e.clientX, y: e.clientY, time: now }];
       velocityRef.current = { x: 0, y: 0 };
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'grabbing';
     };
 
     const onMouseMove = (e: MouseEvent) => {
@@ -481,6 +487,8 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
     const onMouseUp = () => {
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
 
       if (dragRafIdRef.current !== null) {
         cancelAnimationFrame(dragRafIdRef.current);
@@ -489,7 +497,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
       setPan(targetPanRef.current);
 
       const now = performance.now();
-      const recent = mouseHistoryRef.current.filter((p) => now - p.time <= 100);
+      const recent = mouseHistoryRef.current.filter((p) => now - p.time <= 120);
       if (recent.length >= 2) {
         const first = recent[0];
         const last = recent[recent.length - 1];
@@ -497,7 +505,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
         const vx = ((last.x - first.x) / dt) * 16;
         const vy = ((last.y - first.y) / dt) * 16;
         const speed = Math.hypot(vx, vy);
-        const maxSpeed = 38;
+        const maxSpeed = 42;
         const scale = speed > maxSpeed ? maxSpeed / speed : 1;
         velocityRef.current = {
           x: vx * scale,
@@ -1429,7 +1437,7 @@ export const GlobeStreamCanvas: React.FC<GlobeStreamCanvasProps> = ({
                 placeholder="Search notes on globe..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent text-xs text-black placeholder-[#888888] focus:outline-hidden font-sans py-1.5"
+                className="flex-1 bg-transparent text-[16px] text-black placeholder-[#888888] focus:outline-hidden font-sans py-1.5"
               />
               {searchQuery && (
                 <button

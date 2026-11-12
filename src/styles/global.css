@@ -196,3 +196,37 @@ html, body {
   text-decoration: none !important;
 }
 
+/* Summary & Callout Tables: Left-column acts as heading/label -> bold font */
+.prose-obsidian table td:first-child,
+.callout table td:first-child,
+.callout-summary table td:first-child {
+  font-weight: 600 !important;
+  color: #111111;
+  white-space: nowrap;
+}
+
+/* Wikilinks inherit font-weight and size from parent heading, strong, etc. */
+.wikilink,
+.wikilink-unresolved {
+  font-weight: inherit !important;
+  font-size: inherit;
+}
+
+/* For normal paragraphs and lists where parent is regular font, give wikilinks clear medium weight */
+p > .wikilink,
+li > .wikilink {
+  font-weight: 500 !important;
+}
+
+/* In headings or strong/b tags, strictly inherit bold styling */
+h1 .wikilink,
+h2 .wikilink,
+h3 .wikilink,
+h4 .wikilink,
+h5 .wikilink,
+h6 .wikilink,
+strong .wikilink,
+b .wikilink {
+  font-weight: inherit !important;
+}
+

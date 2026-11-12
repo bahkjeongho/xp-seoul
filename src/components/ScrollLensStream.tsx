@@ -37,9 +37,10 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
     }
   }, [selectedNote, notes]);
 
-  // Smooth wheel navigation with accumulator and damping
+  // Smooth wheel navigation with accumulator, damping, and cooldown
   const wheelAccumulatorRef = useRef<number>(0);
   const lastWheelTimeRef = useRef<number>(0);
+  const lastStepTimeRef = useRef<number>(0);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -48,59 +49,74 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
     const dt = now - lastWheelTimeRef.current;
     lastWheelTimeRef.current = now;
 
-    // Reset accumulator on pause (>140ms) to ensure clean stops
-    if (dt > 140) {
+    // Reset accumulator on pause (>150ms) to ensure clean stops
+    if (dt > 150) {
       wheelAccumulatorRef.current = 0;
     }
 
-    // Dampen trackpad flick spikes so cards glide smoothly without rushing
-    const clampedDelta = Math.sign(e.deltaY) * Math.min(36, Math.abs(e.deltaY));
+    // Dampen trackpad flick spikes
+    const clampedDelta = Math.sign(e.deltaY) * Math.min(30, Math.abs(e.deltaY));
     wheelAccumulatorRef.current += clampedDelta;
 
-    const THRESHOLD = 44; // Gentle, fluid trackpad threshold
-    if (Math.abs(wheelAccumulatorRef.current) >= THRESHOLD) {
+    const THRESHOLD = 48;
+    if (Math.abs(wheelAccumulatorRef.current) >= THRESHOLD && now - lastStepTimeRef.current > 140) {
       const step = wheelAccumulatorRef.current > 0 ? 1 : -1;
-      wheelAccumulatorRef.current = wheelAccumulatorRef.current > 0
-        ? Math.max(0, wheelAccumulatorRef.current - THRESHOLD)
-        : Math.min(0, wheelAccumulatorRef.current + THRESHOLD);
-
+      wheelAccumulatorRef.current = 0;
+      lastStepTimeRef.current = now;
       setActiveIndex(prev => Math.max(0, Math.min(notes.length - 1, prev + step)));
     }
   }, [notes.length]);
 
-  // Touch gesture support for mobile swiping with continuous drag feel
+  // Touch gesture support for mobile flicking and smooth dragging
   const touchStartY = useRef<number | null>(null);
   const lastTouchYRef = useRef<number>(0);
-  const touchAccumulatorRef = useRef<number>(0);
+  const touchStartTimeRef = useRef<number>(0);
+  const gestureStepCountRef = useRef<number>(0);
+  const lastDragStepTimeRef = useRef<number>(0);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-    lastTouchYRef.current = e.touches[0].clientY;
-    touchAccumulatorRef.current = 0;
+    const clientY = e.touches[0].clientY;
+    touchStartY.current = clientY;
+    lastTouchYRef.current = clientY;
+    touchStartTimeRef.current = performance.now();
+    gestureStepCountRef.current = 0;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (touchStartY.current === null) return;
     const currentY = e.touches[0].clientY;
-    const dy = lastTouchYRef.current - currentY;
+    const totalDy = touchStartY.current - currentY;
     lastTouchYRef.current = currentY;
 
-    touchAccumulatorRef.current += dy;
-    const TOUCH_THRESHOLD = 36; // Responsive mobile swipe threshold
-
-    if (Math.abs(touchAccumulatorRef.current) >= TOUCH_THRESHOLD) {
-      const step = touchAccumulatorRef.current > 0 ? 1 : -1;
-      touchAccumulatorRef.current = touchAccumulatorRef.current > 0
-        ? Math.max(0, touchAccumulatorRef.current - TOUCH_THRESHOLD)
-        : Math.min(0, touchAccumulatorRef.current + TOUCH_THRESHOLD);
-
+    // For continuous long dragging, step every 80px with a 180ms cooldown
+    const now = performance.now();
+    const DRAG_THRESHOLD = 80;
+    if (Math.abs(totalDy) >= DRAG_THRESHOLD * (gestureStepCountRef.current + 1) && now - lastDragStepTimeRef.current > 180) {
+      const step = totalDy > 0 ? 1 : -1;
+      gestureStepCountRef.current += 1;
+      lastDragStepTimeRef.current = now;
       setActiveIndex(prev => Math.max(0, Math.min(notes.length - 1, prev + step)));
     }
   };
 
   const handleTouchEnd = () => {
+    if (touchStartY.current === null) return;
+    const duration = Math.max(16, performance.now() - touchStartTimeRef.current);
+    const totalDy = touchStartY.current - lastTouchYRef.current;
+    const velocity = totalDy / duration; // px per ms
+
+    // If no drag steps were fired yet, check for a clean flick / swipe
+    if (gestureStepCountRef.current === 0) {
+      const isQuickFlick = duration < 380 && (Math.abs(totalDy) > 28 || Math.abs(velocity) > 0.35);
+      if (isQuickFlick) {
+        // High velocity flick advances 2 items; normal flick advances 1 item
+        const isSuperFlick = Math.abs(velocity) > 1.8 && Math.abs(totalDy) > 160;
+        const step = (totalDy > 0 ? 1 : -1) * (isSuperFlick ? 2 : 1);
+        setActiveIndex(prev => Math.max(0, Math.min(notes.length - 1, prev + step)));
+      }
+    }
+
     touchStartY.current = null;
-    touchAccumulatorRef.current = 0;
   };
 
   // Keyboard navigation
@@ -149,13 +165,13 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
       className="h-full w-full relative overflow-hidden flex flex-col items-center justify-center select-none touch-none bg-[#fbfbfb] transition-all duration-500"
       style={{ touchAction: 'none' }}
     >
-      {/* Target Focus Ring (Figma frame style) */}
+      {/* Target Focus Ring (Equalized concentric frame: 10px uniform gap on all 4 sides) */}
       <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center justify-center px-4">
         <div
           className={`border border-black/10 rounded-2xl pointer-events-none transition-all duration-500 ${
             isCompact
-              ? 'w-[260px] lg:w-[290px] h-[90px]'
-              : 'w-full max-w-[360px] sm:max-w-[520px] md:max-w-[640px] lg:max-w-[720px] h-[120px] sm:h-[130px] lg:h-[140px]'
+              ? 'w-[calc(100%-28px)] max-w-[300px] h-[102px]'
+              : 'w-[calc(100vw-12px)] max-w-[370px] sm:max-w-[520px] md:max-w-[640px] lg:max-w-[720px] h-[130px] sm:h-[140px] lg:h-[152px]'
           }`}
         />
       </div>
@@ -215,9 +231,9 @@ export const ScrollLensStream: React.FC<ScrollLensStreamProps> = ({
               style={{ left: '50%' }}
               transition={{
                 type: 'spring',
-                stiffness: 155,
-                damping: 24,
-                mass: 0.7,
+                stiffness: 120,
+                damping: 22,
+                mass: 0.8,
               }}
               whileHover={{
                 scale: scale * 1.02,

@@ -98,22 +98,62 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
     return [];
   }, [currentAxis, draftPrimary, facetData]);
 
-  // Topics list
+  // Active secondary/sub-item selected under draftPrimary
+  const activeSubSlot = useMemo(() => {
+    if (!draftPrimary) return null;
+    return activeFilterSlots.find((slot) => {
+      if (slot.axis !== currentAxis) return false;
+      if (currentAxis === 'category') return slot.category === draftPrimary && Boolean(slot.subCategory);
+      if (currentAxis === 'type') return slot.type === draftPrimary && Boolean(slot.subType);
+      if (currentAxis === 'field') return slot.field === draftPrimary && Boolean(slot.subField);
+      if (currentAxis === 'region') return slot.country === draftPrimary && Boolean(slot.city);
+      return false;
+    });
+  }, [activeFilterSlots, currentAxis, draftPrimary]);
+
+  const activeSubName = useMemo(() => {
+    if (!activeSubSlot) return null;
+    return (
+      activeSubSlot.subCategory ||
+      activeSubSlot.subType ||
+      activeSubSlot.subField ||
+      activeSubSlot.city ||
+      null
+    );
+  }, [activeSubSlot]);
+
+  // Topics list (reactive to selected sub-item)
   const contextualTopics = useMemo(() => {
     let topicMap: Record<string, number> = {};
     if (currentAxis === 'category' && draftPrimary) {
-      topicMap = facetData.byCategory?.[draftPrimary]?.topics || {};
+      if (activeSubName && facetData.byCategory?.[draftPrimary]?.subs?.[activeSubName]?.topics) {
+        topicMap = facetData.byCategory[draftPrimary].subs[activeSubName].topics;
+      } else {
+        topicMap = facetData.byCategory?.[draftPrimary]?.topics || {};
+      }
     } else if (currentAxis === 'type' && draftPrimary) {
-      topicMap = facetData.byType?.[draftPrimary]?.topics || {};
+      if (activeSubName && facetData.byType?.[draftPrimary]?.subs?.[activeSubName]?.topics) {
+        topicMap = facetData.byType[draftPrimary].subs[activeSubName].topics;
+      } else {
+        topicMap = facetData.byType?.[draftPrimary]?.topics || {};
+      }
     } else if (currentAxis === 'field' && draftPrimary) {
-      topicMap = facetData.byField?.[draftPrimary]?.topics || {};
+      if (activeSubName && facetData.byField?.[draftPrimary]?.subs?.[activeSubName]?.topics) {
+        topicMap = facetData.byField[draftPrimary].subs[activeSubName].topics;
+      } else {
+        topicMap = facetData.byField?.[draftPrimary]?.topics || {};
+      }
     } else if (currentAxis === 'region' && draftPrimary) {
-      topicMap = facetData.byRegion?.[draftPrimary]?.topics || {};
+      if (activeSubName && facetData.byRegion?.[draftPrimary]?.subs?.[activeSubName]?.topics) {
+        topicMap = facetData.byRegion[draftPrimary].subs[activeSubName].topics;
+      } else {
+        topicMap = facetData.byRegion?.[draftPrimary]?.topics || {};
+      }
     }
     return Object.entries(topicMap)
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
-  }, [currentAxis, draftPrimary, facetData]);
+  }, [currentAxis, draftPrimary, activeSubName, facetData]);
 
   const toggleOrAddSlot = (options: {
     primary?: string | null;
@@ -561,7 +601,7 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
                 {draftPrimary && contextualTopics.length > 0 && (
                   <div className="flex flex-col gap-1.5 pt-2 border-t border-[#f0f0f0]">
                     <span className="text-[11px] font-mono text-[#888888] uppercase tracking-wider">
-                      Related Topics:
+                      Related Topics {activeSubName ? `(${activeSubName})` : ''}:
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {contextualTopics.slice(0, 30).map((top) => {
@@ -569,7 +609,7 @@ export const MobileDetailBottomSheet: React.FC<MobileDetailBottomSheetProps> = (
                         return (
                           <button
                             key={top.name}
-                            onClick={() => toggleOrAddSlot({ primary: draftPrimary, topic: top.name })}
+                            onClick={() => toggleOrAddSlot({ primary: draftPrimary, secondary: activeSubName, topic: top.name })}
                             className={`py-1 px-2.5 rounded-full text-[11px] font-mono transition-all flex items-center gap-1 border ${
                               isTopInSlots
                                 ? 'bg-black text-white border-black font-bold shadow-xs'

@@ -1,12 +1,14 @@
-import { useEffect, type RefObject } from 'react';
+// In-memory cache for per-note scroll positions during the session
+export const noteScrollPositions = new Map<string, number>();
 
 /**
  * Custom React hook for Lenis smooth scrolling inside a scrollable container.
- * Perfect for reading long notes, essays, and editorial pages.
+ * Persists and restores scroll positions when navigating back to previously viewed notes.
  */
 export function useLenisScroll(
   containerRef: RefObject<HTMLElement | null>,
-  deps: any[] = []
+  deps: any[] = [],
+  noteKey?: string
 ) {
   useEffect(() => {
     const el = containerRef.current;
@@ -15,8 +17,21 @@ export function useLenisScroll(
     let lenisInstance: any = null;
     let rafId: number;
 
-    // Reset scroll to top on content change
-    el.scrollTop = 0;
+    // Check if this note has a previously saved scroll position (e.g. Back navigation)
+    const savedScrollTop = noteKey && noteScrollPositions.has(noteKey)
+      ? (noteScrollPositions.get(noteKey) || 0)
+      : 0;
+
+    // Set immediate DOM scroll position
+    el.scrollTop = savedScrollTop;
+
+    // Continuously record scroll position on user scroll
+    const handleScroll = () => {
+      if (noteKey && el) {
+        noteScrollPositions.set(noteKey, el.scrollTop);
+      }
+    };
+    el.addEventListener('scroll', handleScroll, { passive: true });
 
     import('lenis').then(({ default: Lenis }) => {
       if (!containerRef.current) return;
@@ -32,6 +47,10 @@ export function useLenisScroll(
         touchMultiplier: 1.4,
       });
 
+      if (savedScrollTop > 0) {
+        lenisInstance.scrollTo(savedScrollTop, { immediate: true });
+      }
+
       const raf = (time: number) => {
         lenisInstance?.raf(time);
         rafId = requestAnimationFrame(raf);
@@ -40,6 +59,11 @@ export function useLenisScroll(
     });
 
     return () => {
+      // Save position before unmounting / switching notes
+      if (noteKey && el) {
+        noteScrollPositions.set(noteKey, el.scrollTop);
+      }
+      el.removeEventListener('scroll', handleScroll);
       if (rafId) cancelAnimationFrame(rafId);
       if (lenisInstance) {
         lenisInstance.destroy();

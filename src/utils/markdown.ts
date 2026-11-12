@@ -53,22 +53,14 @@ export function parseObsidianBlocks(bodyText: string): ContentBlock[] {
 
   function flushCallout() {
     if (currentCallout) {
-      const hasContent = currentCallout.lines.some((l) => l.trim() !== '');
-      const hasCustomTitle =
-        currentCallout.title &&
-        currentCallout.title.toLowerCase() !== currentCallout.calloutType;
-
-      // Only add callouts that actually have content or a custom title
-      if (hasContent || hasCustomTitle) {
-        blocks.push(currentCallout);
-      }
+      blocks.push(currentCallout);
       currentCallout = null;
     }
   }
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const calloutMatch = line.match(/^>\s*\[!([a-zA-Z0-9_-]+)\]\s*(.*)$/);
+    const calloutMatch = line.match(/^>\s*\[!\s*([a-zA-Z0-9_-]+)\]\s*(.*)$/i);
 
     if (calloutMatch) {
       flushNormal();
@@ -141,10 +133,10 @@ function processWikilinksAndImages(markdownText: string, knownTitles?: Set<strin
     const isResolved = knownTitles ? knownTitles.has(cleanTarget.toLowerCase()) : true;
 
     if (isResolved) {
-      return `<a href="#wikilink" data-wikilink="${cleanTarget}" class="wikilink font-medium text-black underline underline-offset-4 decoration-black/30 hover:decoration-black hover:bg-black/5 px-1 py-0.5 rounded transition-colors inline-block cursor-pointer">${cleanDisplay}</a>`;
+      return `<a href="#wikilink" data-wikilink="${cleanTarget}" class="wikilink font-[inherit] text-black underline underline-offset-4 decoration-black/30 hover:decoration-black hover:bg-black/5 px-1 py-0.5 rounded transition-colors inline-block cursor-pointer">${cleanDisplay}</a>`;
     } else {
       // Unresolved note in vault
-      return `<span data-unresolved-wikilink="${cleanTarget}" title="아직 작성되지 않은 노트입니다" class="wikilink-unresolved font-normal text-[#888888] underline underline-offset-4 decoration-solid decoration-[#cccccc] hover:text-[#444444] hover:decoration-[#888888] px-1 py-0.5 rounded transition-colors inline-block cursor-pointer">${cleanDisplay}</span>`;
+      return `<span data-unresolved-wikilink="${cleanTarget}" title="아직 작성되지 않은 노트입니다" class="wikilink-unresolved font-[inherit] text-[#888888] underline underline-offset-4 decoration-solid decoration-[#cccccc] hover:text-[#444444] hover:decoration-[#888888] px-1 py-0.5 rounded transition-colors inline-block cursor-pointer">${cleanDisplay}</span>`;
     }
   });
 
@@ -162,8 +154,10 @@ function processWikilinksAndImages(markdownText: string, knownTitles?: Set<strin
 
 export function renderObsidianBlock(block: ContentBlock, knownTitles?: Set<string>): string {
   if (block.type === 'callout') {
-    const processedLines = processWikilinksAndImages(block.lines.join('\n'), knownTitles);
-    const bodyHtml = marked.parse(processedLines) as string;
+    const rawLines = block.lines.join('\n').trim();
+    const hasContent = rawLines.length > 0;
+    const processedLines = hasContent ? processWikilinksAndImages(rawLines, knownTitles) : '';
+    const bodyHtml = hasContent ? (marked.parse(processedLines) as string) : '';
 
     const displayTitle =
       block.title ||
@@ -171,15 +165,17 @@ export function renderObsidianBlock(block: ContentBlock, knownTitles?: Set<strin
         ? 'TL;DR'
         : block.calloutType.toUpperCase());
 
+    const bodySection = bodyHtml
+      ? `<div class="font-sans text-sm leading-relaxed text-[#111111] space-y-2 mt-2">${bodyHtml}</div>`
+      : '';
+
     return `
-      <div class="callout callout-${block.calloutType} my-5 p-5 rounded-xl border border-black/10 bg-[#f8f8fa]">
-        <div class="font-mono text-[10px] font-bold uppercase tracking-wider text-[#666666] mb-2 flex items-center gap-1.5">
+      <div class="callout callout-${block.calloutType} my-4 p-4 rounded-xl border border-black/10 bg-[#f8f8fa]">
+        <div class="font-mono text-[10px] font-bold uppercase tracking-wider text-[#666666] flex items-center gap-1.5">
           <span class="w-1.5 h-1.5 rounded-full bg-black"></span>
           <span>${displayTitle}</span>
         </div>
-        <div class="font-sans text-sm leading-relaxed text-[#111111] space-y-2">
-          ${bodyHtml}
-        </div>
+        ${bodySection}
       </div>
     `;
   }
@@ -189,11 +185,36 @@ export function renderObsidianBlock(block: ContentBlock, knownTitles?: Set<strin
   return marked.parse(processedText) as string;
 }
 
+function stripFrontmatter(text: string): string {
+  if (!text.startsWith('---')) return text;
+  const lines = text.split(/\r?\n/);
+  if (lines[0].trim() !== '---') return text;
+
+  let closingIdx = -1;
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line === '---') {
+      closingIdx = i;
+      break;
+    }
+    // If we encounter a markdown heading, callout, or table, this is not frontmatter
+    if (line.startsWith('>') || line.startsWith('#') || line.startsWith('|')) {
+      break;
+    }
+  }
+
+  if (closingIdx !== -1) {
+    const after = lines.slice(closingIdx + 1).join('\n');
+    return after.replace(/^(?:\s*---\s*\r?\n*)+/, '').trim();
+  } else {
+    return text.replace(/^(?:\s*---\s*\r?\n*)+/, '').trim();
+  }
+}
+
 export function renderFullNoteHtml(rawContent: string, knownTitles?: Set<string>): string {
   if (!rawContent) return '';
 
-  // Strip frontmatter
-  const bodyText = rawContent.replace(/^---[\s\S]*?---\n*/, '');
+  const bodyText = stripFrontmatter(rawContent);
   const blocks = parseObsidianBlocks(bodyText);
 
   return blocks.map((b) => renderObsidianBlock(b, knownTitles)).join('\n');

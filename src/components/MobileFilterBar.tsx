@@ -78,7 +78,7 @@ export const MobileFilterBar: React.FC<MobileFilterBarProps> = ({
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder="Search notes, topics, cities..."
-                className="w-full bg-transparent text-xs font-mono text-black placeholder-[#999999] outline-none"
+                className="w-full bg-transparent text-[16px] font-mono text-black placeholder-[#999999] outline-none"
                 autoFocus
               />
               {searchQuery && (

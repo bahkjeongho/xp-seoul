@@ -694,7 +694,7 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
                 placeholder="Search notes in stream..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent text-xs text-black placeholder-[#888888] focus:outline-hidden font-sans py-1.5"
+                className="flex-1 bg-transparent text-[16px] text-black placeholder-[#888888] focus:outline-hidden font-sans py-1.5"
               />
               {searchQuery && (
                 <button

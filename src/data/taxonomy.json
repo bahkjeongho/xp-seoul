@@ -111,13 +111,13 @@
     }
   },
   "Entertainment": {
-    "count": 367,
+    "count": 370,
     "subCategories": {
       "Popular Music": {
-        "count": 348,
+        "count": 351,
         "topics": {
           "K-Pop Group": 79,
-          "Music Artist": 154,
+          "Music Artist": 157,
           "Music Producer": 9,
           "Rapper": 11,
           "Record Label": 14,

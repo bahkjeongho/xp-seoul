@@ -183,9 +183,9 @@ export const NoteDetailPanel: React.FC<NoteDetailPanelProps> = ({
     return arr.map(t => String(t).replace(/^\[\[/, '').replace(/\]\]$/, '').replace(/^#/, '').trim()).filter(Boolean);
   }, [fullNote.allProps]);
 
-  // Lenis smooth scrolling for Note Detail reading container
+  // Lenis smooth scrolling for Note Detail reading container with scroll restoration
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
-  useLenisScroll(scrollContainerRef, [fullNote.id]);
+  useLenisScroll(scrollContainerRef, [fullNote.id], fullNote.id);
 
   return (
     <motion.section

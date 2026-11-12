@@ -45,7 +45,9 @@ function parseYamlFrontmatter(text) {
   if (end === -1) return { data: {}, content: text };
   
   const yamlBlock = text.slice(3, end).trim();
-  const content = text.slice(end + 4).trim();
+  let content = text.slice(end + 4).trim();
+  // Strip any lingering standalone --- dividers immediately following frontmatter
+  content = content.replace(/^(?:\s*---\s*\n*)+/, '').trim();
   
   const data = {};
   const lines = yamlBlock.split('\n');
@@ -77,7 +79,7 @@ function parseYamlFrontmatter(text) {
 }
 
 function extractCallout(content, type) {
-  const regex = new RegExp(`>\\s*\\[!${type}\\]([^\\n]*)\\n((?:>[^\\n]*\\n?)*)`, 'i');
+  const regex = new RegExp(`>\\s*\\[!\\s*${type}\\]([^\\n]*)\\n((?:>[^\\n]*\\n?)*)`, 'i');
   const match = content.match(regex);
   if (!match) return '';
   const lines = match[2].split('\n')
