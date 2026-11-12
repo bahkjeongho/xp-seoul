@@ -26,7 +26,19 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
   initialTaxonomy = {},
   initialViewMode = 'stream',
 }) => {
-  const [viewMode, setViewMode] = useState<'stream' | 'globe'>(initialViewMode);
+  const [viewMode, setViewMode] = useState<'stream' | 'globe'>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const modeParam = urlParams.get('mode');
+      if (modeParam === 'stream') return 'stream';
+      if (modeParam === 'globe' || window.location.pathname.startsWith('/globe')) return 'globe';
+      // Mobile default: globe per user request
+      if (window.innerWidth < 768) {
+        return 'globe';
+      }
+    }
+    return initialViewMode;
+  });
   const [notes, setNotes] = useState<NoteItem[]>(initialNotes);
   const [taxonomy, setTaxonomy] = useState<TaxonomyData>(initialTaxonomy);
   const [isLoading, setIsLoading] = useState<boolean>(initialNotes.length === 0);
@@ -122,11 +134,17 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
     }
   }, [notes.length]);
 
-  // Read initial note from URL (?note=...) on first mount
+  // Read initial viewMode from URL (?mode=...) or default mobile to globe on first mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
-      if (window.location.pathname.startsWith('/globe') || urlParams.get('mode') === 'globe') {
+      const modeParam = urlParams.get('mode');
+      if (modeParam === 'stream') {
+        setViewMode('stream');
+      } else if (modeParam === 'globe' || window.location.pathname.startsWith('/globe')) {
+        setViewMode('globe');
+      } else if (window.innerWidth < 768) {
+        // Mobile default: globe per user request
         setViewMode('globe');
       }
     }
@@ -477,13 +495,21 @@ export const XPSeoulApp: React.FC<XPSeoulAppProps> = ({
               <div className="flex items-center bg-[#f4f4f5] p-0.5 sm:p-1 rounded-full border border-black/8 font-sans text-[11px] sm:text-xs ml-1 sm:ml-2 shrink-0">
                 <button
                   onClick={() => setViewMode('stream')}
-                  className="px-2.5 sm:px-3 py-1 rounded-full bg-white text-black font-semibold shadow-2xs"
+                  className={`px-2.5 sm:px-3 py-1 rounded-full font-semibold transition-all ${
+                    viewMode === 'stream'
+                      ? 'bg-white text-black shadow-2xs'
+                      : 'text-[#666666] hover:text-black'
+                  }`}
                 >
                   Stream
                 </button>
                 <button
                   onClick={() => setViewMode('globe')}
-                  className="px-2.5 sm:px-3.5 py-1 rounded-full text-[#666666] hover:text-black transition-colors"
+                  className={`px-2.5 sm:px-3.5 py-1 rounded-full font-semibold transition-all ${
+                    viewMode === 'globe'
+                      ? 'bg-white text-black shadow-2xs'
+                      : 'text-[#666666] hover:text-black'
+                  }`}
                 >
                   Globe
                 </button>
