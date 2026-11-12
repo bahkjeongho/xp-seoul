@@ -1,3 +1,5 @@
+import { useEffect, type RefObject } from 'react';
+
 // In-memory cache for per-note scroll positions during the session
 export const noteScrollPositions = new Map<string, number>();
 
