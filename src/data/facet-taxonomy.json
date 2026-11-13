@@ -137,6 +137,10 @@
       "count": 70
     },
     {
+      "name": "Architecture Studio",
+      "count": 69
+    },
+    {
       "name": "Record Label",
       "count": 69
     },
@@ -151,10 +155,6 @@
     {
       "name": "Editor-in-Chief",
       "count": 67
-    },
-    {
-      "name": "Architecture Studio",
-      "count": 65
     },
     {
       "name": "Photography Director",
@@ -675,7 +675,7 @@
   ],
   "byCategory": {
     "Creative": {
-      "count": 1371,
+      "count": 1372,
       "subs": {
         "Design": {
           "count": 472,
@@ -766,10 +766,10 @@
           }
         },
         "Architecture": {
-          "count": 58,
+          "count": 59,
           "topics": {
             "Architecture Firm": 16,
-            "Architecture Studio": 7,
+            "Architecture Studio": 8,
             "Architecture Award": 7,
             "Architect": 18,
             "Interior Architecture Company": 1,
@@ -800,7 +800,7 @@
         "Design Festival": 8,
         "Architecture Firm": 16,
         "Video Production": 6,
-        "Architecture Studio": 7,
+        "Architecture Studio": 8,
         "Graphic Designer": 76,
         "Photographer": 64,
         "Type Designer": 4,
@@ -1246,15 +1246,15 @@
   },
   "byType": {
     "Organization": {
-      "count": 786,
+      "count": 787,
       "subs": {
         "Studio": {
-          "count": 245,
+          "count": 246,
           "topics": {
             "Graphic Design Studio": 19,
             "Design Studio": 130,
             "Creative Studio": 57,
-            "Architecture Studio": 7,
+            "Architecture Studio": 8,
             "Brand Design Studio": 15,
             "Animation Studio": 1,
             "Type Platform": 2,
@@ -1409,7 +1409,7 @@
         "Creative Studio": 57,
         "Architecture Firm": 16,
         "Video Production": 6,
-        "Architecture Studio": 7,
+        "Architecture Studio": 8,
         "Type Foundry": 12,
         "Art Platform": 14,
         "Publishing Company": 19,

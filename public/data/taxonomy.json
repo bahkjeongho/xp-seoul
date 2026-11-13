@@ -1,6 +1,6 @@
 {
   "Creative": {
-    "count": 1371,
+    "count": 1372,
     "subCategories": {
       "Fashion": {
         "count": 442,
@@ -90,10 +90,10 @@
         }
       },
       "Architecture": {
-        "count": 58,
+        "count": 59,
         "topics": {
           "Architecture Firm": 16,
-          "Architecture Studio": 7,
+          "Architecture Studio": 8,
           "Architecture Award": 7,
           "Interior Architecture Company": 1,
           "Architect": 18,
